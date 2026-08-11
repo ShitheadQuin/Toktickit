@@ -12,7 +12,7 @@ function App() {
     setErrorMessage('')
 
     try {
-      const response = await fetch('/api/health')
+      const response = await fetch('/api/health', { signal: AbortSignal.timeout(5000) })
 
       if (!response.ok) {
         throw new Error('Backend returned an error')
