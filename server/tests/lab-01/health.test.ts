@@ -1,7 +1,15 @@
-import { describe, it } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import request from 'supertest';
+import app from '../../src/app';
 
-// Implemented in Issue 2 (feature/2-health-check).
-// GET /api/health should return 200 with { status: "ok", service: "TokTickIT API" }
 describe('GET /api/health', () => {
-  it.todo('returns 200 and { status: "ok", service: "TokTickIT API" }');
+  it('returns 200 and { status: "ok", service: "TokTickIT API" }', async () => {
+    const response = await request(app).get('/api/health');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      status: 'ok',
+      service: 'TokTickIT API',
+    });
+  });
 });
