@@ -42,7 +42,19 @@ Edit `.env` and set `DATABASE_URL` to point at your local PostgreSQL database, e
 DATABASE_URL="postgresql://<username>:<password>@localhost:5432/toktickit?schema=public"
 ```
 
-## 3. Run the backend
+## 3. Set up the database
+
+```bash
+cd server
+npx prisma migrate dev
+npx prisma db seed
+```
+
+Applies the Prisma migrations (creating the `Category` table) and seeds the four required categories
+(Account and Access, Hardware, Software, Network). The seed uses `upsert` keyed on the unique `name`
+field, so running it more than once is safe and won't create duplicates.
+
+## 4. Run the backend
 
 ```bash
 cd server
@@ -51,7 +63,7 @@ npm run dev
 
 Starts the Express API on `http://localhost:3000`.
 
-## 4. Run the frontend
+## 5. Run the frontend
 
 ```bash
 cd client
@@ -60,7 +72,7 @@ npm run dev
 
 Starts the Vite dev server on `http://localhost:5173`.
 
-## 5. Run tests
+## 6. Run tests
 
 ```bash
 cd client && npm test
