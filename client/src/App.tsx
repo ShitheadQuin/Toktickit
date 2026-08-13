@@ -3,25 +3,46 @@ import './App.css'
 
 type SystemStatus = 'idle' | 'loading' | 'online' | 'offline'
 
+interface Category {
+  id: number
+  name: string
+}
+
 function App() {
   const [status, setStatus] = useState<SystemStatus>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const [categories, setCategories] = useState<Category[]>([])
 
   const checkSystem = async () => {
     setStatus('loading')
     setErrorMessage('')
 
     try {
-      const response = await fetch('/api/health', { signal: AbortSignal.timeout(5000) })
+      const healthResponse = await fetch('/api/health', { signal: AbortSignal.timeout(5000) })
 
-      if (!response.ok) {
+      if (!healthResponse.ok) {
         throw new Error('Backend returned an error')
       }
 
-      const data = await response.json()
-      setStatus(data.status === 'ok' ? 'online' : 'offline')
+      const healthData = await healthResponse.json()
+
+      if (healthData.status !== 'ok') {
+        throw new Error('Backend reported an unhealthy status')
+      }
+
+      const categoriesResponse = await fetch('/api/categories', { signal: AbortSignal.timeout(5000) })
+
+      if (!categoriesResponse.ok) {
+        throw new Error('Backend returned an error')
+      }
+
+      const categoriesData: Category[] = await categoriesResponse.json()
+
+      setCategories(categoriesData)
+      setStatus('online')
     } catch (error) {
       setStatus('offline')
+      setCategories([])
       setErrorMessage('Unable to connect to TokTickIT API')
     }
   }
@@ -36,7 +57,13 @@ function App() {
       {status === 'loading' && <p>Loading...</p>}
       {status === 'online' && (
         <div className="alert alert-success d-inline-block" role="alert">
-          System Status: Online
+          <p className="mb-2">System Status: Online</p>
+          <strong>Supported Request Categories</strong>
+          <ul className="mb-0">
+            {categories.map((category) => (
+              <li key={category.id}>{category.name}</li>
+            ))}
+          </ul>
         </div>
       )}
       {status === 'offline' && (
