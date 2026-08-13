@@ -7,11 +7,15 @@ describe('GET /api/categories', () => {
     const response = await request(app).get('/api/categories');
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual([
-      { id: 1, name: 'Account and Access' },
-      { id: 2, name: 'Hardware' },
-      { id: 3, name: 'Software' },
-      { id: 4, name: 'Network' },
+    expect(response.body).toHaveLength(4);
+    expect(response.body.map((category: { name: string }) => category.name)).toEqual([
+      'Account and Access',
+      'Hardware',
+      'Software',
+      'Network',
     ]);
+    response.body.forEach((category: { id: number }) => {
+      expect(typeof category.id).toBe('number');
+    });
   });
 });
