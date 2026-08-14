@@ -24,12 +24,6 @@ I used Claude (model `claude-sonnet-5`) through Anthropic's Cowork desktop app a
 
 **My Reflection:** Rather than just re-asserting it was fine, it re-read every relevant file directly off disk and checked each of Issue 1's seven acceptance criteria one by one with specifics (file, line, what was verified), instead of giving a vague "looks good."
 
-**4. Get an honest sanity check, not just reassurance**
-
-**Prompt:** "let do sanity check" → "I mean for issue 1 does mine look simillar to his"
-
-**My Reflection:** It didn't just repeat that my code was fine — it actually fetched my partner's real merged PR from GitHub and gave a direct comparison: his `App.tsx` already had the full Check System UI wired in (ahead of Issue 1's actual scope), mine was a minimal Bootstrap-proof button. It said plainly that they didn't look alike rather than smoothing over the difference, then explained why that was still fine against the actual acceptance criteria.
-
 ### Issue 2 — API health check
 
 **1. Debug a live connection issue**
@@ -40,15 +34,9 @@ I used Claude (model `claude-sonnet-5`) through Anthropic's Cowork desktop app a
 
 **2. Resolve ambiguity by following the spec**
 
-**Prompt:** "I'm not sure — just follow the labsheet." (when asked whether to add two optional Vitest UI tests now or defer them)
+**Prompt:** "I'm not sure just follow the labsheet." (when asked whether to add two optional Vitest UI tests now or defer them)
 
 **My Reflection:** Instead of guessing at "best practice," telling it to just follow the spec resolved the ambiguity cleanly — Issue 2 only required the Supertest test, so the Vitest ones stayed deferred to Issue 4.
-
-**3. Fix a UI bug at its root cause**
-
-**Prompt:** "Can you make the front darker?" (after the heading text rendered almost invisible — light gray on white)
-
-**My Reflection:** Instead of just hardcoding a darker color inline, it traced the problem to a CSS variable left over from the unused Vite dark/light theme and fixed it with a dedicated class, which explained why the text looked washed out in the first place.
 
 ### Issue 3 — Category model, migration, and seed
 
@@ -72,12 +60,11 @@ I used Claude (model `claude-sonnet-5`) through Anthropic's Cowork desktop app a
 
 **My Reflection:** It correctly diagnosed that React Testing Library's automatic cleanup hook never registers because Vitest's `test.globals` isn't enabled, and fixed it by explicitly importing `cleanup` and calling it in `afterEach` — a subtle config interaction I wouldn't have guessed.
 
-**2. Respond to a valid review comment**
+**2. Verify merge state instead of assuming**
 
-**Prompt:** "I think we should fix that." (after Chanat pointed out the categories Supertest hardcoded exact autoincrement ids, which don't reset on Postgres `SERIAL`)
+**Prompt:** "can you check have I merged yet?"
 
-**My Reflection:** Rather than defending the original test, it agreed the comment was correct and rewrote the assertions to check category names and a loose `id` type check instead of exact values — a case where the right response was to accept the feedback, not push back.
+**My Reflection:** It checked the PR page directly rather than taking my word for it.
 
 ## Reflection
-
-*(Replace this with your own — a couple of sentences on what worked, what didn't, and how your prompts got better over the session.)*
+making the plan before working make the work flow even smotther take less time make less mistake and it can help me track my progess though the work
