@@ -67,4 +67,4 @@ I used Claude (model `claude-sonnet-5`) through Anthropic's Cowork desktop app a
 **My Reflection:** It checked the PR page directly rather than taking my word for it.
 
 ## Reflection
-making the plan before working make the work flow even smotther take less time make less mistake and it can help me track my progess though the work
+Making a plan before starting the lab makes the workflow smoother, saves time, and helps me avoid mistakes. It also makes it easier to track my progress throughout the work. What worked best was asking Claude to verify its own conclusions instead of just trusting them. For example, I rechecked Issue 1's code file by file, reran the seed command before disputing a review comment, and checked the actual PR page instead of assuming the merge had gone through. This "prove it, don't just assert it" approach helped catch real mistakes along the way. My prompts also became more specific as I went. Early on, vague questions usually gave me vague answers, but later I told Claude exactly what to check and how to work, which reduced the back-and-forth.
