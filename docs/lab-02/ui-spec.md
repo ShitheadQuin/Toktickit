@@ -85,10 +85,12 @@ next to that specific file — not as one generic alert for the whole form.
 | Mobile < 768px | Everything stacks in one column; buttons stay full-width and touch-sized (min 44px tall); no horizontal scrolling |
 | All sizes | No clipped labels, no overlapping messages, no hidden buttons, attachment names remain fully readable (wrap, don't truncate silently) |
 
-Create Ticket: desktop/tablet place system-generated fields (Ticket Number, Ticket Date) at the
-top in a two-column row, classification fields (Category, Related System, Requested Priority)
-grouped in the row below, Summary and Description each full-width beneath that, Attachments
-below the fields, actions at the bottom. Mobile stacks every field in that same order.
+Create Ticket: desktop/tablet place system-generated and read-only fields (Requester, Ticket
+Number, Ticket Date) at the top in a row — Requester is populated from the current Development
+Requester selection (BR-05) and is not editable — classification fields (Category, Related
+System, Requested Priority) grouped in the row below, Summary and Description each full-width
+beneath that, Attachments below the fields, actions at the bottom. Mobile stacks every field in
+that same order.
 
 ## 9. Accessibility
 
@@ -163,6 +165,8 @@ Ticket information and attachment actions are never visually merged.
 | Removed | Grayed out, filename plus "Removed — `<reason>`", no Download link, no preview |
 | Unavailable | Shown when a download/preview attempt fails (e.g. network error): icon + safe message, no broken image/link |
 
+Download link points to `GET /api/attachments/:id/download?requesterId=<current>` (api-spec.md §5).
+
 ## 16. Visual inspection checklist
 
 - [ ] No clipped labels at any viewport
@@ -185,3 +189,23 @@ Captured per `artifacts/lab-02/screenshots/<screen>/`, named `p<part>-<nn>-<stat
 
 Full capture schedule, including which screenshots pair with which Issue, is tracked in
 `LAB2_PLAN.md`, not duplicated here.
+
+## 18. CSS class naming
+
+Concrete selectors for the automated style checks (STYLE-01, STYLE-02 in `tests.md`) to assert
+against. Built on top of the existing Bootstrap-based stack rather than replacing it.
+
+| Element | Class | Notes |
+|---|---|---|
+| Required field label | `.tt-required` | asterisk rendered via `::after` content, not a literal text node |
+| Editable field | `.form-control` | Bootstrap default, no extra class needed |
+| Read-only field | `.tt-field-readonly` | applied alongside `.form-control` |
+| Invalid field | `.is-invalid` + `.invalid-feedback` | Bootstrap's built-in invalid-state pair |
+| Disabled field/button | `.disabled` / native `disabled` attribute | Bootstrap default |
+| Primary button | `.btn.btn-tt-primary` | maps to `#006B3C` |
+| Secondary button | `.btn.btn-tt-secondary` | maps to the `#0B7A46` outline style |
+| Tertiary button | `.btn.btn-tt-tertiary` | text-only, `#0B7A46` |
+| Destructive button | `.btn.btn-tt-destructive` | maps to `#B3261E` outline style |
+| Busy button | `.tt-busy` | added alongside the button's normal class while a request is in flight; sets `aria-busy="true"` |
+| Requested Priority badge | `.badge.tt-badge-low` / `.tt-badge-medium` / `.tt-badge-high` | colors per §12 |
+| Current Status badge | `.badge.tt-badge-new` | colors per §12 |

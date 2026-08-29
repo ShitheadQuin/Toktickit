@@ -66,6 +66,8 @@ work is a foundation rather than three isolated pages.
 - FR-15: The system shall block download and preview of a soft-removed attachment.
 - FR-16: Every screen in scope shall present distinct loading, empty, no-results and error states
   as defined in `ui-spec.md`.
+- FR-17: The system shall retrieve active Categories and active Related Systems for Ticket
+  classification.
 
 ## 5. Business Rules
 
@@ -228,6 +230,9 @@ Full detail — request/response shapes, validation, pagination metadata, status
   or unintended horizontal scrolling occur.
 - AC-26: Given the Development Requester Selection screen, when navigated using only the
   keyboard, then every control is reachable and usable without a mouse.
+- AC-27: Given a Requester is selected, when the Create Ticket screen loads, then the
+  Requester field displays the selected Requester's name, and on successful submission the saved
+  Ticket's `requesterId` matches the selected Requester.
 
 ## 10. Definition of Done
 
@@ -237,12 +242,17 @@ Full detail — request/response shapes, validation, pagination metadata, status
 - Implemented screens and APIs conform to `specification.md`, `api-spec.md` and `ui-spec.md`.
 - Success, failure and boundary cases behave as specified for every screen and endpoint.
 - README setup and test instructions are current for Lab 2.
+- Each PR has been peer-reviewed by Chanat-888 and approved before merge (labsheet §4.1).
+- The visual inspection checklist in `ui-spec.md` §16 has been completed for every in-scope
+  screen (labsheet §4.1).
 
 ## 11. Assumptions and Decisions
 
 - **Ticket Number format:** `TKT-<year>-<6-digit sequence>` (e.g. `TKT-2026-000001`), generated
   by the backend from a database sequence. Chosen for readability and sortability; satisfies
-  BR-01's uniqueness requirement without exposing the raw database id.
+  BR-01's uniqueness requirement. The sequence number doesn't need to equal the database id —
+  `api-spec.md`'s example simply shows both for a freshly-seeded database where they happen to
+  coincide.
 - **Summary/Description limits:** Summary 5-120 characters, Description 10-2000 characters, both
   required and trimmed. Summary is kept short so it fits a list row without wrapping; Description
   is bounded generously enough for real detail while protecting the UI layout and database column.
@@ -255,3 +265,15 @@ Full detail — request/response shapes, validation, pagination metadata, status
 - **`Category` gains `isActive`:** the Lab 1 model has no active flag, but §6 requires retrieving
   only active Categories. The field is added rather than assuming all Lab 1 categories are active
   by omission, so a Category could be retired without deleting its history.
+
+## 12. Seed Data
+
+Seeded idempotently (upsert by unique name/email, safe to re-run — matching the Lab 1 Category
+seed pattern), per labsheet §5.3:
+
+- **Categories (4):** Account and Access, Hardware, Software, Network — all `isActive: true`.
+- **Related Systems (6):** Campus Wi-Fi, Student Portal, Email, Learning Management System,
+  Printing Service, VPN — all `isActive: true`.
+- **Development Requesters (5):** 4 active, 1 inactive. The inactive one must not appear in the
+  selector (BR-06/BR-20). Exact names are Issue #11's implementation detail; the counts and
+  active/inactive split here are the binding requirement.

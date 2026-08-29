@@ -12,6 +12,8 @@ example in §6.2. Missing or non-numeric `X-Requester-Id` on a requester-scoped 
 `400 VALIDATION_ERROR`. A well-formed id that does not match an active Requester returns
 `404 REQUESTER_NOT_FOUND`.
 
+The download endpoint (`GET /api/attachments/:id/download`) is the one exception: because it's used directly in an `<a href>` link so the browser's native download/open-in-new-tab behavior works, it accepts `requesterId` as a **query parameter** instead of the `X-Requester-Id` header. Every other requester-scoped endpoint keeps the header.
+
 **Error shape**, used on every non-2xx response:
 ```json
 { "error": { "code": "VALIDATION_ERROR", "message": "summary is required" } }
@@ -193,7 +195,7 @@ missing attachment. `403 FORBIDDEN` when it exists but its Ticket belongs to ano
 
 ### `GET /api/attachments/:id/download` — download
 
-Requires `X-Requester-Id`, must own the parent Ticket. `200` with the file body and its stored
+Accepts `requesterId` as a **query parameter** (not the `X-Requester-Id` header — see §1), since this endpoint is used directly in an `<a href>` link. Must own the parent Ticket. Missing or non-numeric `requesterId` → `400 VALIDATION_ERROR`. `200` with the file body and its stored
 MIME type when `isActive` is true. `404 NOT_FOUND` when the attachment is missing **or**
 soft-removed — the two look identical on purpose, so a removed file cannot be distinguished from
 one that was never there (BR-16: "cannot be downloaded or previewed"). `403 FORBIDDEN` when the
@@ -227,11 +229,12 @@ metadata shape. `404 NOT_FOUND` if the attachment is missing or already removed.
 
 ## 7. Assumptions specific to this contract
 
-- **`X-Requester-Id` header vs. body `requesterId`:** creation keeps `requesterId` in the body
-  because the labsheet's own §6.2 example puts it there; every other requester-scoped endpoint
-  uses the header instead, since repeating `requesterId` as a query parameter on attachment
-  download links (which may be used directly in an `<img>`/`<a>` tag) is awkward compared to a
-  header the frontend can attach uniformly via one fetch wrapper.
+- **`X-Requester-Id` header vs. body `requesterId` vs. query `requesterId`:** creation keeps
+  `requesterId` in the body because the labsheet's own §6.2 example puts it there. Every other
+  requester-scoped endpoint uses the header — except attachment download, which needs to work as
+  a plain `<a href>` link so the browser's native download/open-in-new-tab behavior works; a
+  browser can't attach a custom header to a navigation, so download alone accepts `requesterId`
+  as a query parameter instead.
 - **Ownership failures return 403, missing resources return 404.** Chosen over hiding both behind
   404 because Parts 6 and 8 of the submission specifically require evidence that cross-Requester
   access is *rejected* — a distinct 403 lets a test and a screenshot prove ownership was checked,
