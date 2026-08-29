@@ -1,4 +1,4 @@
-# Lab 2 API Contract
+# Lab 2 API spec
 
 Base path: `/api`. All request and response bodies are JSON except attachment upload, which is
 `multipart/form-data`, and attachment download, which returns the file with its stored MIME type.
