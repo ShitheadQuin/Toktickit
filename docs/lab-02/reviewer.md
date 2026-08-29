@@ -1,7 +1,7 @@
 # Peer Review — Lab 2
 
-**Author:** ShitheadQuin (Ped)
-**Partner:** Chanat-888
+**Author:** ShitheadQuin (Jeerasak Phisawong 67070503461)
+**Partner:** Chanat-888 (Chanat Dachkumhang  67070503409)
 
 Filled in as PRs are opened, reviewed, and approved throughout the sprint — not reconstructed at
 the end.
