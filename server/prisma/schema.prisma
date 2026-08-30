@@ -26,6 +26,7 @@ model RelatedSystem {
   name      String   @unique
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   tickets Ticket[]
 }
@@ -70,10 +71,9 @@ model Ticket {
   relatedSystem RelatedSystem @relation(fields: [relatedSystemId], references: [id])
   attachments   Attachment[]
 
-  @@index([requesterId])
+  @@index([requesterId, ticketDate])
   @@index([categoryId])
   @@index([relatedSystemId])
-  @@index([ticketDate])
 }
 
 model Attachment {
