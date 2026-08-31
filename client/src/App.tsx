@@ -4,6 +4,7 @@ import { RequesterSelector } from './pages/RequesterSelector';
 import { DiagnosticsPage } from './pages/DiagnosticsPage';
 import { AppShell } from './components/AppShell';
 import './App.css';
+import './theme.css';
 
 function Home() {
   const { requester } = useRequester();

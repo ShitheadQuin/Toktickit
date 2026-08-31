@@ -62,7 +62,7 @@ export function RequesterSelector() {
       )}
 
       {state === 'error' && (
-        <div className="alert alert-danger" role="alert">
+        <div className="alert alert-danger tt-alert-error" role="alert">
           Unable to load Development Requesters. Please try again.
         </div>
       )}
@@ -72,7 +72,7 @@ export function RequesterSelector() {
       </label>
       <select
         id="requester-select"
-        className="form-select mb-3"
+        className="form-select tt-field mb-3"
         style={{ maxWidth: '20rem' }}
         value={selectedId}
         disabled={state !== 'loaded'}
@@ -89,7 +89,7 @@ export function RequesterSelector() {
       </select>
       <button
         type="button"
-        className="btn btn-primary"
+        className="btn btn-tt-primary"
         disabled={state !== 'loaded' || !selectedId}
         onClick={handleContinue}
       >
