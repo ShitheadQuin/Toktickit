@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { RequesterProvider, useRequester } from './context/RequesterContext';
 import { RequesterSelector } from './pages/RequesterSelector';
+import { DiagnosticsPage } from './pages/DiagnosticsPage';
 import { AppShell } from './components/AppShell';
 import './App.css';
 
@@ -24,6 +25,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/diagnostics" element={<DiagnosticsPage />} />
         </Routes>
       </BrowserRouter>
     </RequesterProvider>
