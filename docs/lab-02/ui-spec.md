@@ -180,7 +180,7 @@ Download link points to `GET /api/attachments/:id/download?requesterId=<current>
 
 ## 17. Screenshot paths
 
-Captured per `artifacts/lab-02/screenshots/<screen>/`, named `p<part>-<nn>-<state>.png`:
+Captured locally by each author (not committed to the repository), named `p<part>-<nn>-<state>.png`, organized by screen:
 
 - `create-ticket/` — initial, validation failure, busy, success, API failure, invalid attachment
 - `my-tickets/` — Requester A, Requester B, search, filter, sort, page 2, empty, no-results
