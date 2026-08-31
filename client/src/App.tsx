@@ -17,7 +17,7 @@ function Home() {
 
   return (
     <AppShell>
-      <p>Signed in as {requester.name}. My Tickets is coming in a later Issue.</p>
+      <p className="mb-3">Signed in as {requester.name}. My Tickets is coming in a later Issue.</p>
       <Link to="/create-ticket" className="btn btn-tt-primary">
         Create Ticket
       </Link>
