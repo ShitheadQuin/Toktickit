@@ -265,6 +265,11 @@ Full detail — request/response shapes, validation, pagination metadata, status
 - **`Category` gains `isActive`:** the Lab 1 model has no active flag, but §6 requires retrieving
   only active Categories. The field is added rather than assuming all Lab 1 categories are active
   by omission, so a Category could be retired without deleting its history.
+- **Requester selection persistence:** the selected Development Requester is stored in
+  `sessionStorage`, not `localStorage` or in-memory-only state. This keeps the selection alive
+  across a page refresh (useful given how often the UI gets reloaded during testing and
+  screenshot capture) while still clearing when the tab closes, matching BR-03's framing of the
+  selector as a temporary testing identity rather than a persistent login.
 
 ## 12. Seed Data
 

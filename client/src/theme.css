@@ -1,0 +1,64 @@
+/* Zen Green theme tokens and utility classes — docs/lab-02/ui-spec.md §1, §3, §5, §18.
+   Built on top of the existing Bootstrap-based stack, not a replacement (§18). */
+
+:root {
+  --tt-primary: #006B3C;
+  --tt-secondary: #0B7A46;
+  --tt-pale: #EAF6EF;
+  --tt-page-bg: #F5F7F6;
+  --tt-surface-border: #DCE3DF;
+  --tt-text: #1B2B22;
+  --tt-field-border: #C9D2CC;
+  --tt-readonly-bg: #EDF2EF;
+  --tt-error-text: #B3261E;
+  --tt-error-bg: #FDEAEA;
+}
+
+body {
+  background: var(--tt-page-bg);
+}
+
+.btn-tt-primary {
+  background: var(--tt-primary);
+  border-color: var(--tt-primary);
+  color: #fff;
+}
+.btn-tt-primary:hover,
+.btn-tt-primary:focus {
+  background: var(--tt-secondary);
+  border-color: var(--tt-secondary);
+  color: #fff;
+}
+.btn-tt-primary:disabled {
+  background: #d9dedb;
+  border-color: #d9dedb;
+  color: #6b7a72;
+  opacity: 1;
+}
+
+.btn-tt-secondary {
+  background: #fff;
+  border-color: var(--tt-secondary);
+  color: var(--tt-secondary);
+}
+.btn-tt-secondary:hover,
+.btn-tt-secondary:focus {
+  background: var(--tt-pale);
+  border-color: var(--tt-secondary);
+  color: var(--tt-secondary);
+}
+
+.tt-alert-error {
+  color: var(--tt-error-text);
+  background: var(--tt-error-bg);
+  border-color: var(--tt-error-text);
+}
+
+.tt-field {
+  border-color: var(--tt-field-border) !important;
+  height: 40px;
+}
+.tt-field:focus {
+  border-color: var(--tt-secondary) !important;
+  box-shadow: 0 0 0 2px var(--tt-secondary) !important;
+}

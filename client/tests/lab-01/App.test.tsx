@@ -1,19 +1,19 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
-import App from '../../src/App';
+import { DiagnosticsPage } from '../../src/pages/DiagnosticsPage';
 
-describe('App', () => {
+describe('DiagnosticsPage', () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
   });
 
   it('renders without crashing', () => {
-    render(<App />);
+    render(<DiagnosticsPage />);
   });
 
   it('shows the TokTickIT heading', () => {
-    render(<App />);
+    render(<DiagnosticsPage />);
     expect(screen.getByText('TokTickIT IT Service Desk')).toBeInTheDocument();
   });
 
@@ -33,7 +33,7 @@ describe('App', () => {
         ],
       } as Response);
 
-    render(<App />);
+    render(<DiagnosticsPage />);
 
     fireEvent.click(screen.getByRole('button', { name: /check system/i }));
 
