@@ -17,6 +17,7 @@ Pull Requests I authored (reviewed by my partner):
 | PR | Branch | Base | Reviewer verdict |
 |----|--------|------|-------------------|
 | [#19](https://github.com/ShitheadQuin/Toktickit/pull/19) | feature/10-lab2-spec | lab2-staging | Requested changes (5 points), fix pushed, re-request sent — approved, merged into lab2-staging |
+| [#20](https://github.com/ShitheadQuin/Toktickit/pull/20) | feature/11-data-seed | lab2-staging | Requested changes (2 points), fix pushed, approved, merged into lab2-staging |
 | [#21](https://github.com/ShitheadQuin/Toktickit/pull/21) | feature/12-requester-context | lab2-staging | Requested changes (3 points), fixes pushed, approved, merged into lab2-staging |
 
 ### Issue 10 — [ShitheadQuin/Toktickit#19](https://github.com/ShitheadQuin/Toktickit/pull/19)
@@ -51,6 +52,25 @@ STYLE-01 at it instead of the nonexistent §8.3. Added the two missing DoD bulle
 endpoints, and reworded the Ticket Number bullet to drop the false "hides the id" claim.
 Posted the full breakdown as a PR comment, pushed the fix commit, and re-requested review —
 awaiting Chanat's re-check.
+
+### Issue 11 — [ShitheadQuin/Toktickit#20](https://github.com/ShitheadQuin/Toktickit/pull/20)
+
+**Chanat's comments (blocking):**
+1. The migration had no database sequence for ticket number generation, though
+   `specification.md` §11 calls for one. Asked to either add `CREATE SEQUENCE` or clarify that
+   Issue #12 would handle it.
+2. Two separate single-column indexes on `requesterId` and `ticketDate` should be a composite
+   index matching the actual query pattern instead: `@@index([requesterId, ticketDate])`.
+
+**Chanat's comments (minor):**
+3. `RelatedSystem` had `createdAt` but no `updatedAt`, while `Requester` and `Ticket` had
+   both — asked for `updatedAt` on `RelatedSystem` too, for consistency.
+
+**My response:** Added `CREATE SEQUENCE ticket_number_seq` via a raw-SQL migration step
+(Prisma doesn't support sequences natively), replaced the two single-column indexes with the
+composite `@@index([requesterId, ticketDate])` matching the hot query path, and added
+`updatedAt` (with `@default(now())`) to `RelatedSystem`. Chanat approved after the fixes;
+PR #20 merged into `lab2-staging`.
 
 ### Issue 12 — [ShitheadQuin/Toktickit#21](https://github.com/ShitheadQuin/Toktickit/pull/21)
 
