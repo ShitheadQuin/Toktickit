@@ -1,9 +1,15 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import app from '../../src/app';
 import { prisma } from '../../src/prisma';
 
+// Every Ticket this suite creates uses this Summary, so afterAll can remove exactly the rows
+// it made. Without cleanup each run leaves more rows behind, which is how the database reached
+// 32 identical Tickets and made the Part 7 search, filter and sort screenshots meaningless.
+const FIXTURE_SUMMARY = 'Laptop battery drains quickly';
+
 describe('POST /api/tickets', () => {
+  let suiteStartedAt: Date;
   let activeRequesterId: number;
   let inactiveRequesterId: number;
   let activeCategoryId: number;
@@ -13,12 +19,14 @@ describe('POST /api/tickets', () => {
     requesterId: activeRequesterId,
     categoryId: activeCategoryId,
     relatedSystemId: activeRelatedSystemId,
-    summary: 'Laptop battery drains quickly',
+    summary: FIXTURE_SUMMARY,
     description: 'Battery drops from 100% to 20% within two hours of normal use.',
     requestedPriority: 'MEDIUM',
   });
 
   beforeAll(async () => {
+    suiteStartedAt = new Date();
+
     const activeRequester = await prisma.requester.findFirst({ where: { isActive: true } });
     const inactiveRequester = await prisma.requester.findFirst({ where: { isActive: false } });
     const category = await prisma.category.findFirst({ where: { isActive: true } });
@@ -28,6 +36,14 @@ describe('POST /api/tickets', () => {
     inactiveRequesterId = inactiveRequester!.id;
     activeCategoryId = category!.id;
     activeRelatedSystemId = relatedSystem!.id;
+  });
+
+  afterAll(async () => {
+    // Scoped by Summary as well as time: test files run in parallel, and a time-only filter
+    // could delete another suite's fixtures out from under it mid-run.
+    await prisma.ticket.deleteMany({
+      where: { summary: FIXTURE_SUMMARY, createdAt: { gte: suiteStartedAt } },
+    });
   });
 
   it('creates a Ticket owned by the given Requester, starting with status New', async () => {
