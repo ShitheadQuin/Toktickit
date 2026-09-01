@@ -279,7 +279,14 @@ body {
   }
 
   .tt-ticket-table .tt-col-number { grid-area: number; font-weight: 600; }
-  .tt-ticket-table .tt-col-status { grid-area: status; justify-self: end; }
+  /* The status cell takes its column's width, so the badge inside it also has to be pushed
+     right - otherwise it lands wherever that card's Category and Priority happen to end, and
+     the badge sits in a different place on every card. */
+  .tt-ticket-table .tt-col-status {
+    grid-area: status;
+    justify-self: end;
+    text-align: right;
+  }
 
   /* The card has room to wrap, so the desktop ellipsis is lifted rather than hiding text
      behind a truncation the user cannot expand. */
