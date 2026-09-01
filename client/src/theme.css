@@ -206,6 +206,23 @@ body {
   white-space: nowrap;
 }
 
+/* Wrapper around the search form and filter row (ui-spec.md 11). A white bordered surface,
+   per the "white surfaces" rule in ui-spec.md 7, matching the rest of the page's panels. */
+.tt-list-controls {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+/* Pagination (ui-spec.md 11). Bootstrap utility classes on the element handle centering and
+   spacing; this rule lets the page-number buttons wrap onto a second line instead of
+   overflowing the shell when there are enough pages, which is the AC-25 rule the rest of
+   this screen already follows. */
+.tt-pagination {
+  flex-wrap: wrap;
+}
+
 .tt-skeleton-row {
   height: 2.5rem;
   margin-bottom: 0.5rem;

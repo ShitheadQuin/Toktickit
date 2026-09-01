@@ -4,6 +4,7 @@ import { RequesterSelector } from './pages/RequesterSelector';
 import { DiagnosticsPage } from './pages/DiagnosticsPage';
 import { CreateTicket } from './pages/CreateTicket';
 import { MyTickets } from './pages/MyTickets';
+import { TicketDetailPlaceholder } from './pages/TicketDetailPlaceholder';
 import { AppShell } from './components/AppShell';
 import { RequireRequester } from './components/RequireRequester';
 import './App.css';
@@ -44,6 +45,16 @@ function App() {
               <RequireRequester>
                 <AppShell>
                   <CreateTicket />
+                </AppShell>
+              </RequireRequester>
+            }
+          />
+          <Route
+            path="/tickets/:id"
+            element={
+              <RequireRequester>
+                <AppShell>
+                  <TicketDetailPlaceholder />
                 </AppShell>
               </RequireRequester>
             }
