@@ -1,5 +1,6 @@
 import express from 'express';
 import { prisma } from './prisma';
+import { formatTicketNumber, validateTicketText } from './ticket-helpers';
 
 const app = express();
 app.use(express.json());
@@ -93,15 +94,8 @@ app.post('/api/tickets', async (req, res) => {
         }
     }
 
-    const trimmedSummary = typeof summary === 'string' ? summary.trim() : '';
-    if (trimmedSummary.length < 5 || trimmedSummary.length > 120) {
-        fields.push({ field: 'summary', message: 'summary must be 5-120 characters' });
-    }
-
-    const trimmedDescription = typeof description === 'string' ? description.trim() : '';
-    if (trimmedDescription.length < 10 || trimmedDescription.length > 2000) {
-        fields.push({ field: 'description', message: 'description must be 10-2000 characters' });
-    }
+    const text = validateTicketText(summary, description);
+    fields.push(...text.errors);
 
     if (!REQUESTED_PRIORITIES.includes(requestedPriority)) {
         fields.push({ field: 'requestedPriority', message: 'requestedPriority must be LOW, MEDIUM, or HIGH' });
@@ -114,7 +108,7 @@ app.post('/api/tickets', async (req, res) => {
     }
 
     const [{ nextval }] = await prisma.$queryRaw<{ nextval: bigint }[]>`SELECT nextval('ticket_number_seq') AS nextval`;
-    const ticketNumber = `TKT-${new Date().getFullYear()}-${String(nextval).padStart(6, '0')}`;
+    const ticketNumber = formatTicketNumber(new Date().getFullYear(), nextval);
 
     const ticket = await prisma.ticket.create({
       data: {
@@ -122,8 +116,8 @@ app.post('/api/tickets', async (req, res) => {
         requesterId,
         categoryId,
         relatedSystemId,
-        summary: trimmedSummary,
-        description: trimmedDescription,
+        summary: text.summary,
+        description: text.description,
         requestedPriority,
       },
       select: {
