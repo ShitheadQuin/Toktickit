@@ -1,8 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { RequesterProvider, useRequester } from './context/RequesterContext';
 import { RequesterSelector } from './pages/RequesterSelector';
 import { DiagnosticsPage } from './pages/DiagnosticsPage';
+import { CreateTicket } from './pages/CreateTicket';
 import { AppShell } from './components/AppShell';
+import { RequireRequester } from './components/RequireRequester';
 import './App.css';
 import './theme.css';
 
@@ -15,7 +17,10 @@ function Home() {
 
   return (
     <AppShell>
-      <p>Signed in as {requester.name}. My Tickets and Create Ticket are coming in later Issues.</p>
+      <p className="mb-3">Signed in as {requester.name}. My Tickets is coming in a later Issue.</p>
+      <Link to="/create-ticket" className="btn btn-tt-primary">
+        Create Ticket
+      </Link>
     </AppShell>
   );
 }
@@ -26,6 +31,16 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route
+            path="/create-ticket"
+            element={
+              <RequireRequester>
+                <AppShell>
+                  <CreateTicket />
+                </AppShell>
+              </RequireRequester>
+            }
+          />
           <Route path="/diagnostics" element={<DiagnosticsPage />} />
         </Routes>
       </BrowserRouter>

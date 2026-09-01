@@ -48,6 +48,19 @@ body {
   color: var(--tt-secondary);
 }
 
+/* ui-spec.md 18: tertiary button is text-only, #0B7A46 (--tt-secondary). */
+.btn-tt-tertiary {
+  background: transparent;
+  border-color: transparent;
+  color: var(--tt-secondary);
+}
+.btn-tt-tertiary:hover,
+.btn-tt-tertiary:focus {
+  background: var(--tt-pale);
+  border-color: transparent;
+  color: var(--tt-secondary);
+}
+
 .tt-alert-error {
   color: var(--tt-error-text);
   background: var(--tt-error-bg);
@@ -61,4 +74,26 @@ body {
 .tt-field:focus {
   border-color: var(--tt-secondary) !important;
   box-shadow: 0 0 0 2px var(--tt-secondary) !important;
+}
+
+/* Issue #13 additions — ui-spec.md §4 (required-field marker), §18 (read-only fields,
+   busy button state). */
+
+.tt-required::after {
+  content: " *";
+  color: var(--tt-error-text);
+}
+
+.tt-field-readonly {
+  background: var(--tt-readonly-bg);
+  color: var(--tt-text);
+}
+
+.tt-busy {
+  cursor: progress;
+}
+
+.tt-inline-error {
+  color: var(--tt-error-text);
+  font-size: 0.875rem;
 }
