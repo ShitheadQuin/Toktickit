@@ -45,9 +45,9 @@ PR, and that final run is the evidence submitted for Part 3.
 | UI-06 | UI | AC-12 | CreateTicket API call rejected | Safe error shown; field values remain in the form | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
 | UI-07 | UI | AC-13 | CreateTicket given a disallowed attachment | Inline rejection next to that file; not added to the upload list | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
 | UI-08 | UI | AC-01, AC-27 | CreateTicket successful submission | Success state shows the returned Ticket Number; Requester field shown during entry matches the currently selected Requester | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
-| UI-09 | UI | AC-16, AC-17 | MyTickets with zero Tickets, then a non-matching search | Empty and no-results states are visually and textually distinct | `client/tests/lab-02/MyTickets.test.tsx` | Planned |
-| UI-10 | UI | AC-18, AC-19, AC-20 | MyTickets pagination, sort, and filter controls | List updates to match each control's selection | `client/tests/lab-02/MyTickets.test.tsx` | Planned |
-| UI-11 | UI | AC-15 | MyTickets after a simulated Requester switch | Previous Requester's rows no longer present | `client/tests/lab-02/MyTickets.test.tsx` | Planned |
+| UI-09 | UI | AC-16, AC-17 | MyTickets with zero Tickets, then a non-matching search | Empty and no-results states are visually and textually distinct | `client/tests/lab-02/MyTickets.test.tsx` | Pass |
+| UI-10 | UI | AC-18, AC-19, AC-20 | MyTickets pagination, sort, and filter controls | List updates to match each control's selection | `client/tests/lab-02/MyTickets.test.tsx` | Pass |
+| UI-11 | UI | AC-15 | MyTickets after a simulated Requester switch | Previous Requester's rows no longer present | `client/tests/lab-02/MyTickets.test.tsx` | Pass |
 | UI-12 | UI | AC-21 | RequesterTicketDetail with a fetched Ticket | All fields render read-only, no editable controls | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Planned |
 | UI-13 | UI | BR-22 | RequesterTicketDetail given a 403/404 response | Safe message shown, no partial Ticket data rendered | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Planned |
 | UI-14 | UI | AC-22, AC-23 | AttachmentSection add and soft-remove actions | New attachment appears active; removed one shows as removed metadata | `client/tests/lab-02/AttachmentSection.test.tsx` | Planned |
