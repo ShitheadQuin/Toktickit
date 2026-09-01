@@ -48,6 +48,19 @@ body {
   color: var(--tt-secondary);
 }
 
+/* ui-spec.md 18: tertiary button is text-only, #0B7A46 (--tt-secondary). */
+.btn-tt-tertiary {
+  background: transparent;
+  border-color: transparent;
+  color: var(--tt-secondary);
+}
+.btn-tt-tertiary:hover,
+.btn-tt-tertiary:focus {
+  background: var(--tt-pale);
+  border-color: transparent;
+  color: var(--tt-secondary);
+}
+
 .tt-alert-error {
   color: var(--tt-error-text);
   background: var(--tt-error-bg);

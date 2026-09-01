@@ -13,6 +13,7 @@ type RequestedPriority = (typeof REQUESTED_PRIORITIES)[number];
 
 const ALLOWED_ATTACHMENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+const MAX_ATTACHMENT_COUNT = 5;
 
 interface AttachmentRow {
   file: File;
@@ -91,6 +92,8 @@ export function CreateTicket() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successTicketNumber, setSuccessTicketNumber] = useState<string | null>(null);
 
+  const [serverFieldErrors, setServerFieldErrors] = useState<FieldErrors>({});
+
   const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
 
   useEffect(() => {
@@ -125,7 +128,9 @@ export function CreateTicket() {
     };
   }, []);
 
-  const errors = validate(values);
+  // Server errors are spread last: the backend is the authority, and it knows things the
+  // client cannot, such as a Category deactivated after this page loaded (api-spec.md 1).
+  const errors: FieldErrors = { ...validate(values), ...serverFieldErrors };
 
   const showError = (field: FieldName) => Boolean((touched[field] || submitAttempted) && errors[field]);
 
@@ -133,6 +138,14 @@ export function CreateTicket() {
     (field: FieldName) =>
     (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setValues((prev) => ({ ...prev, [field]: event.target.value }));
+      // Drop this field's server-side rejection once the user edits it; a stale message on a
+      // field they have already corrected is worse than none.
+      setServerFieldErrors((prev) => {
+        if (!(field in prev)) return prev;
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
     };
 
   const handleBlur = (field: FieldName) => () => {
@@ -143,6 +156,9 @@ export function CreateTicket() {
     const files = event.target.files;
     if (!files) return;
 
+    // Checks run in BR-27's order - type, then size, then the per-Ticket count - so the picker
+    // and the server reject a file for the same reason in the same priority.
+    let validCount = attachments.filter((row) => row.error === null).length;
     const nextRows: AttachmentRow[] = Array.from(files).map((file) => {
       if (!ALLOWED_ATTACHMENT_TYPES.includes(file.type)) {
         return { file, error: 'File type not allowed. Use JPG, PNG, WEBP, or PDF.' };
@@ -150,6 +166,10 @@ export function CreateTicket() {
       if (file.size > MAX_ATTACHMENT_BYTES) {
         return { file, error: 'File is over the 5 MB limit.' };
       }
+      if (validCount >= MAX_ATTACHMENT_COUNT) {
+        return { file, error: 'Only 5 attachments are allowed per Ticket (BR-15).' };
+      }
+      validCount += 1;
       return { file, error: null };
     });
 
@@ -165,6 +185,7 @@ export function CreateTicket() {
     event.preventDefault();
     setSubmitAttempted(true);
     setSubmitError(null);
+    setServerFieldErrors({});
 
     if (Object.keys(errors).length > 0) {
       return;
@@ -190,7 +211,32 @@ export function CreateTicket() {
       });
 
       if (!response.ok) {
-        throw new Error('Backend returned an error');
+        // A 500 can return HTML rather than JSON; without this guard the parse would throw and
+        // land in the catch below, reporting a network failure for a server-side rejection.
+        const body = await response.json().catch(() => null);
+        const fields = body?.error?.fields;
+
+        // Only VALIDATION_ERROR carries `fields` (api-spec.md 1). Map them onto the form so the
+        // user sees which fields to fix, rather than a generic banner (AC-09, AC-10).
+        if (response.status === 400 && Array.isArray(fields) && fields.length > 0) {
+          setServerFieldErrors(
+            Object.fromEntries(
+              fields
+                .filter((item: { field?: string; message?: string }) => item.field && item.message)
+                .map((item: { field: string; message: string }) => [item.field, item.message]),
+            ) as FieldErrors,
+          );
+          setSubmitError('The server rejected some fields. Please correct them and submit again.');
+          return;
+        }
+
+        // No field to attach it to - e.g. 404 REQUESTER_NOT_FOUND when the selected Requester was
+        // deactivated after selection. Show the server's own message so the cause is visible.
+        setSubmitError(
+          body?.error?.message ??
+            'The server rejected the request. Your entered values have been kept - please try again.',
+        );
+        return;
       }
 
       const created = await response.json();
@@ -220,6 +266,11 @@ export function CreateTicket() {
           <p className="mb-0">
             <strong>Ticket Number:</strong> {successTicketNumber}
           </p>
+          {attachments.length > 0 && (
+            <p className="mb-0 mt-2">
+              Selected files were not uploaded - attachment upload is not part of this release.
+            </p>
+          )}
         </div>
         <button type="button" className="btn btn-tt-primary" onClick={handleCreateAnother}>
           Create Another Ticket
@@ -239,9 +290,22 @@ export function CreateTicket() {
       )}
 
       <form noValidate onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label className="form-label">Requester</label>
-          <input type="text" className="form-control tt-field-readonly" value={requester?.name ?? ''} readOnly />
+        {/* ui-spec.md 8: system-generated and read-only fields sit in a row at the top on
+            desktop and tablet, stacking below 768px. Ticket Number and Ticket Date are assigned
+            by the server on creation (BR-04), so before submission there is nothing to show. */}
+        <div className="row mb-3">
+          <div className="col-12 col-md-4">
+            <label className="form-label">Requester</label>
+            <input type="text" className="form-control tt-field-readonly" value={requester?.name ?? ''} readOnly />
+          </div>
+          <div className="col-12 col-md-4">
+            <label className="form-label">Ticket Number</label>
+            <input type="text" className="form-control tt-field-readonly" value="Generated on submit" readOnly />
+          </div>
+          <div className="col-12 col-md-4">
+            <label className="form-label">Ticket Date</label>
+            <input type="text" className="form-control tt-field-readonly" value="Set by the server on submit" readOnly />
+          </div>
         </div>
 
         <div className="mb-3">
@@ -367,6 +431,10 @@ export function CreateTicket() {
             accept=".jpg,.jpeg,.png,.webp,.pdf"
             onChange={handleFilesSelected}
           />
+          <div className="form-text">
+            Selected files are checked for type and size now. Attachment upload is not part of this
+            release, so they are not sent with this Ticket yet.
+          </div>
           {attachments.length > 0 && (
             <ul className="list-unstyled mt-2">
               {attachments.map((row, index) => (
