@@ -190,4 +190,85 @@ describe('CreateTicket', () => {
 
     expect(await screen.findByText(/file type not allowed/i)).toBeInTheDocument();
   });
+
+  it('maps a 400 error.fields response onto the matching form fields (AC-09, AC-10)', async () => {
+    selectStoredRequester();
+    mockReferenceDataFetch();
+
+    renderCreateTicket();
+    await waitFor(() => expect(screen.getByLabelText(/category/i)).toBeEnabled());
+    fillValidForm();
+
+    vi.restoreAllMocks();
+    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/tickets')) {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: async () => ({
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'One or more fields are invalid',
+              fields: [
+                { field: 'categoryId', message: 'categoryId must reference an active category' },
+              ],
+            },
+          }),
+        } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /^submit$/i }));
+
+    // The server's own field message is shown, not the generic network banner.
+    expect(
+      await screen.findByText(/categoryid must reference an active category/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/unable to reach the server/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the server message when a rejection has no matching field (404)', async () => {
+    selectStoredRequester();
+    mockReferenceDataFetch();
+
+    renderCreateTicket();
+    await waitFor(() => expect(screen.getByLabelText(/category/i)).toBeEnabled());
+    fillValidForm();
+
+    vi.restoreAllMocks();
+    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/tickets')) {
+        return Promise.resolve({
+          ok: false,
+          status: 404,
+          json: async () => ({
+            error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
+          }),
+        } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /^submit$/i }));
+
+    expect(await screen.findByText(/requester not found or inactive/i)).toBeInTheDocument();
+  });
+
+  it('rejects a sixth attachment once five valid files are selected (BR-15)', async () => {
+    selectStoredRequester();
+    mockReferenceDataFetch();
+
+    renderCreateTicket();
+    await waitFor(() => expect(screen.getByLabelText(/category/i)).toBeEnabled());
+
+    const files = Array.from({ length: 6 }, (_, i) =>
+      new File(['x'], `shot-${i}.png`, { type: 'image/png' }),
+    );
+    fireEvent.change(screen.getByLabelText(/attachments/i), { target: { files } });
+
+    expect(await screen.findByText(/only 5 attachments are allowed/i)).toBeInTheDocument();
+  });
 });
