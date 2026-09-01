@@ -118,6 +118,25 @@ work is a foundation rather than three isolated pages.
   collisions.
 - BR-25: Each attachment record stores original filename, stored filename, MIME type, size in
   bytes, uploaded timestamp, and, once removed, removed timestamp and removal reason.
+- BR-26: An attachment's stored file and its database record are created together or not at all.
+  The file is written to disk first; if the subsequent database write fails, the written file is
+  deleted before the error is returned. No stored file may exist without a matching Attachment
+  row, and no Attachment row may exist without its stored file. This compensation applies to the
+  failing upload only - per BR-19 the parent Ticket is never rolled back for an attachment
+  failure.
+- BR-27: When one uploaded file fails more than one validation check, the checks are evaluated in
+  this fixed order, and the first failure alone determines the response. No later check is
+  evaluated, and exactly one error is returned per upload:
+  (1) the Ticket exists (404 NOT_FOUND); (2) the Ticket is owned by the requesting Requester
+  (403 FORBIDDEN); (3) the file type is JPG, JPEG, PNG, WEBP or PDF (415 UNSUPPORTED_MEDIA_TYPE);
+  (4) the file size is 5 MB or less (413 PAYLOAD_TOO_LARGE); (5) the Ticket has fewer than 5
+  currently active attachments (409 ATTACHMENT_LIMIT_REACHED). Existence and ownership are
+  settled before the file itself is discussed, so a rejection never reveals whether another
+  Requester's Ticket exists. The Create Ticket screen's local picker applies the same
+  type-then-size order, so the client and server never disagree about which rule a file broke.
+- BR-28: Uploading an attachment or soft-removing one updates the parent Ticket's last-updated
+  timestamp. Attachment activity is Ticket activity, so a Ticket whose attachments changed is not
+  shown as stale in the Requester's list. Ticket Date is unaffected (BR-04).
 
 ## 6. UI Specification Summary
 
@@ -233,6 +252,12 @@ Full detail — request/response shapes, validation, pagination metadata, status
 - AC-27: Given a Requester is selected, when the Create Ticket screen loads, then the
   Requester field displays the selected Requester's name, and on successful submission the saved
   Ticket's `requesterId` matches the selected Requester.
+- AC-28: Given an owned Ticket, when a file is uploaded and the database write for its Attachment
+  record fails, then no stored file for that upload remains on disk, no Attachment row exists, and
+  the parent Ticket is unchanged.
+- AC-29: Given an owned Ticket, when a single upload violates more than one rule at once (for
+  example a 7 MB `.txt` file), then exactly one error is returned, and it is the earliest failing
+  check in BR-27's order - `415 UNSUPPORTED_MEDIA_TYPE` in that example, not `413`.
 
 ## 10. Definition of Done
 

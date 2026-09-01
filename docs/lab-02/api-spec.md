@@ -128,7 +128,7 @@ different Requester (§1).
 | `relatedSystem` | Related System id | none |
 | `currentStatus` | exact match | none |
 | `requestedPriority` | exact match | none |
-| `sort` | one of `ticketDate`, `ticketNumber`, `requestedPriority`, `currentStatus` | `ticketDate` |
+| `sort` | one of `ticketDate`, `ticketNumber`, `requestedPriority`, `currentStatus`, `updatedAt` | `ticketDate` |
 | `order` | `asc` or `desc` | `desc` |
 | `page` | 1-based page number | `1` |
 | `pageSize` | one of `5`, `10`, `20` | `10` |
@@ -179,13 +179,23 @@ it is an internal detail.
 
 Requires `X-Requester-Id`, must own the Ticket. `multipart/form-data` with one `file` field.
 
-Validation:
-- Ticket must exist → `404 NOT_FOUND`; must be owned by the requesting Requester → `403 FORBIDDEN`
-- file type must be JPG, JPEG, PNG, WEBP or PDF → `415 UNSUPPORTED_MEDIA_TYPE`
-- file size must be ≤ 5 MB → `413 PAYLOAD_TOO_LARGE`
-- the Ticket must have fewer than 5 currently active attachments → `409 ATTACHMENT_LIMIT_REACHED`
+Validation. These checks run in this order and the **first** failure determines the single
+response status (BR-27); no later check is evaluated, and exactly one error is returned per
+upload:
 
-Response `201`: the metadata shape above, `isActive: true`.
+1. Ticket must exist → `404 NOT_FOUND`
+2. Ticket must be owned by the requesting Requester → `403 FORBIDDEN`
+3. file type must be JPG, JPEG, PNG, WEBP or PDF → `415 UNSUPPORTED_MEDIA_TYPE`
+4. file size must be ≤ 5 MB → `413 PAYLOAD_TOO_LARGE`
+5. the Ticket must have fewer than 5 currently active attachments → `409 ATTACHMENT_LIMIT_REACHED`
+
+Existence and ownership are settled before the file is examined, so a rejection never reveals
+whether another Requester's Ticket exists; the two intrinsic file checks precede the one that
+needs a database count.
+
+Response `201`: the metadata shape above, `isActive: true`. If the database write fails after the
+file has been stored, the stored file is deleted before the error is returned, so no orphaned file
+is left behind (BR-26). A successful upload updates the parent Ticket's `updatedAt` (BR-28).
 
 ### `GET /api/attachments/:id` — metadata
 

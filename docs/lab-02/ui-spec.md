@@ -114,7 +114,8 @@ that same order.
 ## 11. My Tickets — list, search, filter, sort, pagination
 
 **Desktop table columns:** Ticket Number, Summary (truncated with ellipsis past one line),
-Category, Requested Priority (badge), Current Status (badge), Ticket Date, an action to open the
+Category, Requested Priority (badge), Current Status (badge), Ticket Date, Last Updated, an
+action to open the
 Ticket. **Mobile card:** Ticket Number and Current Status badge on the first line, Summary below
 it, Category/Requested Priority/Ticket Date as a secondary line; the whole card opens the Ticket.
 
