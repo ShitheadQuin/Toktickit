@@ -114,13 +114,19 @@ that same order.
 ## 11. My Tickets — list, search, filter, sort, pagination
 
 **Desktop table columns:** Ticket Number, Summary (truncated with ellipsis past one line),
-Category, Requested Priority (badge), Current Status (badge), Ticket Date, Last Updated, an
-action to open the
-Ticket. **Mobile card:** Ticket Number and Current Status badge on the first line, Summary below
-it, Category/Requested Priority/Ticket Date as a secondary line; the whole card opens the Ticket.
+Category, Requested Priority (badge), Current Status (badge), Ticket Date, Last Updated, and an
+action to open the Ticket. **Mobile card:** Ticket Number and Current Status badge on the first
+line, Summary below it, Category/Requested Priority/Ticket Date as a secondary line, and Last
+Updated on its own line beneath it in small muted text; the whole card opens the Ticket. Last
+Updated is given its own line rather than becoming a fourth item on the secondary line, because
+four items wrap at narrow widths and AC-25 fails on clipped or overlapping content.
 
 Above the list: a search box, filter controls for Category / Related System / Current Status /
-Requested Priority, and a sort control. A **Clear filters** tertiary button appears only once a
+Requested Priority, and a sort control. The sort control offers Ticket Date, Last Updated, Ticket
+Number, Requested Priority and Current Status — the five values `api-spec.md` §4 permits for
+`sort` — each selectable ascending or descending, defaulting to Ticket Date descending (BR-10).
+Every permitted API sort value is reachable from the UI: a sort the user cannot select would have
+no user path. A **Clear filters** tertiary button appears only once a
 search term or filter is active. Pagination controls sit below the list, centered: Previous /
 page numbers / Next. Page size is not exposed as a user control in Lab 2 — the frontend always
 requests the default page size from `api-spec.md`; the query contract's other permitted sizes

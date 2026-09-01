@@ -218,8 +218,8 @@ Requires `X-Requester-Id`, must own the parent Ticket. Body:
 { "reason": "Wrong file attached by mistake" }
 ```
 `reason` required, non-empty (BR-17). Sets `isActive: false`, `removedAt` to now, stores
-`removalReason`. The database row is never deleted (BR-16). Response `200` with the updated
-metadata shape. `404 NOT_FOUND` if the attachment is missing or already removed.
+`removalReason`. The database row is never deleted (BR-16). Soft removal also updates the parent
+Ticket's `updatedAt` (BR-28), the same as upload. Response `200` with the updated metadata shape. `404 NOT_FOUND` if the attachment is missing or already removed.
 `403 FORBIDDEN` if it exists and is active but is not owned by the requesting Requester.
 `400 VALIDATION_ERROR` if `reason` is missing or blank.
 
