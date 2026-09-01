@@ -12,12 +12,14 @@ PR, and that final run is the evidence submitted for Part 3.
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File | Final |
 |---|---|---|---|---|---|---|
-| UNIT-01 | Unit | BR-01, FR-05 | Ticket Number generator format and uniqueness | Matches `TKT-<year>-<6 digits>`; no collisions across a batch | `server/tests/lab-02/ticket-number-generator.unit.test.ts` | Planned |
+| UNIT-01 | Unit | BR-01, FR-05 | Ticket Number formatting helper, given a year and a sequence number | Matches `TKT-<year>-<6 digits>`, zero-padded; sequence uniqueness comes from the database sequence and is covered by API-01 | `server/tests/lab-02/ticket-number-generator.unit.test.ts` | Planned |
+| UNIT-02 | Unit | BR-27 | Attachment validation helper given a file failing several checks at once | Returns only the first failing check in BR-27's order | `server/tests/lab-02/attachment-validation.unit.test.ts` | Planned |
+| UNIT-03 | Unit | BR-11 | Summary/Description trim-and-length logic at its boundaries | Trimmed; 5-120 and 10-2000 enforced inclusively | `server/tests/lab-02/ticket-field-validation.unit.test.ts` | Planned |
 | API-01 | API | AC-01 | `POST /api/tickets` with valid data | 201; Ticket saved; Ticket Number returned in the correct format | `server/tests/lab-02/create-ticket.api.test.ts` | Planned |
 | API-02 | API | AC-09, AC-10 | `POST /api/tickets` with a missing or out-of-range field | 400 with every failing field listed | `server/tests/lab-02/create-ticket.api.test.ts` | Planned |
 | API-03 | API | BR-04 | `POST /api/tickets` body includes client-supplied `ticketNumber`/`ticketDate`/`currentStatus` | Server-assigned values are used regardless | `server/tests/lab-02/create-ticket.api.test.ts` | Planned |
 | API-04 | API | AC-15, BR-08 | `GET /api/tickets` as Requester A, then as Requester B | Each response contains only that Requester's own Tickets | `server/tests/lab-02/my-tickets.api.test.ts` | Planned |
-| API-05 | API | AC-18, AC-19, AC-20 | `GET /api/tickets` with search/filter/sort/page params | Correct subset, order, and pagination metadata | `server/tests/lab-02/my-tickets.api.test.ts` | Planned |
+| API-05 | API | AC-18, AC-19, AC-20 | `GET /api/tickets` with search/filter/sort/page params, including `sort=updatedAt` | Correct subset, order, and pagination metadata | `server/tests/lab-02/my-tickets.api.test.ts` | Planned |
 | API-06 | API | BR-10 | `GET /api/tickets` with an invalid `sort`/`page`/`pageSize` | Falls back to documented defaults, no error | `server/tests/lab-02/my-tickets.api.test.ts` | Planned |
 | API-07 | API | AC-16, AC-17 | `GET /api/tickets` for a Requester with none, and a non-matching search | 200, empty `data`, `totalItems: 0` in both cases | `server/tests/lab-02/my-tickets.api.test.ts` | Planned |
 | API-08 | API | AC-21 | `GET /api/tickets/:id` for an owned Ticket | 200 with full detail, including attachments | `server/tests/lab-02/ticket-detail.api.test.ts` | Planned |
@@ -31,6 +33,9 @@ PR, and that final run is the evidence submitted for Part 3.
 | API-16 | API | BR-18 | Upload/remove an attachment on a Ticket not owned by the caller | 403 | `server/tests/lab-02/attachments.api.test.ts` | Planned |
 | API-17 | API | BR-19 | Ticket created successfully, a following attachment upload fails | Ticket remains saved; failure reported per-file, not rolled back | `server/tests/lab-02/create-ticket.api.test.ts` | Planned |
 | API-18 | API | AC-05, BR-06 | `GET /api/requesters` with an inactive Requester seeded | Inactive Requester excluded | `server/tests/lab-02/requesters.api.test.ts` | Planned |
+| API-19 | API | AC-28, BR-26 | Attachment database write fails after the file has been stored | Error returned; no orphaned file on disk; no Attachment row; Ticket unchanged | `server/tests/lab-02/attachments.api.test.ts` | Planned |
+| API-20 | API | AC-29, BR-27 | Upload one file that is both a disallowed type and over 5 MB | Single `415`; `413` not returned | `server/tests/lab-02/attachments.api.test.ts` | Planned |
+| API-21 | API | BR-28 | Upload then soft-remove an attachment, comparing the Ticket's `updatedAt` each time | Bumped by both actions; `ticketDate` unchanged | `server/tests/lab-02/attachments.api.test.ts` | Planned |
 | UI-01 | UI | AC-04, AC-05, AC-06 | RequesterSelector loading / empty / API-failure states | Correct state per condition; Continue disabled while loading | `client/tests/lab-02/RequesterSelector.test.tsx` | Planned |
 | UI-02 | UI | AC-26 | RequesterSelector keyboard-only navigation | Every control reachable and usable without a mouse | `client/tests/lab-02/RequesterSelector.test.tsx` | Planned |
 | UI-03 | UI | AC-02, AC-07, AC-08 | AppShell with no Requester, then after selecting/switching | Selector shown when none selected; name shown after; data reloads on switch | `client/tests/lab-02/AppShell.test.tsx` | Planned |
@@ -48,7 +53,7 @@ PR, and that final run is the evidence submitted for Part 3.
 | UI-15 | UI | AC-24 | AttachmentSection given a removed attachment | Download control absent/disabled for it | `client/tests/lab-02/AttachmentSection.test.tsx` | Planned |
 | STYLE-01 | UI Style | ui-spec.md §18 | Required CSS classes, asterisks, field states, button states on Create Ticket | All required classes/attributes present as rendered | `e2e/lab-02/ui-style.spec.ts` | Planned |
 | STYLE-02 | UI Style | `ui-spec.md` §12 | Requested Priority and Current Status badge markup on My Tickets | Badge classes/colors match §12 for every value | `e2e/lab-02/ui-style.spec.ts` | Planned |
-| RESP-01 | Responsive | AC-25 | Screenshots of Create Ticket, My Tickets, Ticket Detail at desktop/tablet/mobile | No clipping, overlap, or unintended horizontal scroll at any width | `e2e/lab-02/responsive.spec.ts` | Planned |
+| RESP-01 | Responsive | AC-25 | Screenshots of Create Ticket, My Tickets, Ticket Detail at desktop/tablet/mobile, written to `artifacts/lab-02/screenshots/{create-ticket,my-tickets,ticket-detail}/` per labsheet §12 | No clipping, overlap, or unintended horizontal scroll at any width | `e2e/lab-02/responsive.spec.ts` | Planned |
 | E2E-01 | E2E | AC-01, AC-07 | Select a Requester, create a Ticket, find it in My Tickets | Ticket appears with the confirmed Ticket Number | `e2e/lab-02/requester-ticket-flow.spec.ts` | Planned |
 | E2E-02 | E2E | AC-03, AC-15 | Requester A creates a Ticket; switch to B; attempt direct access to A's Ticket | Not in B's list; direct access rejected | `e2e/lab-02/requester-ticket-flow.spec.ts` | Planned |
 | E2E-03 | E2E | AC-22, AC-23, AC-24 | Add an attachment, soft-remove it, attempt to download it | Added, then shown removed, then download blocked | `e2e/lab-02/requester-ticket-flow.spec.ts` | Planned |
@@ -90,6 +95,8 @@ are all labsheet requirements with acceptance criteria that need a home to be te
 | AC-25 | RESP-01 |
 | AC-26 | UI-02 |
 | AC-27 | UI-08 |
+| AC-28 | API-19 |
+| AC-29 | API-20, UNIT-02 |
 
 Every AC in `specification.md` §9 maps to at least one test above.
 

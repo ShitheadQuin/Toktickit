@@ -19,6 +19,7 @@ Pull Requests I authored (reviewed by my partner):
 | [#19](https://github.com/ShitheadQuin/Toktickit/pull/19) | feature/10-lab2-spec | lab2-staging | Requested changes (5 points), fix pushed, re-request sent — approved, merged into lab2-staging |
 | [#20](https://github.com/ShitheadQuin/Toktickit/pull/20) | feature/11-data-seed | lab2-staging | Requested changes (2 points), fix pushed, approved, merged into lab2-staging |
 | [#21](https://github.com/ShitheadQuin/Toktickit/pull/21) | feature/12-requester-context | lab2-staging | Requested changes (3 points), fixes pushed, approved, merged into lab2-staging |
+| [#23](https://github.com/ShitheadQuin/Toktickit/pull/23) | feature/spec-attachment-rules | lab2-staging | Requested changes (2 points), fixes pushed, re-request sent |
 
 ### Issue 10 — [ShitheadQuin/Toktickit#19](https://github.com/ShitheadQuin/Toktickit/pull/19)
 
@@ -102,3 +103,47 @@ work has a clear formal owner. Item 3 (minor) acknowledged as worth doing once `
 exist; deferred to whichever Issue introduces them, no code change needed yet. Retook all six
 Issue #12 screenshots after the styling fix so evidence matches the final UI, not the pre-fix
 version. Chanat approved after the fixes; PR #21 merged into `lab2-staging`.
+
+### Issue 24 — [ShitheadQuin/Toktickit#23](https://github.com/ShitheadQuin/Toktickit/pull/23)
+
+Documentation-only PR adding the attachment business rules labsheet §4.5 requires (BR-26, BR-27),
+the optional BR-28, acceptance criteria AC-28/AC-29, and the My Tickets Last Updated column.
+
+**Chanat's comments (requested changes):**
+1. `DELETE /api/attachments/:id` does not mention the `updatedAt` bump. BR-28 covers both upload
+   and soft removal, and `POST /api/tickets/:id/attachments` states it, but the DELETE section
+   does not. API-21 tests both actions, so the contract should say both.
+2. The Last Updated column was added to the desktop table but not to the mobile card, and not to
+   the sort control. `api-spec.md` §4 now accepts `sort=updatedAt`; if the UI cannot reach it, the
+   sort value has no user path. Asked whether the sort control exposes it.
+
+**Chanat's verification (no change requested):** confirmed BR-26 writes the file before the
+database row and deletes it on a failed write, and correctly limits compensation to the upload
+rather than the Ticket per BR-19; confirmed BR-27's order settles existence and ownership before
+the file checks so a rejection cannot leak another Requester's Ticket, and that `api-spec.md` §5
+repeats the same five steps; confirmed AC-28 and AC-29 both map to tests and BR-28 has API-21.
+
+**My response:** Both points accepted — neither needed arguing, and both were real gaps rather
+than preference.
+
+Point 1 was a plain omission: the `updatedAt` sentence was written into the upload endpoint and
+not the removal one, even though BR-28 and API-21 both cover removal. Added to the DELETE section
+in `api-spec.md`.
+
+Point 2 was the more useful catch. `sort=updatedAt` had been added to the API contract without
+anything in `ui-spec.md` saying the user could select it — a permitted API value with no user
+path, exactly as described. Fixed by naming the sort control's options explicitly in §11 (Ticket
+Date, Last Updated, Ticket Number, Requested Priority, Current Status, ascending or descending,
+default Ticket Date descending per BR-10) and stating that every permitted API sort value is
+reachable from the UI. This follows the pattern §11 already used for page size, which is
+explicitly documented as *not* exposed — so the spec now says plainly, in both directions, what
+the UI does and does not offer.
+
+The mobile card was a real consequence of point 2 rather than a separate nit: once Last Updated
+is sortable, a phone user sorting by it would see an order the card does not explain. Added it as
+its own muted line beneath the secondary line rather than as a fourth item on that line, because
+four items wrap at narrow widths and AC-25 fails on clipped or overlapping content — the reason
+is written into §11 so the choice is documented rather than arbitrary.
+
+No code changed in this PR; Issue #14 implements the column and the sort control, Issue #16
+implements BR-26/27/28.
