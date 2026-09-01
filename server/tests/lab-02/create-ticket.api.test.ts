@@ -88,17 +88,24 @@ describe('POST /api/tickets', () => {
     expect(response.body.error.code).toBe('REQUESTER_NOT_FOUND');
   });
 
-  it('never accepts a client-supplied ticketNumber or ticketDate', async () => {
+  it('never accepts a client-supplied ticketNumber, ticketDate or currentStatus', async () => {
     const response = await request(app)
       .post('/api/tickets')
       .send({
         ...validBody(),
         ticketNumber: 'TKT-0000-000000',
         ticketDate: '2000-01-01T00:00:00Z',
+        currentStatus: 'CLOSED',
       });
 
     expect(response.status).toBe(201);
+    // BR-01/FR-05: the Ticket Number comes from the database sequence, never the request body.
     expect(response.body.ticketNumber).not.toBe('TKT-0000-000000');
+    // BR-04: Ticket Date is server-generated at creation. Asserting the year is not 2000 proves
+    // the supplied value was discarded, without depending on clock agreement between processes.
+    expect(new Date(response.body.ticketDate).getUTCFullYear()).not.toBe(2000);
+    // BR-02: a new Ticket always begins at New, whatever status the client asks for.
+    expect(response.body.currentStatus).toBe('NEW');
   });
 });
 
