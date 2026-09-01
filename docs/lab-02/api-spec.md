@@ -142,6 +142,16 @@ a mistyped query string should degrade to sensible results, not break the screen
 `relatedSystem`, `currentStatus` or `requestedPriority` value that matches nothing simply yields
 zero results, which is the no-results state, not an error.
 
+The two behaviors divide on what the parameter controls, and malformed values follow the same
+split as unmatched ones. `sort`, `order`, `page` and `pageSize` decide how the list is
+*presented*: there is always a sensible presentation, so a bad value falls back to the documented
+default. `category`, `relatedSystem`, `currentStatus` and `requestedPriority` decide what the list
+*contains*: a non-numeric id, or a status or priority outside the enum, is a value no Ticket can
+carry, so it yields zero results exactly as an unmatched-but-well-formed value does. Malformed
+filters are deliberately not dropped — dropping `currentStatus=BOGUS` would widen the result set
+to every Ticket, showing the Requester more than they asked for, which is the one outcome none of
+these rules should ever produce.
+
 Response `200`:
 ```json
 {
