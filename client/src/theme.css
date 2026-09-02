@@ -98,6 +98,63 @@ body {
   font-size: 0.875rem;
 }
 
+/* ui-spec.md 18: destructive button maps to #B3261E (--tt-error-text) outline style, matching
+   the secondary/tertiary buttons' own outline-then-fill pattern above. */
+.btn-tt-destructive {
+  background: #fff;
+  border-color: var(--tt-error-text);
+  color: var(--tt-error-text);
+}
+.btn-tt-destructive:hover,
+.btn-tt-destructive:focus {
+  background: var(--tt-error-bg);
+  border-color: var(--tt-error-text);
+  color: var(--tt-error-text);
+}
+.btn-tt-destructive:disabled {
+  background: #fff;
+  border-color: #d9dedb;
+  color: #6b7a72;
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   Attachments (ui-spec.md 14, 15, 18) — Ticket Detail's Attachment section.
+   --------------------------------------------------------------------------- */
+
+.tt-attachment-section {
+  margin-top: 1rem;
+}
+
+/* ui-spec.md 14: a visible divider so Ticket fields and attachment actions never look merged.
+   A bare <hr> with no rule here renders only the browser's default 1px hairline, which PR #29
+   review found effectively invisible against the page background. */
+.tt-attachment-divider {
+  border: 0;
+  border-top: 1px solid var(--tt-surface-border);
+  margin: 1.5rem 0 1rem;
+}
+
+.tt-attachment-list {
+  margin: 0;
+}
+
+.tt-attachment-row {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--tt-surface-border);
+}
+.tt-attachment-row:last-child {
+  border-bottom: 0;
+}
+
+/* The inline reason prompt for BR-17's removal confirmation - set apart as its own surface so
+   it reads as a distinct step, not more attachment metadata. */
+.tt-attachment-remove-confirm {
+  background: var(--tt-error-bg);
+  border: 1px solid var(--tt-error-text);
+  border-radius: 0.375rem;
+}
+
 /* ---------------------------------------------------------------------------
    My Tickets (ui-spec.md 10, 11, 12, 13)
    --------------------------------------------------------------------------- */
