@@ -21,6 +21,12 @@ Pull Requests I authored (reviewed by my partner):
 | [#21](https://github.com/ShitheadQuin/Toktickit/pull/21) | feature/12-requester-context | lab2-staging | Requested changes (3 points), fixes pushed, approved, merged into lab2-staging |
 | [#22](https://github.com/ShitheadQuin/Toktickit/pull/22) | feature/13-create-ticket | lab2-staging | Requested changes (5 points), fixes pushed, approved, merged into lab2-staging |
 | [#23](https://github.com/ShitheadQuin/Toktickit/pull/23) | feature/spec-attachment-rules | lab2-staging | Requested changes (2 points), fixes pushed, approved, merged into lab2-staging |
+| [#25](https://github.com/ShitheadQuin/Toktickit/pull/25) | feature/14-my-tickets | lab2-staging | Requested changes (3 points), fix pushed, approved, merged into lab2-staging |
+| [#26](https://github.com/ShitheadQuin/Toktickit/pull/26) | feature/15-ticket-detail | lab2-staging | Merged by mistake before review — reverted via #27, redone as #28 |
+| [#27](https://github.com/ShitheadQuin/Toktickit/pull/27) | revert-26-feature/15-ticket-detail | lab2-staging | Revert of #26, merged to restore the pre-review state |
+| [#28](https://github.com/ShitheadQuin/Toktickit/pull/28) | feature/15-ticket-detail | lab2-staging | Requested changes (3 points), fix pushed, approved, merged into lab2-staging |
+| [#29](https://github.com/ShitheadQuin/Toktickit/pull/29) | feature/16-attachments | lab2-staging | Requested changes (1 point), fix pushed, approved, merged into lab2-staging |
+| [#30](https://github.com/ShitheadQuin/Toktickit/pull/30) | feature/17-e2e-visual | lab2-staging | Requested changes (3 points), fix pushed, approved, merged into lab2-staging |
 
 ### Issue 10 — [ShitheadQuin/Toktickit#19](https://github.com/ShitheadQuin/Toktickit/pull/19)
 
@@ -206,3 +212,149 @@ is written into §11 so the choice is documented rather than arbitrary.
 
 No code changed in this PR; Issue #14 implements the column and the sort control, Issue #16
 implements BR-26/27/28.
+
+### Issue 14 — [ShitheadQuin/Toktickit#25](https://github.com/ShitheadQuin/Toktickit/pull/25)
+
+`GET /api/tickets` with search/filter/sort/pagination, and the My Tickets screen.
+
+**Chanat's comments (blocking):**
+1. Every row's Open button linked to `/tickets/${item.id}`, but `App.tsx` had no such route — a
+   dead end. Asked for a placeholder route, or to point the button at Issue #15 and say so.
+
+**Chanat's comments (should-fix):**
+2. `.tt-pagination` and `.tt-list-controls` were used but defined nowhere in `theme.css` —
+   `STYLE-01` asserts the §18 classes, and every other class introduced was defined.
+
+**Chanat's comments (minor):**
+3. `pageSize` is hard-coded to 10 with a code comment explaining why, but `ui-spec.md` §11 didn't
+   say so, so a reader comparing the two would think the control was simply missing.
+
+**Chanat's verification (no change requested):** confirmed ownership is the first clause of the
+`where`, so no path can leak another Requester's rows; `matchesNothing` returns `200` with an
+empty array rather than dropping the filter or erroring; `ticketNumber desc` is the tie-breaker
+and is skipped when it is itself the chosen sort (Prisma's duplicate-field trap); `requestSeq`
+guards a slow response from overwriting a newer one; every filter/sort change resets to page 1;
+empty and no-results states are properly distinguished with only one Clear filters button shown
+at a time; the error state keeps the list rather than showing empty; both badges carry their
+word; and the AppShell nav has the active state, underline, and collapsing mobile menu Issue #14
+took on from the PR #21 review.
+
+**My response:** Item 1 — added `TicketDetailPlaceholder.tsx` ("This screen is coming in Issue
+#15" + a Back to My Tickets button), wrapped in `RequireRequester`/`AppShell` like the other
+screens, and added the `/tickets/:id` route in `App.tsx`. Deliberately fetches nothing — real
+data is Issue #15's job. Item 2 — added `.tt-list-controls` (white bordered panel, matching the
+"white surfaces" rule) and `.tt-pagination` (`flex-wrap: wrap`, the same AC-25 no-overflow rule
+already enforced elsewhere on this screen) to `theme.css`. Item 3 — already fixed on the branch
+before the review round; no action needed. 33/33 client tests still passing. Chanat approved
+after the fixes; PR #25 merged into `lab2-staging`.
+
+### Issue 15 — [ShitheadQuin/Toktickit#28](https://github.com/ShitheadQuin/Toktickit/pull/28)
+
+`GET /api/tickets/:id` and the read-only Requester Ticket Detail screen.
+
+PR #26 (the first attempt at this branch) was **merged by mistake before any review** — my own
+error, not Chanat's. Once caught, I reverted it (PR #27), which put `lab2-staging` back to its
+pre-merge state, then reopened the same work as PR #28 and waited for a real review this time
+before merging.
+
+**Chanat's comments (blocking):**
+1. Attachments came back with no defined order — the Prisma `select` had no `orderBy`, so row
+   order was whatever Postgres returned. Stable in testing, would shuffle after an update. Asked
+   for `orderBy: { uploadedAt: 'asc' }` so the Part 8 screenshots have a defined order.
+
+**Chanat's comments (should-fix):**
+2. The active attachment row was missing the type icon and the Remove button `ui-spec.md` §15
+   lists. Remove belonging to Issue #16 is fine, but asked for that to be said explicitly, and
+   for the icon to be added or dropped from §15.
+
+**Chanat's comments (minor):**
+3. `formatBytes` uses 1024-based math while BR-15's 5 MB limit is enforced elsewhere. Asked to
+   confirm the two agree, so a file the server accepted never displays as over the limit.
+
+**Chanat's verification (no change requested):** confirmed 403 for an unowned Ticket and 404 for
+a missing one per BR-22, with `requesterId` stripped from the response so ownership never leaks;
+the non-numeric id path returns 404 before any query; the Requester is re-checked for `isActive`
+per BR-06; the screen renders nothing on 403 or 404 per UI-13; the download link already uses the
+query-parameter form from `ui-spec.md` §15; removed attachments show the reason with no download
+link; and both badges carry their word.
+
+**My response:** Item 1 — added `orderBy: { uploadedAt: 'asc' }` to the attachments select. Item
+2 — added a type icon to the active attachment row; left an explicit code comment that Remove is
+Issue #16's scope, since this screen stays read-only per `ui-spec.md` §14. Item 3 — confirmed
+`formatBytes` already matched `CreateTicket.tsx`'s own helper and BR-15's `5 * 1024 * 1024`
+limit; added a comment documenting that agreement rather than leaving it an unstated coincidence.
+Chanat approved after the fixes; PR #28 merged into `lab2-staging`.
+
+### Issue 16 — [ShitheadQuin/Toktickit#29](https://github.com/ShitheadQuin/Toktickit/pull/29)
+
+Attachment upload, metadata, download and soft-remove endpoints; wired real upload into Create
+Ticket; added the `AttachmentSection` component (add + soft-remove) to Ticket Detail.
+
+**Chanat's comments (blocking):**
+1. `.btn-tt-destructive` was used on both Remove buttons but defined in no CSS file — checked
+   `theme.css`, `index.css` and `App.css`. Bootstrap has no such class either, so Remove rendered
+   with `.btn` styling and no color at all. Same gap for `.tt-attachment-section`,
+   `.tt-attachment-list`, `.tt-attachment-row` and `.tt-attachment-divider` — all used, none
+   defined. The divider mattered most visually: `ui-spec.md` §14 requires a visible separator
+   between Ticket fields and attachment actions, and a bare `<hr>` with no rule is just the
+   default hairline.
+
+**Chanat's verification (no change requested):** confirmed BR-27's order is enforced without a
+wasted query, by checking type and size with a count of 0 first and only then loading the real
+count; BR-26 deletes the stored file when the transaction fails and swallows `ENOENT` so the
+compensation cannot mask the original error; BR-24's stored filename is a UUID with the extension
+derived from the MIME type, never the client's filename; download treats missing and soft-removed
+identically as 404, while `GET` metadata still returns removed rows, matching BR-16 exactly; both
+upload and removal bump `updatedAt` inside the same transaction per BR-28; BR-19's retry keeps
+the saved Ticket; and the client picker mirrors the server's limits.
+
+**My response:** Defined every class Chanat listed in `theme.css` — `.btn-tt-destructive` as an
+outline style matching `#B3261E` per §18, `.tt-attachment-section`/`.tt-attachment-list`/
+`.tt-attachment-row` for layout and row separation, and `.tt-attachment-divider` as an actual
+visible `border-top` rule (the bare `<hr>` was rendering as an effectively invisible default
+hairline against the page background). Also added `.tt-attachment-remove-confirm` for the BR-17
+reason prompt, which had the same undefined-class gap. 49/49 client tests still passing. Chanat
+approved after the fix; PR #29 merged into `lab2-staging`.
+
+### Issue 17 — [ShitheadQuin/Toktickit#30](https://github.com/ShitheadQuin/Toktickit/pull/30)
+
+Playwright E2E, UI style and responsive evidence in a new top-level `e2e/` package.
+
+**Chanat's comments (blocking):**
+1. The busy-state test was named "Submit shows the busy `.tt-busy` state" but only waited for
+   the Ticket Number — it never touched `.tt-busy` or the disabled attribute. `tests.md`'s
+   STYLE-01 row claims "button states" coverage that didn't exist. Asked to either assert the
+   disabled state synchronously right after `click()`, or drop the busy claim from the test name
+   and the STYLE-01 row.
+
+**Chanat's comments (should-fix):**
+2. `keyboard-nav.spec.ts` wasn't keyboard-driven where it mattered — `select.selectOption()` is a
+   programmatic Playwright call, not a key press, and the `ArrowDown` that followed it moved the
+   selection again, so the Requester actually submitted wasn't necessarily the one intended.
+   AC-26 is about keyboard operability; asked to use key presses and assert the final selected
+   value.
+
+**Chanat's comments (minor):**
+3. Every suite created Tickets and none cleaned up — RESP-01 alone adds 3 per run, STYLE-02 adds
+   3 more. After a few runs the Part 7 My Tickets screenshots would be full of fixture rows.
+
+**Chanat's verification (no change requested):** confirmed `webServer` starts both dev servers
+with `reuseExistingServer` so the suite runs against real Postgres, not mocks; E2E-02 proves
+cross-Requester rejection through both the list and a direct URL, and checks the summary never
+renders; E2E-03 captures the download href before removal and then asserts 404, exactly the
+BR-16 evidence Part 8 needs; the asterisk test correctly reads `::after` rather than the text
+node; and the overflow check has a sub-pixel tolerance instead of an exact zero.
+
+**My response:** Item 1 — the button's DOM disappears the instant the (locally very fast) request
+resolves, so even a synchronous assertion right after `click()` was still racing local Postgres.
+Fixed by delaying only the `POST /api/tickets` response via `page.route()`, so the busy window is
+long enough to observe deterministically rather than by luck, then asserting `.tt-busy` and
+`disabled` before waiting for the (already in-flight) request to finish. Item 2 — replaced
+`selectOption()` with two real `ArrowDown` key presses (native `<select>` skips the disabled
+placeholder on its own), then read back whichever Requester that actually selected and asserted
+that Requester's name appears after submit — proving the keyboard-driven choice, not an
+assumption about where it lands, is what got submitted. Item 3 — added
+`e2e/global-teardown.ts`: every fixture Ticket across all four specs now carries a shared
+`E2E_MARK` prefix, and teardown deletes every Ticket (and its Attachments) carrying it after each
+run. Confirmed 10 fixture Tickets removed per full run with no accumulation across repeated runs.
+21/21 e2e tests still green. Chanat approved after the fixes; PR #30 merged into `lab2-staging`.
