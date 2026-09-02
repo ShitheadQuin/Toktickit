@@ -123,6 +123,29 @@ describe('POST /api/tickets', () => {
     // BR-02: a new Ticket always begins at New, whatever status the client asks for.
     expect(response.body.currentStatus).toBe('NEW');
   });
+
+  // API-17 - BR-19: a Ticket created successfully is kept even when a following attachment
+  // upload for it fails - creation and attachment upload are never one transaction.
+  it('keeps a created Ticket when a following attachment upload is rejected (BR-19)', async () => {
+    const createResponse = await request(app).post('/api/tickets').send(validBody());
+    expect(createResponse.status).toBe(201);
+    const ticketId = createResponse.body.id;
+
+    const uploadResponse = await request(app)
+      .post(`/api/tickets/${ticketId}/attachments`)
+      .set('X-Requester-Id', String(activeRequesterId))
+      .attach('file', Buffer.from('not an allowed type'), { filename: 'notes.txt', contentType: 'text/plain' });
+
+    expect(uploadResponse.status).toBe(415);
+
+    const getResponse = await request(app)
+      .get(`/api/tickets/${ticketId}`)
+      .set('X-Requester-Id', String(activeRequesterId));
+
+    expect(getResponse.status).toBe(200);
+    expect(getResponse.body.ticketNumber).toBe(createResponse.body.ticketNumber);
+    expect(getResponse.body.attachments).toEqual([]);
+  });
 });
 
 describe('GET /api/related-systems', () => {
