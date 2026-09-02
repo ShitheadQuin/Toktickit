@@ -15,9 +15,16 @@ const ALLOWED_ATTACHMENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'appl
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_ATTACHMENT_COUNT = 5;
 
+// ui-spec.md 7/15: an accepted file moves through uploading, then either active or invalid
+// (rejected here, before submit, so it never reaches the server). 'pending' is the initial
+// state before the Ticket exists to upload to.
+type UploadStatus = 'pending' | 'uploading' | 'success' | 'failed';
+
 interface AttachmentRow {
   file: File;
   error: string | null;
+  uploadStatus: UploadStatus;
+  uploadMessage: string | null;
 }
 
 interface FormValues {
@@ -91,6 +98,7 @@ export function CreateTicket() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successTicketNumber, setSuccessTicketNumber] = useState<string | null>(null);
+  const [successTicketId, setSuccessTicketId] = useState<number | null>(null);
 
   const [serverFieldErrors, setServerFieldErrors] = useState<FieldErrors>({});
 
@@ -161,16 +169,16 @@ export function CreateTicket() {
     let validCount = attachments.filter((row) => row.error === null).length;
     const nextRows: AttachmentRow[] = Array.from(files).map((file) => {
       if (!ALLOWED_ATTACHMENT_TYPES.includes(file.type)) {
-        return { file, error: 'File type not allowed. Use JPG, PNG, WEBP, or PDF.' };
+        return { file, error: 'File type not allowed. Use JPG, PNG, WEBP, or PDF.', uploadStatus: 'pending', uploadMessage: null };
       }
       if (file.size > MAX_ATTACHMENT_BYTES) {
-        return { file, error: 'File is over the 5 MB limit.' };
+        return { file, error: 'File is over the 5 MB limit.', uploadStatus: 'pending', uploadMessage: null };
       }
       if (validCount >= MAX_ATTACHMENT_COUNT) {
-        return { file, error: 'Only 5 attachments are allowed per Ticket (BR-15).' };
+        return { file, error: 'Only 5 attachments are allowed per Ticket (BR-15).', uploadStatus: 'pending', uploadMessage: null };
       }
       validCount += 1;
-      return { file, error: null };
+      return { file, error: null, uploadStatus: 'pending', uploadMessage: null };
     });
 
     setAttachments((prev) => [...prev, ...nextRows]);
@@ -179,6 +187,64 @@ export function CreateTicket() {
 
   const removeAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // BR-19: the Ticket is already saved by the time this runs; a failed upload here never
+  // rolls it back. Each row's own status is what carries success/failure, not the form.
+  const uploadOneAttachment = async (ticketId: number, index: number) => {
+    setAttachments((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, uploadStatus: 'uploading', uploadMessage: null } : row)),
+    );
+
+    try {
+      const body = new FormData();
+      body.append('file', attachments[index].file);
+
+      const response = await fetch(`/api/tickets/${ticketId}/attachments`, {
+        method: 'POST',
+        headers: { 'X-Requester-Id': String(requester!.id) },
+        body,
+        signal: AbortSignal.timeout(20000),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        setAttachments((prev) =>
+          prev.map((row, i) =>
+            i === index
+              ? {
+                  ...row,
+                  uploadStatus: 'failed',
+                  uploadMessage: errorBody?.error?.message ?? 'Upload failed. You can retry below.',
+                }
+              : row,
+          ),
+        );
+        return;
+      }
+
+      setAttachments((prev) =>
+        prev.map((row, i) => (i === index ? { ...row, uploadStatus: 'success', uploadMessage: null } : row)),
+      );
+    } catch {
+      setAttachments((prev) =>
+        prev.map((row, i) =>
+          i === index
+            ? { ...row, uploadStatus: 'failed', uploadMessage: 'Unable to reach the server. You can retry below.' }
+            : row,
+        ),
+      );
+    }
+  };
+
+  const uploadAllAttachments = async (ticketId: number) => {
+    // Sequential, not Promise.all: keeps upload order predictable and avoids five concurrent
+    // multipart requests competing for the same 5 MB-per-file backstop.
+    for (let index = 0; index < attachments.length; index += 1) {
+      if (attachments[index].error === null) {
+        await uploadOneAttachment(ticketId, index);
+      }
+    }
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -241,6 +307,10 @@ export function CreateTicket() {
 
       const created = await response.json();
       setSuccessTicketNumber(created.ticketNumber);
+      setSuccessTicketId(created.id);
+      // BR-19: attachment upload happens after the Ticket is already saved, and its outcome
+      // never affects the Ticket itself - only each row's own status, rendered below.
+      void uploadAllAttachments(created.id);
     } catch {
       // Deliberately does not touch `values` — AC-12 requires every entered field to
       // still be there after a failed submission, not just a friendly message.
@@ -252,10 +322,16 @@ export function CreateTicket() {
 
   const handleCreateAnother = () => {
     setSuccessTicketNumber(null);
+    setSuccessTicketId(null);
     setValues(initialValues);
     setTouched({});
     setSubmitAttempted(false);
     setAttachments([]);
+  };
+
+  const handleRetryUpload = (index: number) => {
+    if (successTicketId === null) return;
+    void uploadOneAttachment(successTicketId, index);
   };
 
   if (successTicketNumber) {
@@ -266,12 +342,42 @@ export function CreateTicket() {
           <p className="mb-0">
             <strong>Ticket Number:</strong> {successTicketNumber}
           </p>
-          {attachments.length > 0 && (
-            <p className="mb-0 mt-2">
-              Selected files were not uploaded - attachment upload is not part of this release.
-            </p>
-          )}
         </div>
+
+        {/* ui-spec.md 7/15: each file's own state (uploading/active/failed), not the form's -
+            BR-19 means the Ticket above is already saved regardless of what happens here. */}
+        {attachments.filter((row) => row.error === null).length > 0 && (
+          <ul className="list-unstyled mb-3 tt-attachment-list">
+            {attachments
+              .map((row, index) => ({ row, index }))
+              .filter(({ row }) => row.error === null)
+              .map(({ row, index }) => (
+                <li key={`${row.file.name}-${index}`} className="d-flex align-items-center gap-2 py-1">
+                  <span className="badge text-bg-secondary">{fileTypeLabel(row.file)}</span>
+                  <span>{row.file.name}</span>
+                  {row.uploadStatus === 'uploading' && (
+                    <span className="text-muted" aria-busy="true">
+                      <span className="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                      Uploading…
+                    </span>
+                  )}
+                  {row.uploadStatus === 'success' && <span className="text-success">Uploaded</span>}
+                  {row.uploadStatus === 'failed' && (
+                    <>
+                      <span className="tt-inline-error">{row.uploadMessage ?? 'Upload failed.'}</span>
+                      <button
+                        type="button"
+                        className="btn btn-tt-tertiary btn-sm ms-auto"
+                        onClick={() => handleRetryUpload(index)}
+                      >
+                        Retry
+                      </button>
+                    </>
+                  )}
+                </li>
+              ))}
+          </ul>
+        )}
         <button type="button" className="btn btn-tt-primary" onClick={handleCreateAnother}>
           Create Another Ticket
         </button>
@@ -432,8 +538,8 @@ export function CreateTicket() {
             onChange={handleFilesSelected}
           />
           <div className="form-text">
-            Selected files are checked for type and size now. Attachment upload is not part of this
-            release, so they are not sent with this Ticket yet.
+            Selected files are checked for type and size now, then uploaded once the Ticket is
+            created.
           </div>
           {attachments.length > 0 && (
             <ul className="list-unstyled mt-2">

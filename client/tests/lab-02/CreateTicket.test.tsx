@@ -285,4 +285,87 @@ describe('CreateTicket', () => {
 
     expect(await screen.findByText(/only 5 attachments are allowed/i)).toBeInTheDocument();
   });
+
+  // API-17/BR-19: the Ticket is kept even if an attachment upload afterward fails, and the
+  // Requester is shown which one failed with a way to retry it.
+  it('uploads a selected attachment once the Ticket is created', async () => {
+    selectStoredRequester();
+    mockReferenceDataFetch();
+
+    renderCreateTicket();
+    await waitFor(() => expect(screen.getByLabelText(/category/i)).toBeEnabled());
+    fillValidForm();
+
+    const goodFile = new File(['x'], 'screenshot.png', { type: 'image/png' });
+    fireEvent.change(screen.getByLabelText(/attachments/i), { target: { files: [goodFile] } });
+
+    const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/api/tickets')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ id: 42, ticketNumber: 'TKT-2026-000042' }),
+        } as Response);
+      }
+      if (url.includes('/attachments')) {
+        return Promise.resolve({ ok: true, json: async () => ({ id: 1, isActive: true }) } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /^submit$/i }));
+
+    expect(await screen.findByText(/TKT-2026-000042/)).toBeInTheDocument();
+    expect(await screen.findByText(/^uploaded$/i)).toBeInTheDocument();
+
+    const uploadCall = fetchSpy.mock.calls.find(([input]) => String(input).includes('/attachments'));
+    expect(uploadCall?.[0]).toBe('/api/tickets/42/attachments');
+    expect((uploadCall?.[1] as RequestInit).headers).toMatchObject({ 'X-Requester-Id': '1' });
+  });
+
+  it('keeps the Ticket and offers a Retry when the attachment upload fails (BR-19)', async () => {
+    selectStoredRequester();
+    mockReferenceDataFetch();
+
+    renderCreateTicket();
+    await waitFor(() => expect(screen.getByLabelText(/category/i)).toBeEnabled());
+    fillValidForm();
+
+    const goodFile = new File(['x'], 'screenshot.png', { type: 'image/png' });
+    fireEvent.change(screen.getByLabelText(/attachments/i), { target: { files: [goodFile] } });
+
+    let uploadAttempts = 0;
+    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/api/tickets')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ id: 42, ticketNumber: 'TKT-2026-000042' }),
+        } as Response);
+      }
+      if (url.includes('/attachments')) {
+        uploadAttempts += 1;
+        if (uploadAttempts === 1) {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            json: async () => ({ error: { code: 'INTERNAL_ERROR', message: 'Unable to upload attachment' } }),
+          } as Response);
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ id: 1, isActive: true }) } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /^submit$/i }));
+
+    // The Ticket is shown as created regardless of the attachment outcome.
+    expect(await screen.findByText(/TKT-2026-000042/)).toBeInTheDocument();
+    expect(await screen.findByText(/unable to upload attachment/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(await screen.findByText(/^uploaded$/i)).toBeInTheDocument();
+    expect(uploadAttempts).toBe(2);
+  });
 });
