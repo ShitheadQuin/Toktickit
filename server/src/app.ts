@@ -274,6 +274,9 @@ app.get('/api/tickets/:id', async (req, res) => {
         category: { select: { id: true, name: true } },
         relatedSystem: { select: { id: true, name: true } },
         attachments: {
+          // PR #28 review: Prisma has no default row order, so without this the list looked
+          // stable in testing and would shuffle after an update.
+          orderBy: { uploadedAt: 'asc' },
           select: {
             id: true,
             ticketId: true,

@@ -43,10 +43,18 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+// PR #28 review: matches CreateTicket.tsx's own formatBytes and BR-15's 5 * 1024 * 1024 limit,
+// so a file the server accepted by that same binary-MB math never displays as over the limit.
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// ui-spec.md 15: Active shows a type icon alongside the filename. A generic document/image
+// glyph by broad MIME family is enough here - Issue #16 owns real thumbnails.
+function attachmentIcon(mimeType: string): string {
+  return mimeType.startsWith('image/') ? '🖼️' : '📄';
 }
 
 type Status = 'loading' | 'success' | 'not-found' | 'forbidden' | 'error';
@@ -260,6 +268,7 @@ export function RequesterTicketDetail() {
                 <li key={attachment.id} className="tt-attachment-row mb-2">
                   {attachment.isActive ? (
                     <>
+                      <span aria-hidden="true">{attachmentIcon(attachment.mimeType)}</span>{' '}
                       <span>{attachment.originalFilename}</span>{' '}
                       <span className="text-muted">({formatBytes(attachment.sizeBytes)})</span>{' '}
                       <a
@@ -268,6 +277,8 @@ export function RequesterTicketDetail() {
                       >
                         Download
                       </a>
+                      {/* PR #28 review: Remove is Issue #16's work (attachment upload/removal
+                          flow) - this screen is read-only per ui-spec.md 14. */}
                     </>
                   ) : (
                     // ui-spec.md 15: Removed state - grayed out, no Download link, no preview.
