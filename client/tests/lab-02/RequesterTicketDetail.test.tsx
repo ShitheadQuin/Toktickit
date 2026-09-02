@@ -77,8 +77,9 @@ describe('RequesterTicketDetail', () => {
     ).toHaveAttribute('readonly');
     expect(screen.getByText(/^high$/i)).toBeInTheDocument();
     expect(screen.getByText(/^new$/i)).toBeInTheDocument();
-    // No editable control anywhere on the screen.
-    expect(document.querySelector('input:not([readonly])')).toBeNull();
+    // No editable Ticket-field control anywhere - the Attachment section's own file picker
+    // (Issue #16, ui-spec.md 15) is a separate, intentionally interactive area below.
+    expect(document.querySelector('input:not([readonly]):not([type="file"])')).toBeNull();
     expect(document.querySelector('select')).toBeNull();
     expect(document.querySelector('textarea:not([readonly])')).toBeNull();
   });

@@ -1,22 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useRequester } from '../context/RequesterContext';
+import { AttachmentSection, type Attachment } from '../components/AttachmentSection';
 
 interface ReferenceItem {
   id: number;
   name: string;
-}
-
-interface Attachment {
-  id: number;
-  ticketId: number;
-  originalFilename: string;
-  mimeType: string;
-  sizeBytes: number;
-  uploadedAt: string;
-  isActive: boolean;
-  removedAt: string | null;
-  removalReason: string | null;
 }
 
 interface TicketDetail {
@@ -41,20 +30,6 @@ function formatDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-// PR #28 review: matches CreateTicket.tsx's own formatBytes and BR-15's 5 * 1024 * 1024 limit,
-// so a file the server accepted by that same binary-MB math never displays as over the limit.
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-// ui-spec.md 15: Active shows a type icon alongside the filename. A generic document/image
-// glyph by broad MIME family is enough here - Issue #16 owns real thumbnails.
-function attachmentIcon(mimeType: string): string {
-  return mimeType.startsWith('image/') ? '🖼️' : '📄';
 }
 
 type Status = 'loading' | 'success' | 'not-found' | 'forbidden' | 'error';
@@ -256,41 +231,27 @@ export function RequesterTicketDetail() {
           </div>
 
           {/* ui-spec.md 14: the Attachment section sits behind its own heading and a visible
-              divider, so Ticket fields and attachment actions never visually merge. */}
-          <hr className="tt-attachment-divider" />
-          <h2 className="h5 mb-3">Attachments</h2>
-
-          {ticket.attachments.length === 0 && <p className="text-muted">No attachments.</p>}
-
-          {ticket.attachments.length > 0 && (
-            <ul className="list-unstyled tt-attachment-list">
-              {ticket.attachments.map((attachment) => (
-                <li key={attachment.id} className="tt-attachment-row mb-2">
-                  {attachment.isActive ? (
-                    <>
-                      <span aria-hidden="true">{attachmentIcon(attachment.mimeType)}</span>{' '}
-                      <span>{attachment.originalFilename}</span>{' '}
-                      <span className="text-muted">({formatBytes(attachment.sizeBytes)})</span>{' '}
-                      <a
-                        href={`/api/attachments/${attachment.id}/download?requesterId=${requester?.id}`}
-                        className="btn btn-tt-tertiary btn-sm"
-                      >
-                        Download
-                      </a>
-                      {/* PR #28 review: Remove is Issue #16's work (attachment upload/removal
-                          flow) - this screen is read-only per ui-spec.md 14. */}
-                    </>
-                  ) : (
-                    // ui-spec.md 15: Removed state - grayed out, no Download link, no preview.
-                    <span className="text-muted">
-                      {attachment.originalFilename} — Removed
-                      {attachment.removalReason ? ` — ${attachment.removalReason}` : ''}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+              divider (enforced inside AttachmentSection), so Ticket fields and attachment
+              actions never visually merge. Issue #16: add and soft-remove live here now. */}
+          <AttachmentSection
+            ticketId={ticket.id}
+            attachments={ticket.attachments}
+            onAttachmentAdded={(attachment) =>
+              setTicket((current) =>
+                current ? { ...current, attachments: [...current.attachments, attachment] } : current,
+              )
+            }
+            onAttachmentRemoved={(attachment) =>
+              setTicket((current) =>
+                current
+                  ? {
+                      ...current,
+                      attachments: current.attachments.map((a) => (a.id === attachment.id ? attachment : a)),
+                    }
+                  : current,
+              )
+            }
+          />
 
           <div className="mt-4">
             <Link to="/my-tickets" className="btn btn-tt-secondary">
