@@ -236,5 +236,78 @@ app.get('/api/tickets', async (req, res) => {
   }
 });
 
+app.get('/api/tickets/:id', async (req, res) => {
+  try {
+    // api-spec.md 1: every Requester-scoped endpoint identifies the caller by header.
+    const headerValue = req.header('X-Requester-Id');
+    const requesterId = Number(headerValue);
+    if (!headerValue || !Number.isInteger(requesterId) || requesterId < 1) {
+      return res.status(400).json({
+        error: { code: 'VALIDATION_ERROR', message: 'X-Requester-Id header is required' },
+      });
+    }
+
+    const ticketId = Number(req.params.id);
+    if (!Number.isInteger(ticketId) || ticketId < 1) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    }
+
+    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
+    if (!requester || !requester.isActive) {
+      return res.status(404).json({
+        error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
+      });
+    }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: {
+        id: true,
+        ticketNumber: true,
+        ticketDate: true,
+        updatedAt: true,
+        requesterId: true,
+        summary: true,
+        description: true,
+        requestedPriority: true,
+        currentStatus: true,
+        category: { select: { id: true, name: true } },
+        relatedSystem: { select: { id: true, name: true } },
+        attachments: {
+          // PR #28 review: Prisma has no default row order, so without this the list looked
+          // stable in testing and would shuffle after an update.
+          orderBy: { uploadedAt: 'asc' },
+          select: {
+            id: true,
+            ticketId: true,
+            originalFilename: true,
+            mimeType: true,
+            sizeBytes: true,
+            uploadedAt: true,
+            isActive: true,
+            removedAt: true,
+            removalReason: true,
+          },
+        },
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    }
+
+    // api-spec.md 3, BR-22: an unowned Ticket is 403, never disclosed as 404 - Part 6/8 need
+    // evidence that ownership was actively checked, not just that the id looked wrong.
+    if (ticket.requesterId !== requesterId) {
+      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This Ticket does not belong to you' } });
+    }
+
+    const { requesterId: _ownerId, ...body } = ticket;
+    res.status(200).json(body);
+  } catch (error) {
+    console.error('GET /api/tickets/:id failed:', error);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unable to retrieve ticket' } });
+  }
+});
 
 export default app;
