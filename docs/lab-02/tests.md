@@ -38,7 +38,7 @@ PR, and that final run is the evidence submitted for Part 3.
 | API-20 | API | AC-29, BR-27 | Upload one file that is both a disallowed type and over 5 MB | Single `415`; `413` not returned | `server/tests/lab-02/attachments.api.test.ts` | Pass |
 | API-21 | API | BR-28 | Upload then soft-remove an attachment, comparing the Ticket's `updatedAt` each time | Bumped by both actions; `ticketDate` unchanged | `server/tests/lab-02/attachments.api.test.ts` | Pass |
 | UI-01 | UI | AC-04, AC-05, AC-06 | RequesterSelector loading / empty / API-failure states | Correct state per condition; Continue disabled while loading | `client/tests/lab-02/RequesterSelector.test.tsx` | Pass |
-| UI-02 | UI | AC-26 | RequesterSelector keyboard-only navigation | Every control reachable and usable without a mouse | `client/tests/lab-02/RequesterSelector.test.tsx` | Planned |
+| UI-02 | UI | AC-26 | RequesterSelector keyboard-only navigation | Every control reachable and usable without a mouse | `e2e/lab-02/keyboard-nav.spec.ts` | Pass |
 | UI-03 | UI | AC-02, AC-07, AC-08 | AppShell with no Requester, then after selecting/switching | Selector shown when none selected; name shown after; data reloads on switch | `client/tests/lab-02/AppShell.test.tsx` | Pass |
 | UI-04 | UI | AC-09, AC-10 | CreateTicket submitted with a missing/invalid field | Field-level message shown; no API call made | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
 | UI-05 | UI | AC-11 | CreateTicket Submit clicked | Busy state, button disabled, no duplicate call on repeat click | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
@@ -52,12 +52,12 @@ PR, and that final run is the evidence submitted for Part 3.
 | UI-13 | UI | BR-22 | RequesterTicketDetail given a 403/404 response | Safe message shown, no partial Ticket data rendered | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Pass |
 | UI-14 | UI | AC-22, AC-23 | AttachmentSection add and soft-remove actions | New attachment appears active; removed one shows as removed metadata | `client/tests/lab-02/AttachmentSection.test.tsx` | Pass |
 | UI-15 | UI | AC-24 | AttachmentSection given a removed attachment | Download control absent/disabled for it | `client/tests/lab-02/AttachmentSection.test.tsx` | Pass |
-| STYLE-01 | UI Style | ui-spec.md §18 | Required CSS classes, asterisks, field states, button states on Create Ticket | All required classes/attributes present as rendered | `e2e/lab-02/ui-style.spec.ts` | Planned |
-| STYLE-02 | UI Style | `ui-spec.md` §12 | Requested Priority and Current Status badge markup on My Tickets | Badge classes/colors match §12 for every value | `e2e/lab-02/ui-style.spec.ts` | Planned |
-| RESP-01 | Responsive | AC-25 | Screenshots of Create Ticket, My Tickets, Ticket Detail at desktop/tablet/mobile, written to `artifacts/lab-02/screenshots/{create-ticket,my-tickets,ticket-detail}/` per labsheet §12 | No clipping, overlap, or unintended horizontal scroll at any width | `e2e/lab-02/responsive.spec.ts` | Planned |
-| E2E-01 | E2E | AC-01, AC-07 | Select a Requester, create a Ticket, find it in My Tickets | Ticket appears with the confirmed Ticket Number | `e2e/lab-02/requester-ticket-flow.spec.ts` | Planned |
-| E2E-02 | E2E | AC-03, AC-15 | Requester A creates a Ticket; switch to B; attempt direct access to A's Ticket | Not in B's list; direct access rejected | `e2e/lab-02/requester-ticket-flow.spec.ts` | Planned |
-| E2E-03 | E2E | AC-22, AC-23, AC-24 | Add an attachment, soft-remove it, attempt to download it | Added, then shown removed, then download blocked | `e2e/lab-02/requester-ticket-flow.spec.ts` | Planned |
+| STYLE-01 | UI Style | ui-spec.md §18 | Required CSS classes, asterisks, field states, button states on Create Ticket | All required classes/attributes present as rendered | `e2e/lab-02/ui-style.spec.ts` | Pass |
+| STYLE-02 | UI Style | `ui-spec.md` §12 | Requested Priority and Current Status badge markup on My Tickets | Badge classes/colors match §12 for every value | `e2e/lab-02/ui-style.spec.ts` | Pass |
+| RESP-01 | Responsive | AC-25 | Screenshots of Create Ticket, My Tickets, Ticket Detail at desktop/tablet/mobile, written to `artifacts/lab-02/screenshots/{create-ticket,my-tickets,ticket-detail}/` per labsheet §12 | No clipping, overlap, or unintended horizontal scroll at any width | `e2e/lab-02/responsive.spec.ts` | Pass |
+| E2E-01 | E2E | AC-01, AC-07 | Select a Requester, create a Ticket, find it in My Tickets | Ticket appears with the confirmed Ticket Number | `e2e/lab-02/requester-ticket-flow.spec.ts` | Pass |
+| E2E-02 | E2E | AC-03, AC-15 | Requester A creates a Ticket; switch to B; attempt direct access to A's Ticket | Not in B's list; direct access rejected | `e2e/lab-02/requester-ticket-flow.spec.ts` | Pass |
+| E2E-03 | E2E | AC-22, AC-23, AC-24 | Add an attachment, soft-remove it, attempt to download it | Added, then shown removed, then download blocked | `e2e/lab-02/requester-ticket-flow.spec.ts` | Pass |
 
 `ticket-number-generator.unit.test.ts`, `ticket-list-query.unit.test.ts`, `requesters.api.test.ts`,
 `RequesterSelector.test.tsx`, `AppShell.test.tsx`, `ui-style.spec.ts` and `responsive.spec.ts` are not named in the labsheet's
