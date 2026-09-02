@@ -23,9 +23,9 @@ PR, and that final run is the evidence submitted for Part 3.
 | API-05 | API | AC-18, AC-19, AC-20 | `GET /api/tickets` with search/filter/sort/page params, including `sort=updatedAt` | Correct subset, order, and pagination metadata | `server/tests/lab-02/my-tickets.api.test.ts` | Pass |
 | API-06 | API | BR-10 | `GET /api/tickets` with an invalid `sort`/`page`/`pageSize` | Falls back to documented defaults, no error | `server/tests/lab-02/my-tickets.api.test.ts` | Pass |
 | API-07 | API | AC-16, AC-17 | `GET /api/tickets` for a Requester with none, and a non-matching search | 200, empty `data`, `totalItems: 0` in both cases | `server/tests/lab-02/my-tickets.api.test.ts` | Pass |
-| API-08 | API | AC-21 | `GET /api/tickets/:id` for an owned Ticket | 200 with full detail, including attachments | `server/tests/lab-02/ticket-detail.api.test.ts` | Planned |
-| API-09 | API | AC-03, BR-22 | `GET /api/tickets/:id` for another Requester's Ticket | 403, no Ticket data in the response | `server/tests/lab-02/ticket-detail.api.test.ts` | Planned |
-| API-10 | API | BR-22 | `GET /api/tickets/:id` for a nonexistent id | 404 | `server/tests/lab-02/ticket-detail.api.test.ts` | Planned |
+| API-08 | API | AC-21 | `GET /api/tickets/:id` for an owned Ticket | 200 with full detail, including attachments | `server/tests/lab-02/ticket-detail.api.test.ts` | Pass |
+| API-09 | API | AC-03, BR-22 | `GET /api/tickets/:id` for another Requester's Ticket | 403, no Ticket data in the response | `server/tests/lab-02/ticket-detail.api.test.ts` | Pass |
+| API-10 | API | BR-22 | `GET /api/tickets/:id` for a nonexistent id | 404 | `server/tests/lab-02/ticket-detail.api.test.ts` | Pass |
 | API-11 | API | AC-13, BR-15 | Upload a disallowed type / an oversized file | 415 / 413; no attachment created | `server/tests/lab-02/attachments.api.test.ts` | Planned |
 | API-12 | API | AC-14, BR-15 | Upload a 6th attachment to a Ticket already at 5 active | 409; sixth attachment rejected | `server/tests/lab-02/attachments.api.test.ts` | Planned |
 | API-13 | API | AC-22 | Upload a valid attachment to an owned Ticket | 201; appears active in metadata | `server/tests/lab-02/attachments.api.test.ts` | Planned |
@@ -48,8 +48,8 @@ PR, and that final run is the evidence submitted for Part 3.
 | UI-09 | UI | AC-16, AC-17 | MyTickets with zero Tickets, then a non-matching search | Empty and no-results states are visually and textually distinct | `client/tests/lab-02/MyTickets.test.tsx` | Pass |
 | UI-10 | UI | AC-18, AC-19, AC-20 | MyTickets pagination, sort, and filter controls | List updates to match each control's selection | `client/tests/lab-02/MyTickets.test.tsx` | Pass |
 | UI-11 | UI | AC-15 | MyTickets after a simulated Requester switch | Previous Requester's rows no longer present | `client/tests/lab-02/MyTickets.test.tsx` | Pass |
-| UI-12 | UI | AC-21 | RequesterTicketDetail with a fetched Ticket | All fields render read-only, no editable controls | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Planned |
-| UI-13 | UI | BR-22 | RequesterTicketDetail given a 403/404 response | Safe message shown, no partial Ticket data rendered | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Planned |
+| UI-12 | UI | AC-21 | RequesterTicketDetail with a fetched Ticket | All fields render read-only, no editable controls | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Pass |
+| UI-13 | UI | BR-22 | RequesterTicketDetail given a 403/404 response | Safe message shown, no partial Ticket data rendered | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Pass |
 | UI-14 | UI | AC-22, AC-23 | AttachmentSection add and soft-remove actions | New attachment appears active; removed one shows as removed metadata | `client/tests/lab-02/AttachmentSection.test.tsx` | Planned |
 | UI-15 | UI | AC-24 | AttachmentSection given a removed attachment | Download control absent/disabled for it | `client/tests/lab-02/AttachmentSection.test.tsx` | Planned |
 | STYLE-01 | UI Style | ui-spec.md §18 | Required CSS classes, asterisks, field states, button states on Create Ticket | All required classes/attributes present as rendered | `e2e/lab-02/ui-style.spec.ts` | Planned |
