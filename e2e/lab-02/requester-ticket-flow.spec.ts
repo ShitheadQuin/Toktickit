@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { E2E_MARK } from './fixtures';
 
 // E2E-01/02/03 (Issue #17): the full Requester ticket flow against the real app - real dev
 // servers, real Postgres, no mocked fetches, unlike the Vitest UI suites in client/tests.
@@ -47,7 +48,7 @@ test.describe('Requester ticket flow', () => {
     const [requesterA] = await requesterOptions(page);
     await selectRequester(page, requesterA.value);
 
-    const summary = `Playwright E2E-01 ${Date.now()}`;
+    const summary = `${E2E_MARK} E2E-01 ${Date.now()}`;
     const ticketNumber = await createTicket(page, summary);
 
     await page.goto('/my-tickets');
@@ -64,7 +65,7 @@ test.describe('Requester ticket flow', () => {
     const [requesterA, requesterB] = options;
 
     await selectRequester(page, requesterA.value);
-    const summary = `Playwright E2E-02 ${Date.now()}`;
+    const summary = `${E2E_MARK} E2E-02 ${Date.now()}`;
     const ticketNumber = await createTicket(page, summary);
 
     await page.goto('/my-tickets');
@@ -92,7 +93,7 @@ test.describe('Requester ticket flow', () => {
     const [requesterA] = await requesterOptions(page);
     await selectRequester(page, requesterA.value);
 
-    const summary = `Playwright E2E-03 ${Date.now()}`;
+    const summary = `${E2E_MARK} E2E-03 ${Date.now()}`;
     await createTicket(page, summary);
 
     await page.goto('/my-tickets');

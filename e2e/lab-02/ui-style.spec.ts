@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { E2E_MARK } from './fixtures';
 
 // STYLE-01/02 (Issue #17): automated assertions for the required CSS classes, field states and
 // button behavior documented in ui-spec.md §18, against the real rendered app.
@@ -68,17 +69,30 @@ test.describe('UI style — Create Ticket (STYLE-01, ui-spec.md 18)', () => {
   });
 
   test('Submit shows the busy .tt-busy state and is disabled while the request is in flight', async ({ page }) => {
+    // PR #30 review: local Postgres answers so fast that the very first assertion poll after
+    // click() can already lose the race against the response landing and the screen switching
+    // to success - delaying just the create-Ticket response, not any other request, makes the
+    // busy window long enough to observe deterministically rather than by luck.
+    await page.route('**/api/tickets', async (route) => {
+      if (route.request().method() === 'POST') {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+      await route.continue();
+    });
+
     await page.getByLabel('Category').selectOption({ index: 1 });
     await page.getByLabel('Related System').selectOption({ index: 1 });
-    await page.getByLabel('Summary').fill(`STYLE-01 busy-state ${Date.now()}`);
+    await page.getByLabel('Summary').fill(`${E2E_MARK} STYLE-01 busy-state ${Date.now()}`);
     await page.getByLabel('Description').fill('Checking the busy button state per ui-spec.md 18.');
     await page.getByLabel('Requested Priority').selectOption('LOW');
 
     const submit = page.getByRole('button', { name: /submit/i });
     await submit.click();
-    // The request usually completes before an assertion can catch the busy state reliably in
-    // headless CI timing, so this only asserts the class/attribute contract when caught, not a
-    // fixed sleep - a flaky "sometimes passes" busy-state check is worse than none.
+    // PR #30 review: React flushes setSubmitting(true) before the fetch it triggers can resolve,
+    // so the busy class and disabled attribute are already on the button the instant click()
+    // returns - asserted here before waiting for the (already in-flight) request to complete.
+    await expect(submit).toHaveClass(/tt-busy/);
+    await expect(submit).toBeDisabled();
     await expect(page.getByText(/TKT-\d{4}-\d{6}/)).toBeVisible({ timeout: 15_000 });
   });
 });
@@ -92,7 +106,7 @@ test.describe('UI style — My Tickets badges (STYLE-02, ui-spec.md 12)', () => 
     const summaries: Record<'LOW' | 'MEDIUM' | 'HIGH', string> = { LOW: '', MEDIUM: '', HIGH: '' };
 
     for (const priority of ['LOW', 'MEDIUM', 'HIGH'] as const) {
-      const summary = `STYLE-02 ${priority} ${Date.now()}`;
+      const summary = `${E2E_MARK} STYLE-02 ${priority} ${Date.now()}`;
       summaries[priority] = summary;
 
       await page.goto('/create-ticket');

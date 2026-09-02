@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { E2E_MARK } from './fixtures';
 
 // RESP-01 (Issue #17): screenshots at desktop/tablet/mobile for Create Ticket, My Tickets and
 // Ticket Detail, per labsheet §12. Every screenshot also gets one automated check - no
@@ -55,7 +56,7 @@ for (const [viewportName, size] of Object.entries(VIEWPORTS)) {
     test(`Ticket Detail at ${viewportName}`, async ({ page }) => {
       await selectFirstRequester(page);
 
-      const summary = `RESP-01 ${viewportName} ${Date.now()}`;
+      const summary = `${E2E_MARK} RESP-01 ${viewportName} ${Date.now()}`;
       await page.goto('/create-ticket');
       await page.getByLabel('Category').selectOption({ index: 1 });
       await page.getByLabel('Related System').selectOption({ index: 1 });

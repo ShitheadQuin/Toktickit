@@ -8,6 +8,7 @@ export default defineConfig({
   fullyParallel: false,
   retries: 0,
   reporter: [['list']],
+  globalTeardown: require.resolve('./global-teardown'),
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'retain-on-failure',
