@@ -142,16 +142,46 @@ a mistyped query string should degrade to sensible results, not break the screen
 `relatedSystem`, `currentStatus` or `requestedPriority` value that matches nothing simply yields
 zero results, which is the no-results state, not an error.
 
+The two behaviors divide on what the parameter controls, and malformed values follow the same
+split as unmatched ones. `sort`, `order`, `page` and `pageSize` decide how the list is
+*presented*: there is always a sensible presentation, so a bad value falls back to the documented
+default. `category`, `relatedSystem`, `currentStatus` and `requestedPriority` decide what the list
+*contains*: a non-numeric id, or a status or priority outside the enum, is a value no Ticket can
+carry, so it yields zero results exactly as an unmatched-but-well-formed value does. Malformed
+filters are deliberately not dropped — dropping `currentStatus=BOGUS` would widen the result set
+to every Ticket, showing the Requester more than they asked for, which is the one outcome none of
+these rules should ever produce.
+
 Response `200`:
 ```json
 {
-  "data": [ { "id": 42, "ticketNumber": "TKT-2026-000042", "...": "..." } ],
+  "data": [
+    {
+      "id": 42,
+      "ticketNumber": "TKT-2026-000042",
+      "summary": "Laptop battery drains quickly",
+      "ticketDate": "2026-08-30T03:15:00Z",
+      "updatedAt": "2026-08-30T03:15:00Z",
+      "requestedPriority": "MEDIUM",
+      "currentStatus": "NEW",
+      "category": { "id": 2, "name": "Hardware" }
+    }
+  ],
   "page": 1,
   "pageSize": 10,
   "totalItems": 23,
   "totalPages": 3
 }
 ```
+
+A list item is deliberately narrower than the Ticket Detail response. `description` is omitted —
+`ui-spec.md` §11's table truncates Summary and never shows Description, so sending it would ship
+every Ticket's full 2000-character body on every page load for nothing. `category` is an object
+rather than a bare `categoryId` because §11's Category column displays a name; the id is kept
+alongside it so the same object can drive the filter control. `relatedSystem` is omitted for the
+same reason as `description`: it appears in neither the desktop table nor the mobile card, and
+filtering by it happens by id in the query string. `updatedAt` is present because §11's Last
+Updated column and `sort=updatedAt` (BR-28) both need it.
 
 An empty `data` array with `totalItems: 0` distinguishes a genuine no-results/empty case from a
 failure — the response is still `200`.

@@ -213,6 +213,9 @@ against. Built on top of the existing Bootstrap-based stack rather than replacin
 | Secondary button | `.btn.btn-tt-secondary` | maps to the `#0B7A46` outline style |
 | Tertiary button | `.btn.btn-tt-tertiary` | text-only, `#0B7A46` |
 | Destructive button | `.btn.btn-tt-destructive` | maps to `#B3261E` outline style |
+| Badge, any kind | `.tt-badge` | base shape and padding; never used alone, always with a modifier below |
+| Requested Priority badge | `.tt-badge-priority-low` / `-medium` / `-high` | colors per §12; the priority word is always the badge's own text, so the badge never relies on color alone (§9) |
+| Current Status badge | `.tt-badge-status-new` | colors per §12; named per-status so later labs add `-<status>` without touching the base class |
 | Busy button | `.tt-busy` | added alongside the button's normal class while a request is in flight; sets `aria-busy="true"` |
 | Requested Priority badge | `.badge.tt-badge-low` / `.tt-badge-medium` / `.tt-badge-high` | colors per §12 |
 | Current Status badge | `.badge.tt-badge-new` | colors per §12 |

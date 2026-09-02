@@ -295,16 +295,16 @@ export function CreateTicket() {
             by the server on creation (BR-04), so before submission there is nothing to show. */}
         <div className="row mb-3">
           <div className="col-12 col-md-4">
-            <label className="form-label">Requester</label>
-            <input type="text" className="form-control tt-field-readonly" value={requester?.name ?? ''} readOnly />
+            <label htmlFor="requester" className="form-label">Requester</label>
+            <input id="requester" type="text" className="form-control tt-field-readonly" value={requester?.name ?? ''} readOnly />
           </div>
           <div className="col-12 col-md-4">
-            <label className="form-label">Ticket Number</label>
-            <input type="text" className="form-control tt-field-readonly" value="Generated on submit" readOnly />
+            <label htmlFor="ticketNumber" className="form-label">Ticket Number</label>
+            <input id="ticketNumber" type="text" className="form-control tt-field-readonly" value="Generated on submit" readOnly />
           </div>
           <div className="col-12 col-md-4">
-            <label className="form-label">Ticket Date</label>
-            <input type="text" className="form-control tt-field-readonly" value="Set by the server on submit" readOnly />
+            <label htmlFor="ticketDate" className="form-label">Ticket Date</label>
+            <input id="ticketDate" type="text" className="form-control tt-field-readonly" value="Set by the server on submit" readOnly />
           </div>
         </div>
 

@@ -19,7 +19,8 @@ Pull Requests I authored (reviewed by my partner):
 | [#19](https://github.com/ShitheadQuin/Toktickit/pull/19) | feature/10-lab2-spec | lab2-staging | Requested changes (5 points), fix pushed, re-request sent — approved, merged into lab2-staging |
 | [#20](https://github.com/ShitheadQuin/Toktickit/pull/20) | feature/11-data-seed | lab2-staging | Requested changes (2 points), fix pushed, approved, merged into lab2-staging |
 | [#21](https://github.com/ShitheadQuin/Toktickit/pull/21) | feature/12-requester-context | lab2-staging | Requested changes (3 points), fixes pushed, approved, merged into lab2-staging |
-| [#23](https://github.com/ShitheadQuin/Toktickit/pull/23) | feature/spec-attachment-rules | lab2-staging | Requested changes (2 points), fixes pushed, re-request sent |
+| [#22](https://github.com/ShitheadQuin/Toktickit/pull/22) | feature/13-create-ticket | lab2-staging | Requested changes (5 points), fixes pushed, approved, merged into lab2-staging |
+| [#23](https://github.com/ShitheadQuin/Toktickit/pull/23) | feature/spec-attachment-rules | lab2-staging | Requested changes (2 points), fixes pushed, approved, merged into lab2-staging |
 
 ### Issue 10 — [ShitheadQuin/Toktickit#19](https://github.com/ShitheadQuin/Toktickit/pull/19)
 
@@ -103,6 +104,64 @@ work has a clear formal owner. Item 3 (minor) acknowledged as worth doing once `
 exist; deferred to whichever Issue introduces them, no code change needed yet. Retook all six
 Issue #12 screenshots after the styling fix so evidence matches the final UI, not the pre-fix
 version. Chanat approved after the fixes; PR #21 merged into `lab2-staging`.
+
+### Issue 13 — [ShitheadQuin/Toktickit#22](https://github.com/ShitheadQuin/Toktickit/pull/22)
+
+First implementation PR of the sprint: `POST /api/tickets`, `GET /api/related-systems`, the
+Create Ticket screen, and the shared route guard.
+
+**Chanat's comments (blocking):**
+1. The client ignored `error.fields`. `if (!response.ok) throw` collapsed every non-2xx response
+   into the generic "Unable to reach the server" banner, so a `400` listing its failing fields —
+   the exact shape `api-spec.md` §1 defines, and what AC-09 and AC-10 are graded on — surfaced to
+   the user as a network error with no field-level messages at all.
+2. `.btn-tt-tertiary` was applied to the attachment Remove button but defined nowhere in
+   `theme.css`, so the control rendered unstyled. `ui-spec.md` §18 lists it as a required class.
+
+**Chanat's comments (should-fix):**
+3. Selected attachments were silently dropped on submit. Nothing on screen told the Requester
+   that upload arrives in a later Issue, so the form appeared to lose their files.
+
+**Chanat's comments (minor):**
+4. Ticket Number and Ticket Date were absent from the form, though `ui-spec.md` §8 places them in
+   the read-only top row and Part 6 wants visible proof the server assigns them.
+5. No client-side 5-file limit, though BR-15 caps a Ticket at 5 active attachments.
+
+**Chanat's verification (no change requested):** confirmed the Ticket Number sequence is read
+inside the request path rather than cached, `formatTicketNumber`'s zero-padding, the 400/404 split
+between a malformed and an unknown `requesterId`, the batched field errors, the type-then-size
+check order, AC-12's value preservation on failure, and `RequireRequester` as the shared guard.
+
+**My response:** Verified all five against the actual code before agreeing — each was real, and
+none needed arguing.
+
+Item 1 was the serious one and a genuine spec violation rather than a preference. Fixed by reading
+`error.fields` from the response body and mapping each message onto its own field, with server
+errors spread over any client-side ones so the server stays authoritative. The `json()` parse is
+guarded with `.catch(() => null)`, because without it an HTML `500` body would throw inside the
+parse, fall through to the outer `catch`, and report a network failure again — the same wrong
+banner by a different route. A rejection with no matching field, such as `404 REQUESTER_NOT_FOUND`,
+shows the server's own message instead of being silently swallowed.
+
+Item 2: added `.btn-tt-tertiary` to `theme.css` as a text-only control in `--tt-secondary`, per
+§18. Item 3: the deferral is now stated on screen, under the picker and again on the success
+screen, rather than left as a silent drop. Item 4: added Ticket Number and Ticket Date as
+read-only fields in the three-column top row §8 describes. Item 5: added the client-side 5-file
+check, positioned *after* type and size so the picker rejects in BR-27's exact order and the
+client can never disagree with the server about which rule a file broke.
+
+One suggestion was deliberately not taken. The alternative offered for item 3 was to disable the
+attachment picker entirely until Issue #16 implements upload. That is reasonable as code, but it
+would have made Part 6's "one valid and one invalid attachment selected" screenshot impossible to
+capture until #16 merged — a review point that improves the code while destroying already-required
+graded evidence. The on-screen notice satisfies the same concern without that cost, and the
+trade-off was explained in the PR comment rather than left as a silent refusal.
+
+Three tests were added for the fixed paths — the `400`-with-fields mapping, the `404` with no
+matching field, and the sixth-file rejection — bringing the branch to 24 passing tests. Six Part 6
+screenshots were retaken afterwards, since the review changed what the form looks like and
+evidence has to match the merged UI rather than the pre-fix version. Chanat approved after the
+fixes; PR #22 merged into `lab2-staging`.
 
 ### Issue 24 — [ShitheadQuin/Toktickit#23](https://github.com/ShitheadQuin/Toktickit/pull/23)
 

@@ -97,3 +97,248 @@ body {
   color: var(--tt-error-text);
   font-size: 0.875rem;
 }
+
+/* ---------------------------------------------------------------------------
+   My Tickets (ui-spec.md 10, 11, 12, 13)
+   --------------------------------------------------------------------------- */
+
+/* Application shell navigation (ui-spec.md 10). The active page pairs a pale green
+   background and secondary-green text with an underline, so it is never signalled
+   by color alone (ui-spec.md 9). */
+.tt-nav-link {
+  color: var(--tt-text);
+  text-decoration: none;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.25rem;
+}
+
+.tt-nav-link:hover,
+.tt-nav-link:focus {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-nav-link.active {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+/* Badges (ui-spec.md 12). Each badge always renders its own word, so the color is a
+   second cue rather than the only one. */
+.tt-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tt-badge-priority-low {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-badge-priority-medium {
+  background: #FFF4DE;
+  color: #92600D;
+}
+
+.tt-badge-priority-high {
+  background: var(--tt-error-bg);
+  color: var(--tt-error-text);
+}
+
+.tt-badge-status-new {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+/* Header text wraps. With table-layout: fixed a nowrap header that outgrows its column spills
+   over the next one instead of being clipped, which is the overlap AC-25 fails on - "Requested
+   Priority" and "Current Status" are both wider than any value beneath them. */
+.tt-ticket-table thead th {
+  color: var(--tt-text);
+  border-bottom-color: var(--tt-surface-border);
+  white-space: normal;
+  vertical-align: bottom;
+}
+
+/* Fixed layout with explicit column widths, so the eight columns can never add up to more than
+   the container. With an automatic layout the table sizes itself to its content and overflows
+   the 1126px shell, which clips the row action and produces the horizontal scroll AC-25 fails
+   on. Summary is the one flexible column: it absorbs whatever is left and truncates, which is
+   also what ui-spec.md 11 asks it to do. */
+.tt-ticket-table {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.9375rem;
+}
+
+.tt-ticket-table thead th.tt-head-number { width: 8.25rem; }
+.tt-ticket-table thead th.tt-head-category { width: 7.5rem; }
+.tt-ticket-table thead th.tt-head-priority { width: 7rem; }
+.tt-ticket-table thead th.tt-head-status { width: 6.5rem; }
+.tt-ticket-table thead th.tt-head-date { width: 6rem; }
+.tt-ticket-table thead th.tt-head-updated { width: 8.5rem; }
+.tt-ticket-table thead th.tt-head-action { width: 4.75rem; }
+
+.tt-ticket-table .tt-col-number {
+  white-space: nowrap;
+}
+
+/* ui-spec.md 11: Summary is truncated with an ellipsis past one line on the desktop table. */
+.tt-ticket-table .tt-col-summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tt-ticket-table .tt-col-date {
+  white-space: nowrap;
+}
+
+.tt-ticket-table .tt-col-updated {
+  color: #5B6B62;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+/* Wrapper around the search form and filter row (ui-spec.md 11). A white bordered surface,
+   per the "white surfaces" rule in ui-spec.md 7, matching the rest of the page's panels. */
+.tt-list-controls {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+/* Pagination (ui-spec.md 11). Bootstrap utility classes on the element handle centering and
+   spacing; this rule lets the page-number buttons wrap onto a second line instead of
+   overflowing the shell when there are enough pages, which is the AC-25 rule the rest of
+   this screen already follows. */
+.tt-pagination {
+  flex-wrap: wrap;
+}
+
+.tt-skeleton-row {
+  height: 2.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.25rem;
+  background: linear-gradient(90deg, #E9EEEB 25%, #F3F6F4 37%, #E9EEEB 63%);
+  background-size: 400% 100%;
+  animation: tt-skeleton 1.4s ease infinite;
+}
+
+@keyframes tt-skeleton {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-skeleton-row { animation: none; }
+}
+
+.tt-empty-state__icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.tt-no-results {
+  color: #5B6B62;
+}
+
+/* Below 992px the same table becomes one card per Ticket (ui-spec.md 11). One DOM, two
+   presentations: no duplicated markup for a screen reader to read twice, and no field
+   dropped. Ticket Number and Current Status share the first line, Summary spans the
+   second, Category / Requested Priority / Ticket Date share the third, and Last Updated
+   gets its own line - four items on one line wrap at narrow widths and AC-25 fails on
+   clipped or overlapping content. */
+@media (max-width: 991.98px) {
+  .tt-ticket-table {
+    table-layout: auto;
+    font-size: 1rem;
+  }
+
+  .tt-ticket-table thead {
+    display: none;
+  }
+
+  .tt-ticket-table,
+  .tt-ticket-table tbody,
+  .tt-ticket-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .tt-ticket-table tr {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 0.25rem 0.75rem;
+    grid-template-areas:
+      "number  number   status"
+      "summary summary  summary"
+      "category priority date"
+      "updated updated  updated"
+      "action  action   action";
+    border: 1px solid var(--tt-surface-border);
+    border-radius: 0.5rem;
+    background: #FFFFFF;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tt-ticket-table td {
+    border: 0;
+    padding: 0;
+  }
+
+  .tt-ticket-table .tt-col-number { grid-area: number; font-weight: 600; }
+  /* The status cell takes its column's width, so the badge inside it also has to be pushed
+     right - otherwise it lands wherever that card's Category and Priority happen to end, and
+     the badge sits in a different place on every card. */
+  .tt-ticket-table .tt-col-status {
+    grid-area: status;
+    justify-self: end;
+    text-align: right;
+  }
+
+  /* The card has room to wrap, so the desktop ellipsis is lifted rather than hiding text
+     behind a truncation the user cannot expand. */
+  .tt-ticket-table .tt-col-summary {
+    grid-area: summary;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .tt-ticket-table .tt-col-number,
+  .tt-ticket-table .tt-col-date,
+  .tt-ticket-table .tt-col-updated {
+    white-space: normal;
+  }
+
+  .tt-ticket-table .tt-col-category { grid-area: category; }
+  .tt-ticket-table .tt-col-priority { grid-area: priority; }
+  .tt-ticket-table .tt-col-date { grid-area: date; }
+  .tt-ticket-table .tt-col-updated { grid-area: updated; }
+  .tt-ticket-table .tt-col-action { grid-area: action; }
+
+  .tt-ticket-table .tt-col-category,
+  .tt-ticket-table .tt-col-date {
+    font-size: 0.875rem;
+    color: #5B6B62;
+  }
+
+  .tt-ticket-table .tt-col-updated::before {
+    content: attr(data-label) " ";
+  }
+
+  /* ui-spec.md 8: buttons stay full width and touch-sized below 768px. */
+  .tt-ticket-table .tt-col-action .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}

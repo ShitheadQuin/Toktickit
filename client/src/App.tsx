@@ -1,8 +1,10 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { RequesterProvider, useRequester } from './context/RequesterContext';
 import { RequesterSelector } from './pages/RequesterSelector';
 import { DiagnosticsPage } from './pages/DiagnosticsPage';
 import { CreateTicket } from './pages/CreateTicket';
+import { MyTickets } from './pages/MyTickets';
+import { TicketDetailPlaceholder } from './pages/TicketDetailPlaceholder';
 import { AppShell } from './components/AppShell';
 import { RequireRequester } from './components/RequireRequester';
 import './App.css';
@@ -15,14 +17,10 @@ function Home() {
     return <RequesterSelector />;
   }
 
-  return (
-    <AppShell>
-      <p className="mb-3">Signed in as {requester.name}. My Tickets is coming in a later Issue.</p>
-      <Link to="/create-ticket" className="btn btn-tt-primary">
-        Create Ticket
-      </Link>
-    </AppShell>
-  );
+  // Once a Requester is selected, My Tickets is the landing screen. Redirecting rather than
+  // rendering it here keeps one route per screen, so the shell's active-page indication
+  // (ui-spec.md 10) has a path to match against.
+  return <Navigate to="/my-tickets" replace />;
 }
 
 function App() {
@@ -32,11 +30,31 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route
+            path="/my-tickets"
+            element={
+              <RequireRequester>
+                <AppShell>
+                  <MyTickets />
+                </AppShell>
+              </RequireRequester>
+            }
+          />
+          <Route
             path="/create-ticket"
             element={
               <RequireRequester>
                 <AppShell>
                   <CreateTicket />
+                </AppShell>
+              </RequireRequester>
+            }
+          />
+          <Route
+            path="/tickets/:id"
+            element={
+              <RequireRequester>
+                <AppShell>
+                  <TicketDetailPlaceholder />
                 </AppShell>
               </RequireRequester>
             }

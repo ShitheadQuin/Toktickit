@@ -103,7 +103,7 @@ describe('CreateTicket', () => {
     await waitFor(() => expect(screen.getByLabelText(/category/i)).toBeEnabled());
     fillValidForm();
 
-    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+    const ticketFetch = vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/api/tickets')) {
         return new Promise(() => {}); // never resolves — holds the busy state on screen
@@ -113,7 +113,15 @@ describe('CreateTicket', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /^submit$/i }));
 
-    expect(await screen.findByRole('button', { name: /submitting/i })).toBeDisabled();
+    const busyButton = await screen.findByRole('button', { name: /submitting/i });
+    expect(busyButton).toBeDisabled();
+
+    // BR-13: clicking again while the request is in flight must not fire a second create call.
+    fireEvent.click(busyButton);
+    const createCalls = ticketFetch.mock.calls.filter(([input]) =>
+      String(input).includes('/api/tickets'),
+    );
+    expect(createCalls).toHaveLength(1);
   });
 
   it('shows a safe error and keeps entered values when the backend is unreachable', async () => {
@@ -147,6 +155,12 @@ describe('CreateTicket', () => {
 
     renderCreateTicket();
     await waitFor(() => expect(screen.getByLabelText(/category/i)).toBeEnabled());
+
+    // AC-27: the Requester shown during entry is the one currently selected, read-only.
+    const requesterField = screen.getByLabelText(/^requester$/i);
+    expect(requesterField).toHaveValue('Anong Srisai');
+    expect(requesterField).toHaveAttribute('readOnly');
+
     fillValidForm();
 
     vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
