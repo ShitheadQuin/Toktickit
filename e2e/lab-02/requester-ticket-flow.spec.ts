@@ -71,7 +71,12 @@ test.describe('Requester ticket flow', () => {
     await page.goto('/my-tickets');
     await page.getByLabel('Search').fill(ticketNumber);
     await page.getByRole('button', { name: 'Search' }).click();
+    // Waits for the filtered row itself, not just Search resolving - the unfiltered list can still
+    // satisfy getByRole('link', { name: 'Open' }) before the re-fetch lands, which would open the
+    // wrong Ticket and silently test the wrong id below. Same fix as responsive.spec.ts.
+    await page.getByText(ticketNumber).waitFor({ state: 'visible' });
     await page.getByRole('link', { name: 'Open' }).click();
+    await page.waitForURL('**/tickets/**');
     const url = page.url();
     const ticketId = url.split('/tickets/')[1];
 
@@ -99,6 +104,8 @@ test.describe('Requester ticket flow', () => {
     await page.goto('/my-tickets');
     await page.getByLabel('Search').fill(summary);
     await page.getByRole('button', { name: 'Search' }).click();
+    // Same wait as E2E-02: an unfiltered or still-empty list must not satisfy the Open link.
+    await page.getByText(summary).waitFor({ state: 'visible' });
     await page.getByRole('link', { name: 'Open' }).click();
 
     await page.getByLabel('Add attachment').setInputFiles({

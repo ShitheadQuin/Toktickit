@@ -6,6 +6,11 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './lab-02',
   fullyParallel: false,
+  // One worker, not just one test at a time within a file. Separate describes are handed to
+  // separate workers otherwise, so requester-ticket-flow can be creating its fixture Tickets
+  // while responsive.spec.ts is capturing the My Tickets screenshots - and those fixtures then
+  // appear in the RESP-01 evidence. Costs a few seconds; the screenshots are graded.
+  workers: 1,
   retries: 0,
   reporter: [['list']],
   globalTeardown: require.resolve('./global-teardown'),
