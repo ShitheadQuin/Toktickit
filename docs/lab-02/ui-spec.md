@@ -187,7 +187,16 @@ Download link points to `GET /api/attachments/:id/download?requesterId=<current>
 
 ## 17. Screenshot paths
 
-Captured locally by each author (not committed to the repository), named `p<part>-<nn>-<state>.png`, organized by screen:
+Two different sets of screenshots exist, and only one of them is committed.
+
+**Committed — `artifacts/lab-02/screenshots/`.** The responsive captures written by
+`e2e/lab-02/responsive.spec.ts`, one per viewport under `create-ticket/`, `my-tickets/` and
+`ticket-detail/`. Labsheet §12 lists this path as part of the required repository structure, so
+these are part of the deliverable, not an author preference (PR #31 review).
+
+**Not committed — the submission evidence inbox.** The manually staged screenshots for the
+submission PDF, named `p<part>-<nn>-<state>.png`, captured locally by each author because they
+depend on that author's own seeded data and desktop:
 
 - `create-ticket/` — initial, validation failure, busy, success, API failure, invalid attachment
 - `my-tickets/` — Requester A, Requester B, search, filter, sort, page 2, empty, no-results
