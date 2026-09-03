@@ -105,8 +105,8 @@ npm test
 ```
 
 Starts both dev servers automatically (`webServer` in `playwright.config.ts`) if they aren't
-already running, then runs the requester-ticket-flow, UI-style and responsive specs against the
-real app and real Postgres — no mocked fetches, unlike the Vitest UI suites above. Requires
-PostgreSQL running and at least two active Development Requesters seeded. Responsive screenshots
-are written to `artifacts/lab-02/screenshots/` (gitignored — captured locally per author, not
-committed to the repository).
+already running, then runs the requester-ticket-flow, keyboard-navigation, UI-style and responsive
+specs against the real app and real Postgres — no mocked fetches, unlike the Vitest UI suites
+above. Requires PostgreSQL running and at least two active Development Requesters seeded.
+Responsive screenshots are written to `artifacts/lab-02/screenshots/` (gitignored — captured
+locally per author, not committed to the repository).

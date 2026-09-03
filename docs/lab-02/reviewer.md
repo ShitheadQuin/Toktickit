@@ -1,14 +1,310 @@
 # Peer Review — Lab 2
 
-**Author:** ShitheadQuin (Jeerasak Phisawong 67070503461)
-**Partner:** Chanat-888 (Chanat Dachkumhang  67070503409)
+**Reviewer:** Jeerasak Phisawong
+**Student ID:** 67070503461
+**GitHub username:** ShitheadQuin
+**Partner:** Chanat Dachkumhang — Student ID 67070503409 — GitHub: @Chanat-888
+
+Both partners keep their own copy of the repository (`ShitheadQuin/Toktickit` and
+`Chanat-888/TokTickIT`) and cross-reviewed each other's Pull Requests for every Lab 2 Issue.
 
 Filled in as PRs are opened, reviewed, and approved throughout the sprint — not reconstructed at
 the end.
 
 ## Reviews I gave on my partner's PRs
 
-_(added as they happen)_
+Pull Requests Chanat authored (reviewed by me). All eleven target his `lab2-staging`:
+
+| PR | Branch | My verdict |
+|----|--------|------------|
+| [#13](https://github.com/Chanat-888/TokTickIT/pull/13) | feature/lab2-specs | Commented, discussed, then approved |
+| [#14](https://github.com/Chanat-888/TokTickIT/pull/14) | feature/lab2-docs | Requested changes (1 point), fixed in `2ab2155`, merged |
+| [#24](https://github.com/Chanat-888/TokTickIT/pull/24) | feature/lab2-schema-seed | Requested changes (1 question), answered and documented in `e15894f`, merged |
+| [#25](https://github.com/Chanat-888/TokTickIT/pull/25) | feature/lab2-theme-shell | Approved, with one question answered in the thread |
+| [#26](https://github.com/Chanat-888/TokTickIT/pull/26) | feature/lab2-requester-context | Requested changes (1 point), fixed in `f601b93`, approved |
+| [#27](https://github.com/Chanat-888/TokTickIT/pull/27) | feature/lab2-create-ticket | Requested changes (1 point), fixed in `67fb3eb`, merged |
+| [#28](https://github.com/Chanat-888/TokTickIT/pull/28) | feature/lab2-my-tickets | Requested changes (1 point), documented in `82890cd`, approved |
+| [#29](https://github.com/Chanat-888/TokTickIT/pull/29) | feature/lab2-ticket-detail | Requested changes (1 point), fixed in `86376ce`, approved |
+| [#30](https://github.com/Chanat-888/TokTickIT/pull/30) | feature/lab2-attachments | Requested changes (3 points), fixed in `97fe385`, approved |
+| [#31](https://github.com/Chanat-888/TokTickIT/pull/31) | feature/lab2-e2e-visual | Requested changes twice (3 points, then 2 verifications), fixed in `3267817`, approved |
+| [#32](https://github.com/Chanat-888/TokTickIT/pull/32) | feature/lab2-release-docs | Requested changes (2 points + 1 minor), fixed in `1e8e474`, approved |
+
+Chanat's repository keeps its own business rules, acceptance criteria and open questions with its
+own numbering (BR-38, OQ-5, AC-13 and so on). Every reference below is to **his**
+`specification.md` / `api-spec.md` / `ui-spec.md`, not to this repository's.
+
+### Sprint specification — [Chanat-888/TokTickIT#13](https://github.com/Chanat-888/TokTickIT/pull/13)
+
+**My comments:**
+1. A business rule about the Requester context reads more like a design note for a later lab than
+   something testable, and no acceptance criterion maps to it — suggested moving it to §11
+   Assumptions rather than leaving an untested BR.
+2. Positive: BR-38 doesn't just state that the Ticket Number must be unique, it explains *why*
+   `MAX(id)+1` isn't safe under concurrent requests and why insert-and-retry was chosen over a
+   separate Postgres sequence per year. That reasoning is what labsheet §4 asks for, rather than a
+   bare rule.
+
+**Chanat's response:** Kept it as a BR, with a reason I accepted — labsheet §4.3 lists "the
+transition to real authentication in Lab 3" as one of the required business-rule areas, so moving
+it to Assumptions would leave that area with no rule at all. He agreed no AC should map to it,
+since it constrains what the Requester context is allowed to be rather than describing an
+observable behaviour, and noted it as intentionally untested in `tests.md` so it wouldn't read as a
+coverage gap. On BR-38 he added an implementation risk he'd have to watch: the retry must re-read
+the sequence *inside* the transaction on every attempt, because reusing a candidate computed before
+the first attempt makes every retry collide on the same number and turns the retry bound into a
+delayed failure. Approved.
+
+### Contract documents — [Chanat-888/TokTickIT#14](https://github.com/Chanat-888/TokTickIT/pull/14)
+
+**My verification (no change requested):** Checked the two claims the PR description made rather
+than taking them on trust. AC traceability was complete — every AC-01 to AC-27 in his `tests.md` §3 maps
+to at least one test, and `specification.md` still had exactly 27 ACs, so nothing had silently
+changed or gone missing. CSS class names were complete too — I compared all 16 `STYLE-*` rows in
+`tests.md` §2.4 against the `ui-spec.md` §19 table one by one, with no missing or extra classes.
+
+**My comment (requested changes):** One inconsistency between the two documents. `tests.md`
+API-58/59 expect the exact message `"Missing or invalid idempotency key"`, but `api-spec.md`'s
+Idempotency-Key row gave only the condition and not the message — while the `X-Requester-Id` row
+directly above it *did* include its exact message. Asked for the same pattern, so that a test
+asserting an exact string isn't asserting a string the contract never states.
+
+**Chanat's response:** Fixed in `2ab2155`. Moved the Idempotency-Key 400 into the `api-spec.md` §4
+Responses table directly under the `X-Requester-Id` row with the exact message, and removed it from
+the field-validation table below — correctly, since Idempotency-Key is a header, not a request-body
+field — adding a note that both header 400s are checked before any body field. He also corrected
+`tests.md` §8 OQ-TEST-1, which still pointed at the field-validation table where the rule no longer
+lived. Merged.
+
+### Database schema and seed — [Chanat-888/TokTickIT#24](https://github.com/Chanat-888/TokTickIT/pull/24)
+
+**My comment (requested changes):** In `server/prisma/seed.ts`, the "Dana Lim" entry is an active
+Requester but never appears in `ticketPlan`, so she ends up as a *second* zero-ticket active
+Requester alongside Priya. Asked whether that was intentional — extra data for the
+dropdown/selector tests — or whether `ticketPlan` should cover her too, since a second accidental
+empty Requester would make the empty-state evidence ambiguous.
+
+**My comment (positive):** `createdAt: new Date(base.getTime() + i * 29 * 60 * 60 * 1000)` —
+spacing the 30 seeded Tickets 29 hours apart guarantees every `createdAt` is distinct, so sort
+order is deterministic instead of depending on insert timing. Good to fix before it becomes a
+hidden test bug.
+
+**Chanat's response:** Intentional, with the numbers to back it: `specification.md` §7 sets the
+seed minimum at four active Requesters and defines the ~25/~5/0 split over three of them, so Dana
+is the fourth and has no Tickets by construction. Priya is the one AC-13 uses for the empty state;
+Dana exists so the selector dropdown has a fourth option. Adding her to `ticketPlan` would have
+changed the documented distribution. He added a comment above `REQUESTERS` in `e15894f` so the next
+reader doesn't have to ask the same question.
+
+### Theme and app shell — [Chanat-888/TokTickIT#25](https://github.com/Chanat-888/TokTickIT/pull/25)
+
+**My verification (no change requested):** Checked both items he flagged — every class in
+`components.css` maps exactly to the `ui-spec.md` §19 table with nothing out of scope leaking in,
+and the `theme.css` tokens match §1/§2 value for value.
+
+**My comment (positive):** `<NavLink to="/tickets" end>` — the `end` prop is doing real work here.
+Without it, My Tickets would stay highlighted on `/tickets/new` and `/tickets/:id` as well, which
+breaks the active-page rule in `ui-spec.md` §10.
+
+**My comment (question):** The Change Requester button has no `onClick` wired yet — confirming that
+was deferred deliberately rather than an oversight.
+
+**Chanat's response:** Deferred, not an oversight. `ui-spec.md` §10 defines the button as clearing
+the stored selection and routing back to the selector, and the `sessionStorage` context it depends
+on doesn't exist until his Issue #17 — wiring an `onClick` now would either do nothing or need
+rewriting. The Requester name beside it is a placeholder for the same reason, and both become real
+in the same commit. Approved.
+
+### Requester context — [Chanat-888/TokTickIT#26](https://github.com/Chanat-888/TokTickIT/pull/26)
+
+**My comment (requested changes):** Not introduced by this PR, but visible while reading
+`server/src/app.ts`: the `/api/categories` 500 handler still returned
+`{ error: "Unable to load categories" }`, while `api-spec.md` §12 OQ-5 decided that endpoint should
+use the generic `"Unexpected server error"` — which `/api/requesters`, directly below it, already
+does correctly. Pre-existing drift between two sibling reference-data endpoints and their own
+contract, worth a quick fix rather than leaving them inconsistent.
+
+**My comments (positive):**
+- The plain `fetch` for `GET /api/requesters` is correct, not a missed header: his `api-spec.md`
+  §0.1 explicitly excludes that endpoint from the `X-Requester-Id` requirement, since it is the one
+  endpoint that runs *before* a Requester has been chosen.
+- Validating the parsed shape with `isSelectedRequester` and catching `JSON.parse` failures means
+  corrupted or hand-edited `sessionStorage` degrades to "nothing selected" instead of crashing the
+  app on load.
+
+**Chanat's response:** Fixed in `f601b93` — `/api/categories` now returns the generic
+`"Unexpected server error"` on 500, matching `/api/requesters` and OQ-5, with nothing else in the
+handler changed. Approved.
+
+### Create Ticket — [Chanat-888/TokTickIT#27](https://github.com/Chanat-888/TokTickIT/pull/27)
+
+**My verification (no change requested):** Checked both claims in the actual code rather than the
+description. The idempotency replay check runs *before* `validateTicketInput(req.body)`, so a
+malformed replay body isn't validated a second time. The attachment checks are in the right order
+too — 400 → 404 → 409 → 415 → 413, matching `api-spec.md` §12 OQ-9.
+
+**My comment (positive):** Using Prisma's `err.meta.target` to tell a `ticketNumber` collision apart
+from a `(requesterId, idempotencyKey)` collision is the right distinction — the first should retry
+with a new Ticket Number, the second means the same request already won the race and the existing
+Ticket should be re-fetched and returned as 200. Two unique-constraint violations that need
+opposite handling.
+
+**My comment (requested changes):** The multer instance sets no `limits.fileSize`, so a file larger
+than the 5 MB business limit is fully buffered into memory before the manual size check ever runs.
+Suggested a coarse multer limit well above the real one (10-20 MB) so genuinely oversized uploads
+are rejected before they are buffered.
+
+**Chanat's response:** Fixed in `67fb3eb`. Added `limits.fileSize: 20MB` — deliberately coarse and
+well above the 5 MB rule, so anything over 20 MB is rejected by multer before being buffered, while
+files between 5 MB and 20 MB still pass multer and hit the existing manual 413 check, which keeps
+the documented status code. `handleAttachmentUpload`'s error branch was already a catch-all, so
+`LIMIT_FILE_SIZE` routes through the same 400 as any other malformed upload with no new branch.
+
+### My Tickets — [Chanat-888/TokTickIT#28](https://github.com/Chanat-888/TokTickIT/pull/28)
+
+**My verification (no change requested):** Verified in the code, not just the description.
+`categoryId` here checks only that the Category exists, with no `isActive` check — deliberately
+different from `POST /api/tickets`, and matching `api-spec.md` §12 OQ-2. The `orderBy` logic always
+appends `{ id: "desc" }` as the second sort key regardless of which `sortBy`/`sortDir` is chosen, so
+the OQ-7 tiebreaker genuinely applies to every sort rather than only the default one. The multer
+`fileSize` limit from the previous review is present on this branch too.
+
+**My comment (positive):** `requestedPriority` sorts correctly without a separate sort-weight
+column. The `Priority` enum is declared `LOW, MEDIUM, HIGH` and Postgres sorts enum values in
+declaration order, so `desc` puts HIGH first as `ui-spec.md` OQ-2 requires — the simpler solution,
+and it only works because the enum is declared in the right order.
+
+**My comment (requested changes):** On an exact tie — `pageSize=15` being equally close to 10 and
+20 — `reduce` keeps the first candidate and clamps to 10. Asked whether round-down is intended or an
+artefact of iteration order, since OQ-8 only says "nearest allowed value" and doesn't settle ties,
+and suggested a note either way so the behaviour is a decision rather than an accident.
+
+**Chanat's response:** Round-down is intended, not an accident of `reduce`'s iteration order. Fixed
+in `82890cd` by adding a comment stating it: OQ-8 leaves ties open, either direction is defensible,
+and he picked round-down and documented it rather than leaving it implicit. Approved.
+
+### Ticket Detail — [Chanat-888/TokTickIT#29](https://github.com/Chanat-888/TokTickIT/pull/29)
+
+**My comment (requested changes):** The PR description says a malformed `:id` returns 404, but no
+test covered it. Asked for a `GET /api/tickets/abc` → 404 case, so a future refactor can't quietly
+turn the documented 404 into a 400 without a test failing.
+
+**My comments (positive):**
+- One of the not-found tests compares the response *bodies* as well as the status codes, rather than
+  only asserting 404 twice. That actually proves the missing-Ticket and not-owned cases are
+  indistinguishable to the caller, which is much stronger evidence for BR-10/BR-36 than matching
+  status codes alone.
+- Confirmed the 404-for-a-non-numeric-id choice against `api-spec.md` §6, which defines only 200,
+  403, 404 and 500 for that endpoint. Returning 404 matches the contract; adding a 400 would have
+  been the easy assumption and would have invented a response the spec doesn't define.
+
+**Chanat's response:** Added in `86376ce` — `GET /api/tickets/abc` now asserts 404 with the same
+`{ error: "Not found" }` body as the other not-found cases in the file, so a change to 400 would
+break the test. Approved.
+
+### Attachments — [Chanat-888/TokTickIT#30](https://github.com/Chanat-888/TokTickIT/pull/30)
+
+**My comments (requested changes):**
+1. `requesterId` is passed in the download URL's query string rather than the `X-Requester-Id`
+   header every other endpoint uses — raised the browser-history and server-log exposure that comes
+   with putting an identity in a URL, and asked whether a blob/object-URL fetch would be preferable.
+2. The "Unavailable" pre-check doesn't actually close the race it appears to close: the attachment
+   can still be removed after the metadata request succeeds but before the browser follows the
+   download URL.
+3. `getAttachment` throws on *any* non-OK response, so the caller can't tell a missing or removed
+   attachment from a 500 or a network failure. Rendering all three as "Unavailable" tells the user
+   the file was removed when the real cause may be that the server is down.
+
+**Outcome:** Points 1 and 2 were kept, with reasons rather than a silent dismissal. On 1, the
+download route has to work as an ordinary `<a href>` without JavaScript fetching the file first,
+which BR-35 requires; the query parameter is allowed only on that one route via
+`allowQueryFallback` and every other route still requires the header, and the Requester context is
+itself a temporary stand-in that Lab 3 replaces with real session authentication. On 2, the
+pre-check stays as an improvement to the common case — an attachment removed since the page loaded —
+while being explicitly *not* treated as a guarantee; the direct navigation can still return 404
+inside the small window. Point 3 was fixed in `97fe385`: a dedicated `AttachmentNotFoundError`
+thrown by `getAttachment` only on a 404, mirroring the existing `NotFoundError` pattern, so the
+Unavailable message and row-disable now fire only on that error or on `meta.isRemoved`, and any
+other failure falls through to the real download URL instead of being reported as a removal.
+Approved.
+
+### E2E, responsive and screenshot evidence — [Chanat-888/TokTickIT#31](https://github.com/Chanat-888/TokTickIT/pull/31)
+
+**My comments, first round (requested changes):**
+1. **Blocking — no test isolation.** E2E-01 creates a real Ticket in the dev database on every run
+   and nothing removes it. Reading the initial total instead of hardcoding 25 stops the assertion
+   failing, but it treats the symptom: the database still grows by one Ticket per run until it is
+   manually re-seeded. That same missing isolation is why the suite needs `fullyParallel: false`,
+   and why the 26 screenshots depend on whatever database state happened to exist when they were
+   captured. Asked for a `globalSetup` that resets and re-seeds before each run, or at minimum
+   cleans up the Tickets the suite creates.
+2. Are RESP-01 to RESP-07 screenshot evidence only, or do they use `toHaveScreenshot`? If they are evidence
+   only, what actually determines pass or fail? Visibility, collapsed-nav and no-horizontal-overflow
+   checks would make them real tests rather than capture steps.
+3. E2E-01 to E2E-08 plus RESP-01 to RESP-07 is 15 test IDs, but 22 tests are reported — asked him to confirm the
+   difference is parameterisation across viewports rather than an undocumented gap.
+
+**Chanat's response:** Point 1 fixed in `3267817` — a Playwright `globalSetup` that truncates
+Ticket/Attachment and re-seeds before every run, so the dev database starts from the exact 25/5/0
+shape each time instead of growing by one Ticket per run; with that guaranteed, E2E-04's `>= 25`
+workaround was reverted to an exact 25. Point 2: RESP-01 to RESP-07 *are* the real assertions (visibility,
+collapsed nav, no horizontal scroll, column presence); the §4 checklist screenshots are separate
+capture steps with no pixel-diff, consistent with `tests.md` §7's stated limitation. Point 3:
+confirmed — 15 named `test()` blocks plus 7 more that each capture a group of checklist screenshots,
+which is 22.
+
+**My comments, second round (requested changes):** Two verifications before merging, both because
+the fix is powerful rather than because I doubted it. First, a truncate-on-every-run hook deserves
+confirmation that the connection string it uses really is the dev database, and that it is wired
+through `globalSetup` in the config rather than being a file that merely happens to be named that.
+Second, confirm `3267817` is actually on `feature/lab2-e2e-visual` and the commit count moved from 1
+to 2 — my fetch of the PR page was still showing the stale single-commit view, so I couldn't verify
+from my side that the fix had landed.
+
+**Chanat's response:** Confirmed both. `globalSetup.ts` uses `server/.env`'s `DATABASE_URL` — the
+dev database, never `toktickit_test` — through `npx prisma db execute --stdin --schema
+prisma/schema.prisma` with `cwd` set to `server/`, and it is wired in `playwright.config.ts` as
+`globalSetup: "./global-setup.ts"`. On the commit, `origin/feature/lab2-e2e-visual` is at `3267817`
+on top of `34c476f`, two commits total; a hard refresh cleared the stale page on my end. Approved.
+
+### Release documentation — [Chanat-888/TokTickIT#32](https://github.com/Chanat-888/TokTickIT/pull/32)
+
+**My comments (requested changes):**
+1. **The seed-log fix may already be undone.** The closing log was changed from
+   `prisma.ticket.count()` to `ticketPlan.length` because the raw count picked up Tickets the E2E
+   suite had created against the same dev database — true when it was written, but #31's
+   `globalSetup` truncates and re-seeds before every run, so there are no foreign Tickets left for
+   the count to pick up. Worse, the two values aren't equally useful: `prisma.ticket.count()` is a
+   real query against what is actually in the database, so a silently failed create or a rejected
+   row makes the number come back lower and the log says so, while `ticketPlan.length` is the length
+   of an array already in memory and prints 30 whether or not a single row was written. The change
+   replaced a value that *can* disagree with reality with one that can't. Suggested reverting to the
+   raw count, or better, asserting the count equals `ticketPlan.length` and failing loudly on a
+   mismatch.
+2. **Merge order.** Both this PR and #31 target `lab2-staging` and both touch dev-database seed
+   behaviour — this one documents the seed check in the README, #31 changes what the seed state
+   actually is at test time. Asked which was intended to merge first, since the wrong order would
+   leave the README describing behaviour `globalSetup` had since changed.
+3. **Minor:** the README now carries a worked `.env.test` example using the `postgres` role — fine
+   for a lab, but worth double-checking there is no real password in it, since the repository is
+   public.
+
+**Chanat's response:** Point 1 fixed in `1e8e474`, and better than what I proposed — the log now
+prints *both* the seed's own plan size (keeping the 30 / 25-5-0 anchor that makes the breakdown
+readable) and a real `prisma.ticket.count()`, with a `console.error` when they disagree, so a silent
+create failure surfaces instead of being masked. Point 2: no ordering hazard, because #31 had
+already merged into `lab2-staging` before this branch existed, so `globalSetup` was in place when
+the seed fix was written. Point 3: confirmed `server/.env.test` was never committed (`git log --all`
+shows no history for it) and the README value is documentation, not a credential.
+
+**My approval:** I was wrong on point 2 and said so — I had assumed #31 was still pending when it
+had already merged, so no ordering decision was needed. Left one non-blocking follow-up for whenever
+`seed.ts` is next touched: the new mismatch warning was firing on a healthy run on his machine (plan
+30, database 33) from leftover E2E Tickets, and a warning that fires on every normal run is one
+people stop reading — so it won't be noticed when it fires for a real reason. The two directions
+aren't equivalent: `count > plan` is expected, since `globalSetup` truncates *before* a run but
+nothing cleans up after, while `count < plan` means rows that should exist don't. Warning only on
+`count < plan` stays quiet normally and speaks up exactly when something is actually wrong. Approved
+and merged.
 
 ## Reviews my partner gave on my PRs
 

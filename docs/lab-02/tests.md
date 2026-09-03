@@ -110,7 +110,8 @@ itself is defined once, in `ui-spec.md` §16, so it is not duplicated here.
 
 - Server: `npm test` inside `server/`
 - Client: `npm test` inside `client/`
-- E2E: `npx playwright test` from the repo root (added in Issue #17; not yet in `package.json`)
+- E2E, UI style and responsive: `npm test` inside `e2e/` (added in Issue #17). The Playwright
+  config starts both dev servers itself, so no server needs to be running first; PostgreSQL does.
 
 ## 6. Final Results
 
