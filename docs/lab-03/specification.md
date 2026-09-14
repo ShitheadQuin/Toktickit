@@ -135,12 +135,13 @@ Lab 2 didn't need that distinction because it had no real identity to protect; L
   authentication"). Lab 3 has real authentication, so that reasoning no longer holds; `403` is now
   reserved for role denials that reveal nothing about a specific record (e.g. a Requester calling
   `/users` or an Internal Note endpoint).
-- BR-13: Any active IT Staff/Administrator may claim an unassigned Ticket or reassign a Ticket's
-  owner, regardless of current status.
+- BR-13: Any active IT Staff member may claim an unassigned Ticket or reassign a Ticket's owner
+  to another active IT Staff member, regardless of current status.
 - BR-14: Status transitions beyond claiming may only be performed by the Ticket's current Owner;
   an unowned Ticket must be claimed first.
-- BR-15: IT Priority may be set only by IT Staff/Administrator; Requested Priority is fixed at
-  creation.
+- BR-15: IT Priority may be set only by an active IT Staff member; Requested Priority is fixed at
+  creation. (Administrator has read-only access to Tickets per BR-04 but performs no ticket
+  actions — see Section 11.)
 - BR-16: Public Comment and Internal Note content is rejected when empty or whitespace-only,
   capped at 2,000 characters, and always rendered as plain text — never interpreted as HTML or
   markdown — so posted content cannot execute as markup in another user's browser.
@@ -348,6 +349,16 @@ a wildcard) for the credentialed client — no separate CSRF token is issued in 
 - **Non-owned Ticket/Attachment now `404`, not `403`** — see BR-12. The Lab 2 docs are left as
   written, since they record what Lab 2 actually delivered; only the Lab 2 *tests* that assumed
   `403` are updated, with the change explained in that PR.
+- **Initial-password issuance (labsheet §6's "approved local-lab behavior"):** since email is out
+  of scope, the system generates a random initial password server-side on user creation and on
+  password reset, and returns it **once**, in that API response only, for the Administrator to
+  relay to the user out-of-band. It is never stored in plaintext (only its hash) and is never
+  retrievable again after that single response.
+- **Administrator ticket access is read-only, not zero:** BR-04 (given) requires Public Comments
+  visible to Administrator and Internal Notes visible to IT Staff *and* Administrator — that's a
+  fixed viewing right. What Administrator cannot do (per the §4.3 default already recorded above)
+  is claim, reassign, change status/priority, or post a Comment/Note. Read access and write access
+  are decided independently, and only the write side is restricted.
 
 ## 12. Seed Data
 
