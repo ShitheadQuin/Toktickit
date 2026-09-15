@@ -71,7 +71,8 @@ describe('RequesterTicketDetail', () => {
     // (Issue #16, ui-spec.md 15) is a separate, intentionally interactive area below.
     expect(document.querySelector('input:not([readonly]):not([type="file"])')).toBeNull();
     expect(document.querySelector('select')).toBeNull();
-    expect(document.querySelector('textarea:not([readonly])')).toBeNull();
+    // Lab 3 (#38): the Public Comments composer is the one intentionally editable textarea here.
+    expect(document.querySelector('textarea:not([readonly]):not(.tt-conversation-composer)')).toBeNull();
   });
 
   it('requests the Ticket via the session cookie, not a header', async () => {
