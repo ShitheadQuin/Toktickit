@@ -207,3 +207,73 @@ describe('Staff Queue role authorization (API-12)', () => {
     expect(response.status).toBe(401);
   });
 });
+
+
+// API-11 - AC-04, BR-04: a Requester is refused Internal Notes as a role, even on their own
+// Ticket - 403 with no note content. API-14 - specification.md 11: an Administrator performs no
+// Ticket actions, so claim, reassign, priority and status are all 403 before any Ticket lookup.
+describe('Internal Notes and Ticket actions role authorization (API-11, API-14)', () => {
+  const DETAIL_EMAIL_PREFIX = 'lab3-authz-detail-test-';
+  const TICKET_NUMBER = 'TKT-2099-938901';
+  let requesterCookie: string;
+  let administratorCookie: string;
+  let ownTicketId: number;
+
+  beforeAll(async () => {
+    const passwordHash = await hashPassword(PASSWORD);
+    const requester = await prisma.user.create({
+      data: { name: 'Authz Detail Requester', email: `${DETAIL_EMAIL_PREFIX}requester@toktickit.dev`, role: 'REQUESTER', passwordHash, mustChangePassword: false },
+    });
+    const administrator = await prisma.user.create({
+      data: { name: 'Authz Detail Admin', email: `${DETAIL_EMAIL_PREFIX}admin@toktickit.dev`, role: 'ADMINISTRATOR', passwordHash, mustChangePassword: false },
+    });
+    requesterCookie = `sid=${(await createSession(requester.id)).token}`;
+    administratorCookie = `sid=${(await createSession(administrator.id)).token}`;
+
+    const category = await prisma.category.findFirstOrThrow({ where: { isActive: true } });
+    const relatedSystem = await prisma.relatedSystem.findFirstOrThrow({ where: { isActive: true } });
+    const ticket = await prisma.ticket.create({
+      data: {
+        ticketNumber: TICKET_NUMBER,
+        requesterId: requester.id,
+        categoryId: category.id,
+        relatedSystemId: relatedSystem.id,
+        summary: 'Authz detail fixture',
+        description: 'Fixture Ticket for API-11.',
+        requestedPriority: 'LOW',
+        itPriority: 'LOW',
+      },
+    });
+    ownTicketId = ticket.id;
+  });
+
+  afterAll(async () => {
+    await prisma.internalNote.deleteMany({ where: { ticket: { ticketNumber: TICKET_NUMBER } } });
+    await prisma.ticket.deleteMany({ where: { ticketNumber: TICKET_NUMBER } });
+    await prisma.session.deleteMany({ where: { user: { email: { startsWith: DETAIL_EMAIL_PREFIX } } } });
+    await prisma.user.deleteMany({ where: { email: { startsWith: DETAIL_EMAIL_PREFIX } } });
+  });
+
+  it('API-11: GET /api/tickets/:id/notes on the Requester’s own Ticket is 403 FORBIDDEN with no note content', async () => {
+    const response = await request(app).get(`/api/tickets/${ownTicketId}/notes`).set('Cookie', requesterCookie);
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe('FORBIDDEN');
+    expect(Array.isArray(response.body)).toBe(false);
+  });
+
+  it('API-14: an Administrator gets 403 FORBIDDEN for claim, reassign, priority and status', async () => {
+    const calls = [
+      request(app).post(`/api/staff/tickets/${ownTicketId}/claim`),
+      request(app).post(`/api/staff/tickets/${ownTicketId}/reassign`).send({ newOwnerId: 1 }),
+      request(app).patch(`/api/staff/tickets/${ownTicketId}/priority`).send({ itPriority: 'HIGH' }),
+      request(app).patch(`/api/staff/tickets/${ownTicketId}/status`).send({ status: 'CANCELLED' }),
+    ];
+    for (const call of calls) {
+      const response = await call.set('Cookie', administratorCookie);
+      expect(response.status).toBe(403);
+      expect(response.body.error.code).toBe('FORBIDDEN');
+    }
+    const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ownTicketId } });
+    expect(ticket).toMatchObject({ ticketOwnerId: null, currentStatus: 'NEW', itPriority: 'LOW' });
+  });
+});

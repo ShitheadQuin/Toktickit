@@ -572,3 +572,123 @@ body {
     content: attr(data-label) ": ";
   }
 }
+
+/* IT Staff Ticket Detail (docs/lab-03/ui-spec.md 7). The editable controls sit in their own white
+   panel, apart from the read-only Ticket fields above them. */
+.tt-staff-controls {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+/* Success feedback pairs with .tt-alert-error above; the message text carries the meaning. */
+.tt-alert-success {
+  color: var(--tt-secondary);
+  background: var(--tt-pale);
+  border-color: var(--tt-secondary);
+}
+
+/* ui-spec.md 7: an owner-required status option stays in the list, greyed out. */
+.tt-disabled-not-owner {
+  color: #8A968F;
+}
+
+/* ui-spec.md 5: the Requester's "problem appears resolved" signal, shown next to the status badge. */
+.tt-requester-confirmed {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-requester-confirmed::before {
+  content: '✓ ';
+}
+
+.tt-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--tt-surface-border);
+}
+
+.tt-tab {
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 0.5rem 0.75rem;
+  color: var(--tt-text);
+}
+
+.tt-tab[aria-selected="true"] {
+  border-bottom-color: var(--tt-secondary);
+  color: var(--tt-secondary);
+  font-weight: 600;
+}
+
+.tt-tab:focus-visible {
+  outline: 2px solid var(--tt-secondary);
+  outline-offset: 2px;
+}
+
+/* ui-spec.md 7: Public Comments and Internal Notes are distinct by design, not by label alone - a
+   white card with the pale-green edge for comments, an amber card with a lock and caption for notes. */
+.tt-comment-public {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-left: 6px solid var(--tt-pale);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.tt-note-internal {
+  background: #FFF4DE;
+  border: 1px solid #EAD29F;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.tt-note-caption {
+  color: #92600D;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.tt-composer-internal {
+  background: #FFF4DE;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.tt-conversation-meta,
+.tt-composer-counter {
+  color: #5B6B62;
+  font-size: 0.8125rem;
+}
+
+/* BR-16: plain text keeps its own line breaks, and a long unbroken string can't widen the page. */
+.tt-conversation-body {
+  margin: 0.25rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* BR-18: Cancel and Reopen confirm in a centered dialog over a dimmed page. */
+.tt-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(27, 43, 34, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1050;
+}
+
+.tt-confirm-dialog {
+  background: #FFFFFF;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 1.25rem;
+  width: 100%;
+  max-width: 28rem;
+}

@@ -93,7 +93,9 @@ in Section 4 instead).
   "problem appears resolved").
 - New: `POST /api/tickets/:id/resolution-signal` — Requester only, must own the Ticket (else
   `404`). No body. Sets `requesterConfirmedAt` to now. Never changes `currentStatus` (BR-05).
-  Response `200` with the updated Ticket.
+  Response `200` with the updated Ticket. `409 CONFLICT`, code `TICKET_CLOSED`, when the Ticket is
+  Closed or Cancelled. A repeat call on a Ticket that already has `requesterConfirmedAt` returns
+  `200` with the Ticket unchanged, keeping the first time.
 - New: `POST /api/tickets/:id/comments`, `GET /api/tickets/:id/comments` — see Section 5.
 
 ## 4. IT Staff Ticket Queue & Ticket Detail
@@ -155,7 +157,8 @@ Response `200`:
 
 ### `GET /api/staff/tickets/:id` — Ticket Detail
 Response `200`: full Ticket fields (including `requestedPriority`, `itPriority`, `currentStatus`,
-`requesterConfirmedAt`), `requester: {id, name, email}`, `category`, `relatedSystem`,
+`requesterConfirmedAt`), `requester: {id, name, email}`, `owner: {id, name}` (or `null` when
+unassigned, same shape as the Queue), `category`, `relatedSystem`,
 `attachments` (Lab 2 metadata shape). **Comments and Internal Notes are never embedded here** —
 fetched separately via Section 5, so the same rule that keeps Notes out of the Requester's view
 (BR-26) doesn't have to be re-implemented per response shape. `404 NOT_FOUND` if the Ticket
@@ -164,7 +167,10 @@ doesn't exist.
 ### `POST /api/staff/tickets/:id/claim`
 No body. Valid only when the Ticket is unassigned and in status `NEW`. Sets `ticketOwnerId` to the
 caller, `currentStatus` to `OPEN`. `409 CONFLICT` (code `ALREADY_ASSIGNED`) if the Ticket already
-has an owner — use reassign instead. `404 NOT_FOUND` if the Ticket doesn't exist.
+has an owner — use reassign instead. `409 CONFLICT` (code `INVALID_TRANSITION`) if it is unassigned
+but no longer `NEW` — reassign it to yourself instead. The write is atomic (applied only if the
+Ticket is still unassigned and `NEW`), so of two simultaneous claims exactly one succeeds and the
+other gets `ALREADY_ASSIGNED`. `404 NOT_FOUND` if the Ticket doesn't exist.
 
 ### `POST /api/staff/tickets/:id/reassign`
 Body: `{ "newOwnerId": 15 }`. Valid at any status, assigned or not. `newOwnerId` must reference an
@@ -184,6 +190,16 @@ ownership, the caller must be the current `ticketOwnerId` → else `403 FORBIDDE
 `NOT_TICKET_OWNER`. Confirmation for Cancel/Reopen (BR-18) is a UI-only step — the API accepts the
 transition once requested; it doesn't require a special "confirmed" flag. `404 NOT_FOUND` if
 missing.
+
+### `GET /api/staff/assignable-users`
+The list behind the Ticket Owner dropdown (Issue #38): `/api/users` is Administrator-only, so IT
+Staff need their own read. Response `200`: `[{ "id": 12, "name": "Jane Lee" }]` — active `IT_STAFF`
+users only, ordered by name. No email, role or activation state is returned.
+
+### `GET /api/staff/attachments/:id/download`
+Attachment continuity for IT Staff (Issue #38): serves the file of an **active** Attachment on any
+Ticket, same headers as the Requester download. Read-only — IT Staff never upload or remove
+Attachments in Lab 3. `404 NOT_FOUND` for a missing or soft-removed Attachment (BR-16).
 
 ## 5. Public Comments & Internal Notes
 
@@ -207,6 +223,9 @@ shape, oldest first. A Requester calling the comments endpoint on a Ticket they 
 per-record one (BR-04, AC-04).
 
 Both are append-only — no `PATCH`/`DELETE` endpoint exists for either in Lab 3 (BR-17).
+
+Posting a Public Comment updates the Ticket's `updatedAt`; posting an Internal Note does not, so a
+Requester's "Last Updated" never reveals that internal activity happened (BR-26).
 
 ## 6. Administrator User Management
 
@@ -257,7 +276,7 @@ true`. Response `200`: `{ "initialPassword": "..." }`, same one-time-only rule a
 | `/auth/*` | ✅ (own session) | ✅ | ✅ |
 | `/tickets`, `/attachments` (Requester's own) | ✅ own only | ❌ 403 | ❌ 403 |
 | `/tickets/:id/resolution-signal` | ✅ own only | ❌ 403 | ❌ 403 |
-| `/staff/tickets*` (queue, detail, claim, reassign, priority, status) | ❌ 403 | ✅ | ❌ 403 |
+| `/staff/tickets*` (queue, detail, claim, reassign, priority, status), `/staff/assignable-users`, `/staff/attachments/:id/download` | ❌ 403 | ✅ | ❌ 403 |
 | `POST /tickets/:id/comments` | ✅ own only | ✅ any | ❌ 403 |
 | `GET /tickets/:id/comments` | ✅ own only | ✅ any | ✅ any |
 | `POST /tickets/:id/notes` | ❌ 403 | ✅ any | ❌ 403 |

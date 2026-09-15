@@ -48,3 +48,17 @@ export async function deleteAttachmentFile(storedFilename: string): Promise<void
 export function attachmentFilePath(storedFilename: string): string {
   return path.join(UPLOAD_DIR, storedFilename);
 }
+
+// The Attachment metadata every response shows - shared by the Requester routes (app.ts) and
+// the IT Staff routes (routes/staff-tickets.ts), so both return the same shape.
+export const ATTACHMENT_METADATA_SELECT = {
+  id: true,
+  ticketId: true,
+  originalFilename: true,
+  mimeType: true,
+  sizeBytes: true,
+  uploadedAt: true,
+  isActive: true,
+  removedAt: true,
+  removalReason: true,
+} as const;

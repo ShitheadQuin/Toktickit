@@ -5,6 +5,7 @@ import { CreateTicket } from './pages/CreateTicket';
 import { MyTickets } from './pages/MyTickets';
 import { RequesterTicketDetail } from './pages/RequesterTicketDetail';
 import { StaffTicketQueue } from './pages/StaffTicketQueue';
+import { StaffTicketDetail } from './pages/StaffTicketDetail';
 import { Login } from './pages/Login';
 import { ChangePassword } from './pages/ChangePassword';
 import { AppShell } from './components/AppShell';
@@ -36,7 +37,7 @@ function Home() {
 
 // PR #44 review: a link to a route that doesn't exist yet renders a blank page. Such routes exist
 // now, role-guarded and inside the shell (so nav/identity/logout all work), holding a placeholder
-// until #38 (Staff Ticket Detail, opened from a Queue row) and #39 (User Management) replace it
+// until #39 (User Management) replaces it
 // with the real screen.
 function ScreenInLaterIssue({ screen }: { screen: string }) {
   return <p>The {screen} screen arrives in a later Issue.</p>;
@@ -95,7 +96,7 @@ function App() {
             element={
               <RequireRole roles={['IT_STAFF']}>
                 <AppShell>
-                  <ScreenInLaterIssue screen="Staff Ticket Detail" />
+                  <StaffTicketDetail />
                 </AppShell>
               </RequireRole>
             }
