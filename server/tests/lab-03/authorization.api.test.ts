@@ -277,3 +277,29 @@ describe('Internal Notes and Ticket actions role authorization (API-11, API-14)'
     expect(ticket).toMatchObject({ ticketOwnerId: null, currentStatus: 'NEW', itPriority: 'LOW' });
   });
 });
+
+// API-13 - AC-22, BR-20: User Management is Administrator-only. IT Staff get 403 with no user data.
+describe('User Management role authorization (API-13)', () => {
+  const USERS_STAFF_EMAIL = 'lab3-authz-users-test-staff@toktickit.dev';
+  let staffCookie: string;
+
+  beforeAll(async () => {
+    const passwordHash = await hashPassword(PASSWORD);
+    const staff = await prisma.user.create({
+      data: { name: 'Authz Users Staff', email: USERS_STAFF_EMAIL, role: 'IT_STAFF', passwordHash, mustChangePassword: false },
+    });
+    staffCookie = `sid=${(await createSession(staff.id)).token}`;
+  });
+
+  afterAll(async () => {
+    await prisma.session.deleteMany({ where: { user: { email: USERS_STAFF_EMAIL } } });
+    await prisma.user.deleteMany({ where: { email: USERS_STAFF_EMAIL } });
+  });
+
+  it('GET /api/users as IT Staff returns 403 FORBIDDEN with no user data', async () => {
+    const response = await request(app).get('/api/users').set('Cookie', staffCookie);
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe('FORBIDDEN');
+    expect(Array.isArray(response.body)).toBe(false);
+  });
+});

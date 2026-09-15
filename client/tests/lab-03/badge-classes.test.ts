@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { STATUS_BADGE_CLASS, ROLE_BADGE_CLASS } from '../../src/components/badge-classes';
+import { STATUS_BADGE_CLASS, ROLE_BADGE_CLASS, USER_STATUS_BADGE_CLASS } from '../../src/components/badge-classes';
 
 // STYLE-03 - docs/lab-03/ui-spec.md 9/14. PR #44 review: a badge class with no CSS rule renders
 // with no color at all and no test notices, since jsdom doesn't load theme.css. This reads the
@@ -37,8 +37,12 @@ describe('Badge classes (STYLE-03)', () => {
     });
   });
 
+  it('maps user Active/Inactive to their badge classes (ui-spec.md 9, 14)', () => {
+    expect(USER_STATUS_BADGE_CLASS).toEqual({ ACTIVE: 'tt-badge-user-active', INACTIVE: 'tt-badge-user-inactive' });
+  });
+
   it('has a theme.css rule for every status and role badge class', () => {
-    const missing = [...Object.values(STATUS_BADGE_CLASS), ...Object.values(ROLE_BADGE_CLASS)].filter(
+    const missing = [...Object.values(STATUS_BADGE_CLASS), ...Object.values(ROLE_BADGE_CLASS), ...Object.values(USER_STATUS_BADGE_CLASS)].filter(
       (cssClass) => !hasRule(cssClass),
     );
     expect(missing).toEqual([]);
