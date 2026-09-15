@@ -34,12 +34,12 @@ describe('GET /api/tickets', () => {
     request(app).get(`/api/tickets${query}`).set('X-Requester-Id', String(requesterId));
 
   beforeAll(async () => {
-    const [requesterA, requesterB] = await prisma.requester.findMany({
-      where: { isActive: true },
+    const [requesterA, requesterB] = await prisma.user.findMany({
+      where: { isActive: true, role: 'REQUESTER' },
       orderBy: { id: 'asc' },
       take: 2,
     });
-    const inactive = await prisma.requester.findFirst({ where: { isActive: false } });
+    const inactive = await prisma.user.findFirst({ where: { isActive: false, role: 'REQUESTER' } });
     const [categoryOne, categoryTwo] = await prisma.category.findMany({
       where: { isActive: true },
       orderBy: { id: 'asc' },
@@ -56,8 +56,14 @@ describe('GET /api/tickets', () => {
 
     // A Requester that owns nothing, for the AC-16 empty state. Created and removed by this
     // suite so no seeded Requester has to be kept artificially clean.
-    const emptyRequester = await prisma.requester.create({
-      data: { name: `${MARK} Empty Fixture`, email: `${MARK.toLowerCase()}-empty@toktickit.dev`, isActive: true },
+    const emptyRequester = await prisma.user.create({
+      data: {
+        name: `${MARK} Empty Fixture`,
+        email: `${MARK.toLowerCase()}-empty@toktickit.dev`,
+        isActive: true,
+        // passwordHash is required since Lab 3, but this fixture user never logs in.
+        passwordHash: 'fixture-never-logs-in',
+      },
     });
     emptyRequesterId = emptyRequester.id;
 
@@ -82,6 +88,7 @@ describe('GET /api/tickets', () => {
           summary: fixture.summary,
           description: 'Fixture Ticket created by the My Tickets API suite.',
           requestedPriority: fixture.requestedPriority,
+          itPriority: fixture.requestedPriority,
         },
       });
     }
@@ -97,6 +104,7 @@ describe('GET /api/tickets', () => {
           summary: `${MARK} Requester B only ticket ${index + 1}`,
           description: 'Fixture Ticket created by the My Tickets API suite.',
           requestedPriority: 'MEDIUM',
+          itPriority: 'MEDIUM',
         },
       });
     }
@@ -104,7 +112,7 @@ describe('GET /api/tickets', () => {
 
   afterAll(async () => {
     await prisma.ticket.deleteMany({ where: { ticketNumber: { in: [...A_NUMBERS, ...B_NUMBERS] } } });
-    await prisma.requester.deleteMany({ where: { id: emptyRequesterId } });
+    await prisma.user.deleteMany({ where: { id: emptyRequesterId } });
   });
 
   // API-04 - AC-15, BR-08: ownership scoping

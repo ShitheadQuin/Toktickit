@@ -27,8 +27,8 @@ describe('POST /api/tickets', () => {
   beforeAll(async () => {
     suiteStartedAt = new Date();
 
-    const activeRequester = await prisma.requester.findFirst({ where: { isActive: true } });
-    const inactiveRequester = await prisma.requester.findFirst({ where: { isActive: false } });
+    const activeRequester = await prisma.user.findFirst({ where: { isActive: true, role: 'REQUESTER' } });
+    const inactiveRequester = await prisma.user.findFirst({ where: { isActive: false, role: 'REQUESTER' } });
     const category = await prisma.category.findFirst({ where: { isActive: true } });
     const relatedSystem = await prisma.relatedSystem.findFirst({ where: { isActive: true } });
 

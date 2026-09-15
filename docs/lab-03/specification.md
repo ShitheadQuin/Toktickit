@@ -345,7 +345,7 @@ a wildcard) for the credentialed client — no separate CSRF token is issued in 
   authorization matrix, as §4.3 allows, restricts both to IT Staff.
 - **Migration of existing Requesters:** every Lab 2 Requester becomes a `User` with role
   `REQUESTER`, `mustChangePassword: true`, and a shared local-dev initial password documented in
-  the seed script and `ai-use.md` — never a real credential, never committed as a secret beyond
+  the seed script and the README — never a real credential, never committed as a secret beyond
   that explicit "local development only" label.
 - **Non-owned Ticket/Attachment now `404`, not `403`** — see BR-12. The Lab 2 docs are left as
   written, since they record what Lab 2 actually delivered; only the Lab 2 *tests* that assumed
