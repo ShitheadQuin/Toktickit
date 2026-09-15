@@ -5,32 +5,24 @@ import { prisma } from './prisma';
 import { formatTicketNumber, validateTicketText } from './ticket-helpers';
 import { parseTicketListQuery } from './ticket-list-helpers';
 import { parseStaffQueueQuery } from './staff-queue-helpers';
-import { MAX_ATTACHMENT_BYTES, attachmentFilePath, deleteAttachmentFile, generateStoredFilename, saveAttachmentFile } from './attachment-storage';
+import { ATTACHMENT_METADATA_SELECT, MAX_ATTACHMENT_BYTES, attachmentFilePath, deleteAttachmentFile, generateStoredFilename, saveAttachmentFile } from './attachment-storage';
 import { validateAttachmentUpload } from './attachment-validation';
 import { requireAuth, requirePasswordChanged, requireRole } from './middleware';
 import authRouter from './routes/auth';
+import staffTicketsRouter from './routes/staff-tickets';
+import ticketConversationRouter from './routes/ticket-conversation';
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use('/api/auth', authRouter);
+app.use('/api/staff', staffTicketsRouter);
+app.use('/api/tickets', ticketConversationRouter);
 
 // BR-15/BR-27: multer's own limit is a memory backstop only, set above the real 5 MB rule so an
 // oversized-and-wrong-type file still reaches the handler and gets the documented check order -
 // type before size - rather than a generic multer rejection before either runs.
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_ATTACHMENT_BYTES * 2 } });
-
-const ATTACHMENT_METADATA_SELECT = {
-  id: true,
-  ticketId: true,
-  originalFilename: true,
-  mimeType: true,
-  sizeBytes: true,
-  uploadedAt: true,
-  isActive: true,
-  removedAt: true,
-  removalReason: true,
-} as const;
 
 // api-spec.md 3: Requester-scoped, restricted to role REQUESTER - IT Staff/Administrator get
 // their own Ticket Detail in #38 instead (403 here, per the authorization matrix in §7).
@@ -246,6 +238,7 @@ app.get('/api/tickets/:id', ...requireRequester, async (req, res) => {
         description: true,
         requestedPriority: true,
         currentStatus: true,
+        requesterConfirmedAt: true,
         category: { select: { id: true, name: true } },
         relatedSystem: { select: { id: true, name: true } },
         attachments: {
@@ -268,6 +261,42 @@ app.get('/api/tickets/:id', ...requireRequester, async (req, res) => {
   } catch (error) {
     console.error('GET /api/tickets/:id failed:', error);
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unable to retrieve ticket' } });
+  }
+});
+
+// api-spec.md 3, BR-05: the Requester records that the problem appears resolved. Never changes
+// status - only IT Staff formally resolve.
+app.post('/api/tickets/:id/resolution-signal', ...requireRequester, async (req, res) => {
+  try {
+    const requesterId = req.user!.id;
+    const ticketId = Number(req.params.id);
+    if (!Number.isInteger(ticketId) || ticketId < 1) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { requesterId: true, currentStatus: true, requesterConfirmedAt: true },
+    });
+    // BR-12: someone else's Ticket is the same 404 as a missing one.
+    if (!ticket || ticket.requesterId !== requesterId) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    }
+    if (ticket.currentStatus === 'CLOSED' || ticket.currentStatus === 'CANCELLED') {
+      return res.status(409).json({ error: { code: 'TICKET_CLOSED', message: 'This Ticket is already closed' } });
+    }
+
+    const select = { id: true, ticketNumber: true, currentStatus: true, requesterConfirmedAt: true, updatedAt: true } as const;
+    // specification.md 11: a repeat keeps the first time - the signal records when the Requester
+    // first saw the problem as fixed.
+    const updated = ticket.requesterConfirmedAt
+      ? await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId }, select })
+      : await prisma.ticket.update({ where: { id: ticketId }, data: { requesterConfirmedAt: new Date() }, select });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error('POST /api/tickets/:id/resolution-signal failed:', error);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unable to record resolution signal' } });
   }
 });
 
