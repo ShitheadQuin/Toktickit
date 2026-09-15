@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import { prisma } from './prisma';
 import { formatTicketNumber, validateTicketText } from './ticket-helpers';
 import { parseTicketListQuery } from './ticket-list-helpers';
+import { parseStaffQueueQuery } from './staff-queue-helpers';
 import { MAX_ATTACHMENT_BYTES, attachmentFilePath, deleteAttachmentFile, generateStoredFilename, saveAttachmentFile } from './attachment-storage';
 import { validateAttachmentUpload } from './attachment-validation';
 import { requireAuth, requirePasswordChanged, requireRole } from './middleware';
@@ -461,6 +462,86 @@ app.delete('/api/attachments/:id', ...requireRequester, async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/attachments/:id failed:', error);
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unable to remove attachment' } });
+  }
+});
+
+// api-spec.md 4/7: every /api/staff/tickets* endpoint is IT Staff only. Requester and
+// Administrator both get 403 - specification.md 11: Administrator performs no ticket operations.
+const requireItStaff = [requireAuth, requirePasswordChanged, requireRole('IT_STAFF')];
+
+app.get('/api/staff/tickets', ...requireItStaff, async (req, res) => {
+  try {
+    const query = parseStaffQueueQuery(req.query as Record<string, unknown>);
+
+    // api-spec.md 4: a filter no Ticket can satisfy is zero results, not an error. Short-circuiting
+    // avoids handing Prisma a value its enum cannot accept.
+    if (query.matchesNothing) {
+      return res.status(200).json({ data: [], page: query.page, pageSize: query.pageSize, totalCount: 0, totalPages: 0 });
+    }
+
+    const contains = (text: string) => ({ contains: text, mode: 'insensitive' as const });
+
+    const where = {
+      ...(query.status !== undefined ? { currentStatus: query.status } : {}),
+      ...(query.itPriority !== undefined ? { itPriority: query.itPriority } : {}),
+      ...(query.owner === 'unassigned'
+        ? { ticketOwnerId: null }
+        : query.owner !== undefined
+          ? { ticketOwnerId: query.owner }
+          : {}),
+      // specification.md 11: ticket number, summary/description text, requester name/email -
+      // partial and case-insensitive. A requester is found here rather than by a separate filter.
+      ...(query.search !== undefined
+        ? {
+            OR: [
+              { ticketNumber: contains(query.search) },
+              { summary: contains(query.search) },
+              { description: contains(query.search) },
+              { requester: { name: contains(query.search) } },
+              { requester: { email: contains(query.search) } },
+            ],
+          }
+        : {}),
+    };
+
+    // api-spec.md 4: the chosen sort (enum columns sort in their declared order), then Ticket id
+    // ascending as the tie-breaker so a Ticket can never appear on two pages.
+    const sortField = query.sort === 'status' ? 'currentStatus' : query.sort;
+    const orderBy = [{ [sortField]: query.order }, { id: 'asc' as const }];
+
+    const totalCount = await prisma.ticket.count({ where });
+
+    const rows = await prisma.ticket.findMany({
+      where,
+      orderBy,
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+      // specification.md 11: the 7 Queue columns plus id - nothing else leaves the server.
+      select: {
+        id: true,
+        ticketNumber: true,
+        summary: true,
+        currentStatus: true,
+        itPriority: true,
+        createdAt: true,
+        requester: { select: { id: true, name: true } },
+        ticketOwner: { select: { id: true, name: true } },
+      },
+    });
+
+    // api-spec.md 4 calls the field `owner`; the schema's relation is `ticketOwner`.
+    const data = rows.map(({ ticketOwner, ...row }) => ({ ...row, owner: ticketOwner }));
+
+    res.status(200).json({
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      totalCount,
+      totalPages: Math.ceil(totalCount / query.pageSize),
+    });
+  } catch (error) {
+    console.error('GET /api/staff/tickets failed:', error);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unable to retrieve the ticket queue' } });
   }
 });
 

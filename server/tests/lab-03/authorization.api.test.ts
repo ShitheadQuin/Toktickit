@@ -156,3 +156,54 @@ describe('Lab 2 route authorization (API-09, API-10, API-15)', () => {
     expect(response.body.error.code).toBe('UNAUTHENTICATED');
   });
 });
+
+
+// API-12 - BR-20, api-spec.md 7: the Queue is IT Staff only. A Requester and an Administrator both
+// get 403 for the whole endpoint - nothing about any Ticket is returned.
+describe('Staff Queue role authorization (API-12)', () => {
+  const QUEUE_EMAIL_PREFIX = 'lab3-authz-queue-test-';
+  let requesterCookie: string;
+  let administratorCookie: string;
+  let staffCookie: string;
+
+  beforeAll(async () => {
+    const passwordHash = await hashPassword(PASSWORD);
+    const make = (key: string, role: 'REQUESTER' | 'IT_STAFF' | 'ADMINISTRATOR') =>
+      prisma.user.create({
+        data: { name: 'Authz Queue Test', email: `${QUEUE_EMAIL_PREFIX}${key}@toktickit.dev`, role, passwordHash, mustChangePassword: false },
+      });
+
+    requesterCookie = `sid=${(await createSession((await make('requester', 'REQUESTER')).id)).token}`;
+    administratorCookie = `sid=${(await createSession((await make('admin', 'ADMINISTRATOR')).id)).token}`;
+    staffCookie = `sid=${(await createSession((await make('staff', 'IT_STAFF')).id)).token}`;
+  });
+
+  afterAll(async () => {
+    await prisma.session.deleteMany({ where: { user: { email: { startsWith: QUEUE_EMAIL_PREFIX } } } });
+    await prisma.user.deleteMany({ where: { email: { startsWith: QUEUE_EMAIL_PREFIX } } });
+  });
+
+  it('GET /api/staff/tickets as a Requester returns 403 FORBIDDEN with no Ticket data', async () => {
+    const response = await request(app).get('/api/staff/tickets').set('Cookie', requesterCookie);
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe('FORBIDDEN');
+    expect(response.body.data).toBeUndefined();
+  });
+
+  it('GET /api/staff/tickets as an Administrator returns 403 FORBIDDEN (Administrator performs no ticket operations)', async () => {
+    const response = await request(app).get('/api/staff/tickets').set('Cookie', administratorCookie);
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe('FORBIDDEN');
+    expect(response.body.data).toBeUndefined();
+  });
+
+  it('GET /api/staff/tickets as IT Staff returns 200', async () => {
+    const response = await request(app).get('/api/staff/tickets').set('Cookie', staffCookie);
+    expect(response.status).toBe(200);
+  });
+
+  it('GET /api/staff/tickets with no session returns 401 UNAUTHENTICATED', async () => {
+    const response = await request(app).get('/api/staff/tickets');
+    expect(response.status).toBe(401);
+  });
+});

@@ -328,7 +328,8 @@ a wildcard) for the credentialed client — no separate CSRF token is issued in 
 - **"Problem Appears Resolved"** sets `requesterConfirmedAt` on the Ticket; it never touches
   `currentStatus` (BR-05). Only IT Staff can move a Ticket to Resolved.
 - **Queue query contract:** searchable — ticket number, summary/description text, requester name/
-  email. Filterable — status, IT Priority, assigned/unassigned, requester. Sortable — createdAt, IT
+  email. Filterable — status, IT Priority, and owner (a specific IT Staff member, or unassigned); a
+  requester is found through search, not a separate filter. Sortable — createdAt, IT
   Priority, status. Default order — createdAt ascending (oldest first). Page size 20. Pagination
   metadata: `{ data, page, pageSize, totalCount, totalPages }`. Invalid query params fall back to
   the default rather than returning `400`, so a mistyped URL degrades gracefully instead of
