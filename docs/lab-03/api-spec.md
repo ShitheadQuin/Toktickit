@@ -123,6 +123,12 @@ their default rather than erroring; an unmatched `status`/`itPriority`/`owner` s
 results — same split as Lab 2's query contract, for the same reason (a mistyped URL degrades to
 sensible results, not a broken screen).
 
+Sorting by `itPriority` or `status` follows the enum's declared order — LOW → MEDIUM → HIGH, and
+New → Open → In Progress → Waiting for Requester → Resolved → Closed → Reopened → Cancelled — so
+`order=asc` puts LOW (or New) first. Every sort breaks ties by Ticket `id` ascending, so a Ticket
+never appears on two pages. The client's "Assigned: Me" sends the caller's own user id as `owner`;
+there is no special `me` value.
+
 Response `200`:
 ```json
 {
