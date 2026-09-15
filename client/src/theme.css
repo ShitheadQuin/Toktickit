@@ -448,3 +448,127 @@ body {
     min-height: 44px;
   }
 }
+
+
+/* IT Staff Ticket Queue (docs/lab-03/ui-spec.md 6/11). Its own class rather than reusing
+   .tt-ticket-table, whose card layout is built around My Tickets' different columns. Same
+   approach: fixed layout with explicit widths so seven columns can't overflow the shell, and
+   Summary as the one flexible column that truncates. Status is wide enough for the longest badge,
+   "Waiting for Requester", on one line. */
+.tt-queue-table {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.9375rem;
+}
+
+.tt-queue-table thead th {
+  color: var(--tt-text);
+  border-bottom-color: var(--tt-surface-border);
+  white-space: normal;
+  vertical-align: bottom;
+}
+
+.tt-queue-table thead th.tt-queue-head-number { width: 8.75rem; }
+.tt-queue-table thead th.tt-queue-head-requester { width: 8.5rem; }
+.tt-queue-table thead th.tt-queue-head-status { width: 10.75rem; }
+.tt-queue-table thead th.tt-queue-head-priority { width: 6rem; }
+.tt-queue-table thead th.tt-queue-head-owner { width: 8.5rem; }
+.tt-queue-table thead th.tt-queue-head-created { width: 7.25rem; }
+
+.tt-queue-row {
+  cursor: pointer;
+}
+
+.tt-queue-row:hover > td {
+  background: var(--tt-pale);
+}
+
+.tt-queue-table .tt-queue-number {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.tt-queue-table .tt-queue-summary,
+.tt-queue-table .tt-queue-requester,
+.tt-queue-table .tt-queue-owner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tt-queue-table .tt-queue-created {
+  white-space: nowrap;
+}
+
+.tt-queue-unassigned {
+  color: #5B6B62;
+  font-style: italic;
+}
+
+/* Below 992px each Ticket becomes a card (ui-spec.md 6): Ticket # and Status badge on the first
+   line, Summary below, Requester and IT Priority badge as a secondary line, Assigned To and
+   Created as a third muted line. One DOM, two presentations. */
+@media (max-width: 991.98px) {
+  .tt-queue-table {
+    table-layout: auto;
+    font-size: 1rem;
+  }
+
+  .tt-queue-table thead {
+    display: none;
+  }
+
+  .tt-queue-table,
+  .tt-queue-table tbody,
+  .tt-queue-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .tt-queue-table tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 0.75rem;
+    grid-template-areas:
+      "number    status"
+      "summary   summary"
+      "requester priority"
+      "owner     created";
+    border: 1px solid var(--tt-surface-border);
+    border-radius: 0.5rem;
+    background: #FFFFFF;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tt-queue-table td {
+    border: 0;
+    padding: 0;
+    min-width: 0;
+  }
+
+  .tt-queue-table .tt-queue-number { grid-area: number; }
+  .tt-queue-table .tt-queue-status { grid-area: status; justify-self: end; text-align: right; }
+  .tt-queue-table .tt-queue-requester { grid-area: requester; }
+  .tt-queue-table .tt-queue-priority { grid-area: priority; justify-self: end; text-align: right; }
+  .tt-queue-table .tt-queue-owner { grid-area: owner; }
+  .tt-queue-table .tt-queue-created { grid-area: created; justify-self: end; text-align: right; }
+
+  /* The card has room to wrap, so the desktop ellipsis is lifted instead of hiding text. */
+  .tt-queue-table .tt-queue-summary {
+    grid-area: summary;
+    white-space: normal;
+    overflow: visible;
+  }
+
+  .tt-queue-table .tt-queue-owner,
+  .tt-queue-table .tt-queue-created {
+    font-size: 0.875rem;
+    color: #5B6B62;
+  }
+
+  .tt-queue-table .tt-queue-owner::before,
+  .tt-queue-table .tt-queue-created::before {
+    content: attr(data-label) ": ";
+  }
+}

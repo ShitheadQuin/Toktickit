@@ -27,7 +27,7 @@ export type CurrentStatusValue =
 export type RequestedPriorityValue = 'LOW' | 'MEDIUM' | 'HIGH';
 
 const PERMITTED_PAGE_SIZES = [5, 10, 20];
-const CURRENT_STATUSES: CurrentStatusValue[] = [
+export const CURRENT_STATUSES: CurrentStatusValue[] = [
   'NEW',
   'OPEN',
   'IN_PROGRESS',
@@ -37,7 +37,7 @@ const CURRENT_STATUSES: CurrentStatusValue[] = [
   'REOPENED',
   'CANCELLED',
 ];
-const REQUESTED_PRIORITIES: RequestedPriorityValue[] = ['LOW', 'MEDIUM', 'HIGH'];
+export const REQUESTED_PRIORITIES: RequestedPriorityValue[] = ['LOW', 'MEDIUM', 'HIGH'];
 
 export const TICKET_LIST_DEFAULTS = {
   sort: 'ticketDate' as TicketListSort,
@@ -64,14 +64,17 @@ export interface TicketListQuery {
   matchesNothing: boolean;
 }
 
+// firstValue, parsePositiveInt, Filter, enumFilter and the two value lists are exported so the
+// IT Staff Queue's staff-queue-helpers.ts (Issue #37) parses its query the same way.
+
 /** Express parses a repeated parameter (?page=2&page=9) into an array; take the first value. */
-function firstValue(raw: unknown): string | undefined {
+export function firstValue(raw: unknown): string | undefined {
   if (Array.isArray(raw)) return typeof raw[0] === 'string' ? raw[0] : undefined;
   return typeof raw === 'string' ? raw : undefined;
 }
 
 /** Digits only, at least 1. Rejects '0', '-3', '2.5' and 'two' without throwing. */
-function parsePositiveInt(raw: string | undefined): number | undefined {
+export function parsePositiveInt(raw: string | undefined): number | undefined {
   if (raw === undefined) return undefined;
   const trimmed = raw.trim();
   if (!/^\d+$/.test(trimmed)) return undefined;
@@ -79,7 +82,7 @@ function parsePositiveInt(raw: string | undefined): number | undefined {
   return Number.isSafeInteger(parsed) && parsed >= 1 ? parsed : undefined;
 }
 
-type Filter<T> = { value?: T; invalid: boolean };
+export type Filter<T> = { value?: T; invalid: boolean };
 
 function idFilter(raw: unknown): Filter<number> {
   const value = firstValue(raw);
@@ -89,7 +92,7 @@ function idFilter(raw: unknown): Filter<number> {
   return id === undefined ? { invalid: true } : { value: id, invalid: false };
 }
 
-function enumFilter<T extends string>(raw: unknown, permitted: T[]): Filter<T> {
+export function enumFilter<T extends string>(raw: unknown, permitted: T[]): Filter<T> {
   const value = firstValue(raw);
   if (value === undefined || value.trim() === '') return { invalid: false };
   // The membership check above is what makes the narrowing to T sound.
