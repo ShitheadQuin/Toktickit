@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AttachmentSection, type Attachment } from '../components/AttachmentSection';
+import { STATUS_BADGE_CLASS } from '../components/badge-classes';
 
 interface ReferenceItem {
   id: number;
@@ -166,7 +167,7 @@ export function RequesterTicketDetail() {
             </div>
             <div className="col-12 col-md-4">
               <span className="form-label d-block">Current Status</span>
-              <span className={`tt-badge tt-badge-status-${ticket.currentStatus.toLowerCase()}`}>
+              <span className={`tt-badge ${STATUS_BADGE_CLASS[ticket.currentStatus] ?? ''}`}>
                 {STATUS_LABEL[ticket.currentStatus] ?? ticket.currentStatus}
               </span>
             </div>

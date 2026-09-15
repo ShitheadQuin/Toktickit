@@ -29,15 +29,16 @@ function Home() {
     return <Navigate to="/my-tickets" replace />;
   }
 
-  // IT Staff's Queue (#37) and Administrator's Users screen (#39) don't exist yet - #36 only
-  // covers authentication/authorization and the Requester regression. Landing here (inside the
-  // shell, so nav/identity/logout all work) rather than redirecting to a route that doesn't
-  // exist yet.
-  return (
-    <AppShell>
-      <p>Signed in as {user.name}. The screen for this role arrives in a later Issue.</p>
-    </AppShell>
-  );
+  // Same one-route-per-screen reasoning for the other two roles' landing screens.
+  return <Navigate to={user.role === 'IT_STAFF' ? '/staff/queue' : '/users'} replace />;
+}
+
+// PR #44 review: the shell's My Queue and Users links pointed at routes that didn't exist, so
+// clicking them rendered a blank page. The routes exist now, role-guarded and inside the shell
+// (so nav/identity/logout all work), holding a placeholder until #37 (Ticket Queue) and #39 (User
+// Management) replace it with the real screen.
+function ScreenInLaterIssue({ screen }: { screen: string }) {
+  return <p>The {screen} screen arrives in a later Issue.</p>;
 }
 
 function App() {
@@ -74,6 +75,26 @@ function App() {
               <RequireRole roles={['REQUESTER']}>
                 <AppShell>
                   <RequesterTicketDetail />
+                </AppShell>
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/staff/queue"
+            element={
+              <RequireRole roles={['IT_STAFF']}>
+                <AppShell>
+                  <ScreenInLaterIssue screen="Ticket Queue" />
+                </AppShell>
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <RequireRole roles={['ADMINISTRATOR']}>
+                <AppShell>
+                  <ScreenInLaterIssue screen="User Management" />
                 </AppShell>
               </RequireRole>
             }

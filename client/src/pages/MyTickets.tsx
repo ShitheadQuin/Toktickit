@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { STATUS_BADGE_CLASS } from '../components/badge-classes';
 
 interface ReferenceItem {
   id: number;
@@ -433,7 +434,7 @@ export function MyTickets() {
                           </span>
                         </td>
                         <td className="tt-col-status">
-                          <span className={`tt-badge tt-badge-status-${item.currentStatus.toLowerCase()}`}>
+                          <span className={`tt-badge ${STATUS_BADGE_CLASS[item.currentStatus] ?? ''}`}>
                             {STATUS_LABEL[item.currentStatus] ?? item.currentStatus}
                           </span>
                         </td>

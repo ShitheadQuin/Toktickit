@@ -112,7 +112,7 @@ Frontend tests run with Vitest; backend tests run with Vitest + Supertest (Super
 Express app directly, so no server needs to be running to test it — it does need PostgreSQL
 running, since these tests hit the real database).
 
-## 7. Run the Playwright E2E/UI-style/responsive suite (Lab 2)
+## 7. Run the Playwright E2E/UI-style/responsive suite
 
 ```bash
 cd e2e
@@ -120,9 +120,12 @@ npm test
 ```
 
 Starts both dev servers automatically (`webServer` in `playwright.config.ts`) if they aren't
-already running, then runs the requester-ticket-flow, keyboard-navigation, UI-style and responsive
-specs against the real app and real Postgres — no mocked fetches, unlike the Vitest UI suites
-above. Requires PostgreSQL running and at least two active Development Requesters seeded.
-Responsive screenshots are written to `artifacts/lab-02/screenshots/` and are committed —
-labsheet §12 lists that path as part of the required repository structure. Re-running the suite
-overwrites them in place.
+already running, then runs every spec under `e2e/lab-02/` (requester-ticket-flow, UI-style,
+responsive) and `e2e/lab-03/` (authentication) against the real app and real Postgres — no mocked
+fetches, unlike the Vitest UI suites above. Requires PostgreSQL running with the seed applied; the
+specs create their own fixture accounts.
+
+The Lab 2 responsive spec checks for horizontal overflow at desktop, tablet and mobile widths but
+no longer writes screenshots. `artifacts/lab-02/screenshots/` holds the committed captures Lab 2
+was submitted with and is kept as that record. Lab 3's screenshots are written to
+`artifacts/lab-03/screenshots/` (Issue #40).

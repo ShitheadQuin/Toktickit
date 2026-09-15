@@ -61,6 +61,17 @@ describe('AppShell role-based navigation (UI-09)', () => {
     expect(screen.getByText(/it staff/i)).toBeInTheDocument();
   });
 
+  // PR #44 review: the badge used an undefined `.tt-badge-role` class, so it rendered unstyled.
+  it.each([
+    ['REQUESTER', 'Requester', 'tt-badge-role-requester'],
+    ['IT_STAFF', 'IT Staff', 'tt-badge-role-it-staff'],
+    ['ADMINISTRATOR', 'Administrator', 'tt-badge-role-administrator'],
+  ] as const)('gives the %s role badge its documented class (ui-spec.md 14)', async (role, label, cssClass) => {
+    renderShell(userFor(role));
+
+    await waitFor(() => expect(screen.getByText(label, { selector: '.tt-badge' })).toHaveClass(cssClass));
+  });
+
   it('provides Change Password and Logout in the identity area', async () => {
     renderShell(userFor('REQUESTER'));
 

@@ -213,6 +213,55 @@ body {
   color: var(--tt-secondary);
 }
 
+/* Lab 3 statuses and roles (docs/lab-03/ui-spec.md 9, class names per 14). The class for each
+   value comes from components/badge-classes.ts. */
+.tt-badge-status-open,
+.tt-badge-status-resolved {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-badge-status-in-progress,
+.tt-badge-status-waiting {
+  background: #FFF4DE;
+  color: #92600D;
+}
+
+.tt-badge-status-closed,
+.tt-badge-status-cancelled {
+  background: var(--tt-readonly-bg);
+  color: var(--tt-text);
+}
+
+.tt-badge-status-reopened {
+  background: var(--tt-error-bg);
+  color: var(--tt-error-text);
+}
+
+/* ui-spec.md 9: Resolved and Cancelled pair their word with an icon, not just a color. */
+.tt-badge-status-resolved::before {
+  content: '✓ ';
+}
+
+.tt-badge-status-cancelled::before {
+  content: '⊘ ';
+}
+
+.tt-badge-role-requester {
+  background: var(--tt-readonly-bg);
+  color: var(--tt-text);
+}
+
+.tt-badge-role-it-staff {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-badge-role-administrator {
+  background: #FFF4DE;
+  color: #92600D;
+}
+
 /* Header text wraps. With table-layout: fixed a nowrap header that outgrows its column spills
    over the next one instead of being clipped, which is the overlap AC-25 fails on - "Requested
    Priority" and "Current Status" are both wider than any value beneath them. */

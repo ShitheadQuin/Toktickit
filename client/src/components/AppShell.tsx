@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ROLE_BADGE_CLASS } from './badge-classes';
 
 const ROLE_LABEL: Record<string, string> = {
   REQUESTER: 'Requester',
@@ -72,7 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {user && (
           <div className="app-shell__identity d-flex align-items-center gap-2">
             <span>{user.name}</span>
-            <span className="tt-badge tt-badge-role">{ROLE_LABEL[user.role] ?? user.role}</span>
+            <span className={`tt-badge ${ROLE_BADGE_CLASS[user.role] ?? ''}`}>{ROLE_LABEL[user.role] ?? user.role}</span>
             <NavLink to="/change-password" className="btn btn-tt-tertiary btn-sm">
               Change Password
             </NavLink>
