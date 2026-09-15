@@ -157,7 +157,8 @@ Response `200`:
 
 ### `GET /api/staff/tickets/:id` — Ticket Detail
 Response `200`: full Ticket fields (including `requestedPriority`, `itPriority`, `currentStatus`,
-`requesterConfirmedAt`), `requester: {id, name, email}`, `category`, `relatedSystem`,
+`requesterConfirmedAt`), `requester: {id, name, email}`, `owner: {id, name}` (or `null` when
+unassigned, same shape as the Queue), `category`, `relatedSystem`,
 `attachments` (Lab 2 metadata shape). **Comments and Internal Notes are never embedded here** —
 fetched separately via Section 5, so the same rule that keeps Notes out of the Requester's view
 (BR-26) doesn't have to be re-implemented per response shape. `404 NOT_FOUND` if the Ticket
