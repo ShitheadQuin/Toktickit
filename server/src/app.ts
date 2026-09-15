@@ -1,13 +1,17 @@
 import express from 'express';
 import multer from 'multer';
+import cookieParser from 'cookie-parser';
 import { prisma } from './prisma';
 import { formatTicketNumber, validateTicketText } from './ticket-helpers';
 import { parseTicketListQuery } from './ticket-list-helpers';
 import { MAX_ATTACHMENT_BYTES, attachmentFilePath, deleteAttachmentFile, generateStoredFilename, saveAttachmentFile } from './attachment-storage';
 import { validateAttachmentUpload } from './attachment-validation';
+import authRouter from './routes/auth';
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
+app.use('/api/auth', authRouter);
 
 // BR-15/BR-27: multer's own limit is a memory backstop only, set above the real 5 MB rule so an
 // oversized-and-wrong-type file still reaches the handler and gets the documented check order -

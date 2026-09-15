@@ -1,10 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { RequesterProvider, useRequester } from './context/RequesterContext';
+import { AuthProvider } from './context/AuthContext';
 import { RequesterSelector } from './pages/RequesterSelector';
 import { DiagnosticsPage } from './pages/DiagnosticsPage';
 import { CreateTicket } from './pages/CreateTicket';
 import { MyTickets } from './pages/MyTickets';
 import { RequesterTicketDetail } from './pages/RequesterTicketDetail';
+import { Login } from './pages/Login';
+import { ChangePassword } from './pages/ChangePassword';
 import { AppShell } from './components/AppShell';
 import { RequireRequester } from './components/RequireRequester';
 import './App.css';
@@ -25,44 +28,48 @@ function Home() {
 
 function App() {
   return (
-    <RequesterProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route
-            path="/my-tickets"
-            element={
-              <RequireRequester>
-                <AppShell>
-                  <MyTickets />
-                </AppShell>
-              </RequireRequester>
-            }
-          />
-          <Route
-            path="/create-ticket"
-            element={
-              <RequireRequester>
-                <AppShell>
-                  <CreateTicket />
-                </AppShell>
-              </RequireRequester>
-            }
-          />
-          <Route
-            path="/tickets/:id"
-            element={
-              <RequireRequester>
-                <AppShell>
-                  <RequesterTicketDetail />
-                </AppShell>
-              </RequireRequester>
-            }
-          />
-          <Route path="/diagnostics" element={<DiagnosticsPage />} />
-        </Routes>
-      </BrowserRouter>
-    </RequesterProvider>
+    <AuthProvider>
+      <RequesterProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/change-password" element={<ChangePassword />} />
+            <Route
+              path="/my-tickets"
+              element={
+                <RequireRequester>
+                  <AppShell>
+                    <MyTickets />
+                  </AppShell>
+                </RequireRequester>
+              }
+            />
+            <Route
+              path="/create-ticket"
+              element={
+                <RequireRequester>
+                  <AppShell>
+                    <CreateTicket />
+                  </AppShell>
+                </RequireRequester>
+              }
+            />
+            <Route
+              path="/tickets/:id"
+              element={
+                <RequireRequester>
+                  <AppShell>
+                    <RequesterTicketDetail />
+                  </AppShell>
+                </RequireRequester>
+              }
+            />
+            <Route path="/diagnostics" element={<DiagnosticsPage />} />
+          </Routes>
+        </BrowserRouter>
+      </RequesterProvider>
+    </AuthProvider>
   );
 }
 
