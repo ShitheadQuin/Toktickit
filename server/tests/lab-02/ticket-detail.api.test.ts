@@ -2,40 +2,38 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import app from '../../src/app';
 import { prisma } from '../../src/prisma';
+import { makeRequesterFixture, sessionCookieFor } from './auth-fixtures';
 
 // Marker keeps this suite's fixture rows identifiable and safe to delete, without disturbing
 // whatever else is in the database (same convention as my-tickets.api.test.ts).
 const MARK = 'ZQ8D';
 const TICKET_NUMBER = 'TKT-2099-900201';
+const EMAIL_PREFIX = 'lab2-ticket-detail-test-';
 
 describe('GET /api/tickets/:id', () => {
-  let requesterAId: number;
-  let requesterBId: number;
+  let requesterACookie: string;
+  let requesterBCookie: string;
   let categoryId: number;
   let relatedSystemId: number;
   let ticketId: number;
 
-  const getAs = (requesterId: number | string, id: number | string) =>
-    request(app).get(`/api/tickets/${id}`).set('X-Requester-Id', String(requesterId));
+  const getAs = (cookie: string, id: number | string) => request(app).get(`/api/tickets/${id}`).set('Cookie', cookie);
 
   beforeAll(async () => {
-    const [requesterA, requesterB] = await prisma.user.findMany({
-      where: { isActive: true, role: 'REQUESTER' },
-      orderBy: { id: 'asc' },
-      take: 2,
-    });
+    const requesterA = await makeRequesterFixture(`${EMAIL_PREFIX}a@toktickit.dev`);
+    const requesterB = await makeRequesterFixture(`${EMAIL_PREFIX}b@toktickit.dev`);
+    requesterACookie = await sessionCookieFor(requesterA.id);
+    requesterBCookie = await sessionCookieFor(requesterB.id);
+
     const category = await prisma.category.findFirst({ where: { isActive: true } });
     const relatedSystem = await prisma.relatedSystem.findFirst({ where: { isActive: true } });
-
-    requesterAId = requesterA.id;
-    requesterBId = requesterB.id;
     categoryId = category!.id;
     relatedSystemId = relatedSystem!.id;
 
     const ticket = await prisma.ticket.create({
       data: {
         ticketNumber: TICKET_NUMBER,
-        requesterId: requesterAId,
+        requesterId: requesterA.id,
         categoryId,
         relatedSystemId,
         summary: `${MARK} Laptop battery drains quickly`,
@@ -49,11 +47,13 @@ describe('GET /api/tickets/:id', () => {
 
   afterAll(async () => {
     await prisma.ticket.deleteMany({ where: { ticketNumber: TICKET_NUMBER } });
+    await prisma.session.deleteMany({ where: { user: { email: { startsWith: EMAIL_PREFIX } } } });
+    await prisma.user.deleteMany({ where: { email: { startsWith: EMAIL_PREFIX } } });
   });
 
   // API-08 - AC-21: full detail, including attachments, for an owned Ticket
   it('returns the full Ticket detail, including attachments, for the owning Requester', async () => {
-    const response = await getAs(requesterAId, ticketId);
+    const response = await getAs(requesterACookie, ticketId);
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
@@ -73,42 +73,34 @@ describe('GET /api/tickets/:id', () => {
     expect(response.body).not.toHaveProperty('requesterId');
   });
 
-  // API-09 - AC-03, BR-22: a Ticket that exists but belongs to someone else
-  it('rejects another Requester’s Ticket with 403 and no Ticket data (BR-22)', async () => {
-    const response = await getAs(requesterBId, ticketId);
+  // API-09 - AC-09, BR-12 (Lab 3 supersedes Lab 2's 403 - see PR for Issue #36): a Ticket that
+  // exists but belongs to someone else is now indistinguishable from a nonexistent one.
+  it('rejects another Requester’s Ticket with 404, indistinguishable from a nonexistent one (BR-12)', async () => {
+    const response = await getAs(requesterBCookie, ticketId);
 
-    expect(response.status).toBe(403);
-    expect(response.body.error.code).toBe('FORBIDDEN');
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe('NOT_FOUND');
     expect(response.body).not.toHaveProperty('summary');
     expect(response.body).not.toHaveProperty('data');
   });
 
   // API-10 - BR-22: a nonexistent id
   it('returns 404 for a nonexistent Ticket id', async () => {
-    const response = await getAs(requesterAId, 999999999);
+    const response = await getAs(requesterACookie, 999999999);
 
     expect(response.status).toBe(404);
     expect(response.body.error.code).toBe('NOT_FOUND');
   });
 
-  it('rejects a missing or non-numeric X-Requester-Id with 400', async () => {
-    const missing = await request(app).get(`/api/tickets/${ticketId}`);
-    const malformed = await getAs('not-a-number', ticketId);
+  it('rejects the request with 401 when there is no session', async () => {
+    const response = await request(app).get(`/api/tickets/${ticketId}`);
 
-    expect(missing.status).toBe(400);
-    expect(missing.body.error.code).toBe('VALIDATION_ERROR');
-    expect(malformed.status).toBe(400);
-  });
-
-  it('rejects an unknown or inactive Requester with 404 REQUESTER_NOT_FOUND', async () => {
-    const response = await getAs(999999, ticketId);
-
-    expect(response.status).toBe(404);
-    expect(response.body.error.code).toBe('REQUESTER_NOT_FOUND');
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe('UNAUTHENTICATED');
   });
 
   it('returns 404 for a non-numeric Ticket id rather than throwing', async () => {
-    const response = await getAs(requesterAId, 'not-a-number');
+    const response = await getAs(requesterACookie, 'not-a-number');
 
     expect(response.status).toBe(404);
     expect(response.body.error.code).toBe('NOT_FOUND');

@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { getSessionUser, COOKIE_OPTIONS } from './auth/session';
 import type { User } from './generated/prisma/models/User';
+import type { Role } from './generated/prisma/enums';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -40,4 +41,15 @@ export function requirePasswordChanged(req: Request, res: Response, next: NextFu
     });
   }
   next();
+}
+
+// api-spec.md 7: a valid session whose role isn't permitted for this endpoint at all -> 403,
+// nothing about a specific record revealed. Must run after requireAuth.
+export function requireRole(...roles: Role[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Not permitted for this role' } });
+    }
+    next();
+  };
 }

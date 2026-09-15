@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
-import { useRequester } from '../context/RequesterContext';
+import { useAuth } from '../context/AuthContext';
 
 interface ReferenceItem {
   id: number;
@@ -86,7 +86,7 @@ function fileTypeLabel(file: File): string {
 }
 
 export function CreateTicket() {
-  const { requester } = useRequester();
+  const { user } = useAuth();
 
   const [categories, setCategories] = useState<ReferenceItem[]>([]);
   const [relatedSystems, setRelatedSystems] = useState<ReferenceItem[]>([]);
@@ -202,7 +202,7 @@ export function CreateTicket() {
 
       const response = await fetch(`/api/tickets/${ticketId}/attachments`, {
         method: 'POST',
-        headers: { 'X-Requester-Id': String(requester!.id) },
+        credentials: 'include',
         body,
         signal: AbortSignal.timeout(20000),
       });
@@ -256,7 +256,7 @@ export function CreateTicket() {
     if (Object.keys(errors).length > 0) {
       return;
     }
-    if (!requester || submitting) {
+    if (submitting) {
       return;
     }
 
@@ -264,9 +264,9 @@ export function CreateTicket() {
     try {
       const response = await fetch('/api/tickets', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requesterId: requester.id,
           categoryId: Number(values.categoryId),
           relatedSystemId: Number(values.relatedSystemId),
           summary: values.summary.trim(),
@@ -402,7 +402,7 @@ export function CreateTicket() {
         <div className="row mb-3">
           <div className="col-12 col-md-4">
             <label htmlFor="requester" className="form-label">Requester</label>
-            <input id="requester" type="text" className="form-control tt-field-readonly" value={requester?.name ?? ''} readOnly />
+            <input id="requester" type="text" className="form-control tt-field-readonly" value={user?.name ?? ''} readOnly />
           </div>
           <div className="col-12 col-md-4">
             <label htmlFor="ticketNumber" className="form-label">Ticket Number</label>

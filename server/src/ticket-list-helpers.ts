@@ -13,11 +13,30 @@ export const TICKET_LIST_SORTS = [
 export type TicketListSort = (typeof TICKET_LIST_SORTS)[number];
 export type TicketListOrder = 'asc' | 'desc';
 
-export type CurrentStatusValue = 'NEW';
+// #34's migration extended CurrentStatus to all 8 values (labsheet 4.5); #36 catches this filter
+// up so filtering by any status other than NEW doesn't silently match nothing.
+export type CurrentStatusValue =
+  | 'NEW'
+  | 'OPEN'
+  | 'IN_PROGRESS'
+  | 'WAITING_FOR_REQUESTER'
+  | 'RESOLVED'
+  | 'CLOSED'
+  | 'REOPENED'
+  | 'CANCELLED';
 export type RequestedPriorityValue = 'LOW' | 'MEDIUM' | 'HIGH';
 
 const PERMITTED_PAGE_SIZES = [5, 10, 20];
-const CURRENT_STATUSES: CurrentStatusValue[] = ['NEW'];
+const CURRENT_STATUSES: CurrentStatusValue[] = [
+  'NEW',
+  'OPEN',
+  'IN_PROGRESS',
+  'WAITING_FOR_REQUESTER',
+  'RESOLVED',
+  'CLOSED',
+  'REOPENED',
+  'CANCELLED',
+];
 const REQUESTED_PRIORITIES: RequestedPriorityValue[] = ['LOW', 'MEDIUM', 'HIGH'];
 
 export const TICKET_LIST_DEFAULTS = {

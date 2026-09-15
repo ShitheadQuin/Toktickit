@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useRequester } from '../context/RequesterContext';
+import { useAuth } from '../context/AuthContext';
 import { AttachmentSection, type Attachment } from '../components/AttachmentSection';
+import { STATUS_BADGE_CLASS } from '../components/badge-classes';
 
 interface ReferenceItem {
   id: number;
   name: string;
 }
+
+type CurrentStatus =
+  | 'NEW'
+  | 'OPEN'
+  | 'IN_PROGRESS'
+  | 'WAITING_FOR_REQUESTER'
+  | 'RESOLVED'
+  | 'CLOSED'
+  | 'REOPENED'
+  | 'CANCELLED';
 
 interface TicketDetail {
   id: number;
@@ -16,15 +27,25 @@ interface TicketDetail {
   summary: string;
   description: string;
   requestedPriority: 'LOW' | 'MEDIUM' | 'HIGH';
-  currentStatus: 'NEW';
+  currentStatus: CurrentStatus;
   category: ReferenceItem;
   relatedSystem: ReferenceItem;
   attachments: Attachment[];
 }
 
-// ui-spec.md 12: every badge shows its word, so state is never carried by color alone.
+// ui-spec.md 12: every badge shows its word, so state is never carried by color alone. See
+// MyTickets.tsx for why the full 8-value set is here, not just NEW.
 const PRIORITY_LABEL: Record<string, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' };
-const STATUS_LABEL: Record<string, string> = { NEW: 'New' };
+const STATUS_LABEL: Record<string, string> = {
+  NEW: 'New',
+  OPEN: 'Open',
+  IN_PROGRESS: 'In Progress',
+  WAITING_FOR_REQUESTER: 'Waiting for Requester',
+  RESOLVED: 'Resolved',
+  CLOSED: 'Closed',
+  REOPENED: 'Reopened',
+  CANCELLED: 'Cancelled',
+};
 
 function formatDate(iso: string): string {
   const date = new Date(iso);
@@ -32,37 +53,31 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-type Status = 'loading' | 'success' | 'not-found' | 'forbidden' | 'error';
+type Status = 'loading' | 'success' | 'not-found' | 'error';
 
 // ui-spec.md 14: Requester Ticket Detail, read-only. AC-21: full detail for an owned Ticket.
-// BR-22: ownership is enforced server-side (app.ts); this screen only renders whatever the
-// backend already decided the caller may see, and never partial data on a 403/404 (UI-13).
+// BR-12 (Lab 3): a Ticket that exists but belongs to someone else is 404, identical to one that
+// doesn't exist - so there is no separate "forbidden" state here anymore, only not-found.
 export function RequesterTicketDetail() {
   const { id } = useParams();
-  const { requester } = useRequester();
+  const { user } = useAuth();
 
   const [status, setStatus] = useState<Status>('loading');
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
-    if (!requester) return;
+    if (!user) return;
 
     let cancelled = false;
     setStatus('loading');
     setTicket(null);
 
-    fetch(`/api/tickets/${id}`, {
-      headers: { 'X-Requester-Id': String(requester.id) },
-    })
+    fetch(`/api/tickets/${id}`, { credentials: 'include' })
       .then(async (response) => {
         if (cancelled) return;
         if (response.status === 404) {
           setStatus('not-found');
-          return;
-        }
-        if (response.status === 403) {
-          setStatus('forbidden');
           return;
         }
         if (!response.ok) {
@@ -85,7 +100,7 @@ export function RequesterTicketDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, requester, retryToken]);
+  }, [id, user, retryToken]);
 
   return (
     <section className="tt-ticket-detail">
@@ -103,15 +118,6 @@ export function RequesterTicketDetail() {
       {status === 'not-found' && (
         <div className="alert tt-alert-error" role="alert">
           <p className="mb-2">This Ticket does not exist.</p>
-          <Link to="/my-tickets" className="btn btn-tt-secondary">
-            Back to My Tickets
-          </Link>
-        </div>
-      )}
-
-      {status === 'forbidden' && (
-        <div className="alert tt-alert-error" role="alert">
-          <p className="mb-2">You don't have access to this Ticket.</p>
           <Link to="/my-tickets" className="btn btn-tt-secondary">
             Back to My Tickets
           </Link>
@@ -161,7 +167,7 @@ export function RequesterTicketDetail() {
             </div>
             <div className="col-12 col-md-4">
               <span className="form-label d-block">Current Status</span>
-              <span className={`tt-badge tt-badge-status-${ticket.currentStatus.toLowerCase()}`}>
+              <span className={`tt-badge ${STATUS_BADGE_CLASS[ticket.currentStatus] ?? ''}`}>
                 {STATUS_LABEL[ticket.currentStatus] ?? ticket.currentStatus}
               </span>
             </div>

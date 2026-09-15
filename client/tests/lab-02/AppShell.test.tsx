@@ -1,69 +1,107 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
-import App from '../../src/App';
+import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
+import { AppShell } from '../../src/components/AppShell';
+import { renderWithAuth, withAuthMe } from '../support/auth-mock';
+import type { AuthUser } from '../../src/context/AuthContext';
 
-describe('AppShell', () => {
+const userFor = (role: AuthUser['role']): AuthUser => ({
+  id: 1,
+  name: 'Test User',
+  email: 'test@toktickit.dev',
+  role,
+  mustChangePassword: false,
+});
+
+function renderShell(user: AuthUser) {
+  vi.spyOn(global, 'fetch').mockImplementation(withAuthMe(user, () => Promise.reject(new Error('unexpected fetch'))));
+  return renderWithAuth(
+    <AppShell>
+      <p>content</p>
+    </AppShell>,
+  );
+}
+
+// UI-09 - ui-spec.md 3: a role never sees a link it can't reach, not just hidden by CSS.
+describe('AppShell role-based navigation (UI-09)', () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
-    sessionStorage.clear();
   });
 
-  it('shows the Requester Selection screen when no Requester is selected', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => [{ id: 1, name: 'Anong Srisai' }],
-    } as Response);
+  it('shows only My Tickets and Create Ticket for a Requester', async () => {
+    renderShell(userFor('REQUESTER'));
 
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
-    });
-    expect(screen.getByRole('heading', { name: 'TokTickIT' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('link', { name: /my tickets/i })).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /create ticket/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /my queue/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^users$/i })).not.toBeInTheDocument();
   });
 
-  it('shows the selected Requester name and a Change Requester action after Continue', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => [{ id: 1, name: 'Anong Srisai' }],
-    } as Response);
+  it('shows only My Queue for IT Staff, and never renders Create Ticket', async () => {
+    renderShell(userFor('IT_STAFF'));
 
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByRole('combobox')).toBeEnabled();
-    });
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
-    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Anong Srisai')).toBeInTheDocument();
-    });
-    expect(screen.getByRole('button', { name: /change requester/i })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('link', { name: /my queue/i })).toBeInTheDocument());
+    expect(screen.queryByRole('link', { name: /my tickets/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /create ticket/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^users$/i })).not.toBeInTheDocument();
   });
 
-  it('returns to the Requester Selection screen when Change Requester is used', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => [{ id: 1, name: 'Anong Srisai' }],
-    } as Response);
+  it('shows only Users for an Administrator', async () => {
+    renderShell(userFor('ADMINISTRATOR'));
 
-    render(<App />);
+    await waitFor(() => expect(screen.getByRole('link', { name: /^users$/i })).toBeInTheDocument());
+    expect(screen.queryByRole('link', { name: /my tickets/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /my queue/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the current user’s name and role badge, replacing the Lab 2 Requester display', async () => {
+    renderShell(userFor('IT_STAFF'));
+
+    await waitFor(() => expect(screen.getByText('Test User')).toBeInTheDocument());
+    expect(screen.getByText(/it staff/i)).toBeInTheDocument();
+  });
+
+  // PR #44 review: the badge used an undefined `.tt-badge-role` class, so it rendered unstyled.
+  it.each([
+    ['REQUESTER', 'Requester', 'tt-badge-role-requester'],
+    ['IT_STAFF', 'IT Staff', 'tt-badge-role-it-staff'],
+    ['ADMINISTRATOR', 'Administrator', 'tt-badge-role-administrator'],
+  ] as const)('gives the %s role badge its documented class (ui-spec.md 14)', async (role, label, cssClass) => {
+    renderShell(userFor(role));
+
+    await waitFor(() => expect(screen.getByText(label, { selector: '.tt-badge' })).toHaveClass(cssClass));
+  });
+
+  it('provides Change Password and Logout in the identity area', async () => {
+    renderShell(userFor('REQUESTER'));
+
+    await waitFor(() => expect(screen.getByRole('link', { name: /change password/i })).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
+  });
+
+  it('logs out and clears the session on Logout', async () => {
+    const user = userFor('REQUESTER');
+    const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(
+      withAuthMe(user, (input) => {
+        const url = String(input);
+        if (url.endsWith('/api/auth/logout')) {
+          return Promise.resolve({ ok: true, json: async () => ({ ok: true }) } as Response);
+        }
+        return Promise.reject(new Error(`unexpected fetch: ${url}`));
+      }),
+    );
+
+    renderWithAuth(
+      <AppShell>
+        <p>content</p>
+      </AppShell>,
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /logout/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('combobox')).toBeEnabled();
-    });
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
-    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /change requester/i })).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByRole('button', { name: /change requester/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(fetchSpy.mock.calls.some(([input]) => String(input).endsWith('/api/auth/logout'))).toBe(true);
     });
   });
 });

@@ -1,14 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { RequesterProvider } from '../../src/context/RequesterContext';
+import { screen, cleanup } from '@testing-library/react';
+import { Routes, Route } from 'react-router-dom';
 import { RequesterTicketDetail } from '../../src/pages/RequesterTicketDetail';
-
-const STORAGE_KEY = 'toktickit.selectedRequester';
-
-function selectStoredRequester(id = 1, name = 'Anong Srisai') {
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ id, name }));
-}
+import { renderWithAuth, withAuthMe, MOCK_REQUESTER } from '../support/auth-mock';
 
 const detail = (over: Record<string, unknown> = {}) => ({
   id: 42,
@@ -26,22 +20,21 @@ const detail = (over: Record<string, unknown> = {}) => ({
 });
 
 function mockFetch(status: number, body: unknown) {
-  return vi.spyOn(global, 'fetch').mockResolvedValue({
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => body,
-  } as Response);
+  return vi.spyOn(global, 'fetch').mockImplementation(
+    withAuthMe(MOCK_REQUESTER, async () => ({
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => body,
+    }) as Response),
+  );
 }
 
 function renderDetail(id = '42') {
-  return render(
-    <MemoryRouter initialEntries={[`/tickets/${id}`]}>
-      <RequesterProvider>
-        <Routes>
-          <Route path="/tickets/:id" element={<RequesterTicketDetail />} />
-        </Routes>
-      </RequesterProvider>
-    </MemoryRouter>,
+  return renderWithAuth(
+    <Routes>
+      <Route path="/tickets/:id" element={<RequesterTicketDetail />} />
+    </Routes>,
+    [`/tickets/${id}`],
   );
 }
 
@@ -49,12 +42,10 @@ describe('RequesterTicketDetail', () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
-    sessionStorage.clear();
   });
 
   it('shows a loading state while the request is in flight', () => {
-    selectStoredRequester();
-    vi.spyOn(global, 'fetch').mockImplementation(() => new Promise(() => {}));
+    vi.spyOn(global, 'fetch').mockImplementation(withAuthMe(MOCK_REQUESTER, () => new Promise(() => {})));
 
     renderDetail();
 
@@ -63,7 +54,6 @@ describe('RequesterTicketDetail', () => {
 
   // UI-12 - AC-21: all fields render read-only, no editable controls
   it('renders every Ticket field as read-only, with no editable control', async () => {
-    selectStoredRequester();
     mockFetch(200, detail());
 
     renderDetail();
@@ -84,20 +74,18 @@ describe('RequesterTicketDetail', () => {
     expect(document.querySelector('textarea:not([readonly])')).toBeNull();
   });
 
-  it('requests the Ticket with the current Requester header', async () => {
-    selectStoredRequester(7, 'Suphachai Wattana');
+  it('requests the Ticket via the session cookie, not a header', async () => {
     const spy = mockFetch(200, detail());
 
     renderDetail('42');
     await screen.findByDisplayValue('TKT-2026-000042');
 
-    const [url, init] = spy.mock.calls[0];
-    expect(String(url)).toBe('/api/tickets/42');
-    expect((init as RequestInit).headers).toMatchObject({ 'X-Requester-Id': '7' });
+    const call = spy.mock.calls.find(([input]) => String(input).includes('/api/tickets/42'));
+    expect(call?.[0]).toBe('/api/tickets/42');
+    expect((call?.[1] as RequestInit).credentials).toBe('include');
   });
 
   it('provides navigation back to My Tickets', async () => {
-    selectStoredRequester();
     mockFetch(200, detail());
 
     renderDetail();
@@ -108,9 +96,10 @@ describe('RequesterTicketDetail', () => {
     );
   });
 
-  // UI-13 - BR-22: a 403/404 response shows a safe message, no partial Ticket data
-  it('shows a safe not-found message and no Ticket data on 404', async () => {
-    selectStoredRequester();
+  // UI-13 - BR-12 (Lab 3 supersedes Lab 2's 403 - see PR for Issue #36): a Ticket that doesn't
+  // exist, and one that exists but belongs to someone else, are now the same 404 response and
+  // the same safe message - there is no separate "forbidden" state anymore.
+  it('shows a safe not-found message and no Ticket data on 404, whether missing or not owned', async () => {
     mockFetch(404, { error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
 
     renderDetail();
@@ -120,20 +109,10 @@ describe('RequesterTicketDetail', () => {
     expect(screen.getByRole('link', { name: /back to my tickets/i })).toBeInTheDocument();
   });
 
-  it('shows a safe forbidden message and no Ticket data on 403, never the raw response', async () => {
-    selectStoredRequester();
-    mockFetch(403, { error: { code: 'FORBIDDEN', message: 'This Ticket does not belong to you' } });
-
-    renderDetail();
-
-    expect(await screen.findByText(/don't have access/i)).toBeInTheDocument();
-    expect(screen.queryByText(/FORBIDDEN/)).not.toBeInTheDocument();
-    expect(screen.queryByDisplayValue(/TKT-/)).not.toBeInTheDocument();
-  });
-
   it('shows a safe error with retry when the request fails outright', async () => {
-    selectStoredRequester();
-    vi.spyOn(global, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+    vi.spyOn(global, 'fetch').mockImplementation(
+      withAuthMe(MOCK_REQUESTER, () => Promise.reject(new TypeError('Failed to fetch'))),
+    );
 
     renderDetail();
 
