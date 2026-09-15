@@ -151,6 +151,8 @@ anticipated states, not an unexpected error.
 | Role — Requester | `#EDF2EF` | `#1B2B22` | word always shown |
 | Role — IT Staff | `#EAF6EF` | `#0B7A46` | word always shown |
 | Role — Administrator | `#FFF4DE` | `#92600D` | word always shown |
+| User status — Active | `#EAF6EF` | `#0B7A46` | word always shown |
+| User status — Inactive | `#EDF2EF` | `#1B2B22` | word always shown |
 
 ## 10. Screen modes and feedback (labsheet §8.6)
 
@@ -204,6 +206,7 @@ Extends `docs/lab-02/ui-spec.md` §18 rather than replacing it — all Lab 2 cla
 |---|---|---|
 | Status badge | `.tt-badge-status-new` / `-open` / `-in-progress` / `-waiting` / `-resolved` / `-closed` / `-reopened` / `-cancelled` | colors per §9 |
 | Role badge | `.tt-badge-role-requester` / `-it-staff` / `-administrator` | colors per §9 |
+| User status badge | `.tt-badge-user-active` / `-inactive` | colors per §9 |
 | Internal Note card | `.tt-note-internal` | amber background + lock icon, distinct from `.tt-comment-public` |
 | Public Comment card | `.tt-comment-public` | pale-green left border |
 | Owner-required control, viewer not owner | `.tt-disabled-not-owner` | grayed + tooltip, still rendered (not `display:none`) |

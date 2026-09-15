@@ -150,8 +150,8 @@ Lab 2 didn't need that distinction because it had no real identity to protect; L
 - BR-17: Public Comments and Internal Notes are append-only — no edit or delete endpoint exists in
   Lab 3.
 - BR-18: Cancelling a Ticket and Reopening a Ticket each require explicit UI confirmation.
-- BR-19: Email address is unique across all users (case-insensitive); a duplicate is rejected as a
-  validation error.
+- BR-19: Email address is unique across all users (case-insensitive); a duplicate is rejected with
+  `409 CONFLICT` (`EMAIL_ALREADY_EXISTS`).
 - BR-20: Every Administrator endpoint returns `403 FORBIDDEN` to a non-Administrator without
   revealing user data.
 - BR-21: An Administrator may assign only one of Requester, IT Staff, or Administrator; no other
