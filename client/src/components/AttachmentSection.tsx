@@ -1,5 +1,4 @@
 import { useState, type ChangeEvent } from 'react';
-import { useRequester } from '../context/RequesterContext';
 
 export interface Attachment {
   id: number;
@@ -53,8 +52,6 @@ export function AttachmentSection({
   onAttachmentAdded,
   onAttachmentRemoved,
 }: AttachmentSectionProps) {
-  const { requester } = useRequester();
-
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [removeReason, setRemoveReason] = useState('');
@@ -74,7 +71,7 @@ export function AttachmentSection({
 
       const response = await fetch(`/api/tickets/${ticketId}/attachments`, {
         method: 'POST',
-        headers: { 'X-Requester-Id': String(requester!.id) },
+        credentials: 'include',
         body,
         signal: AbortSignal.timeout(20000),
       });
@@ -168,7 +165,8 @@ export function AttachmentSection({
     try {
       const response = await fetch(`/api/attachments/${attachmentId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'X-Requester-Id': String(requester!.id) },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: removeReason.trim() }),
         signal: AbortSignal.timeout(10000),
       });
@@ -210,7 +208,7 @@ export function AttachmentSection({
                     <span>{attachment.originalFilename}</span>
                     <span className="text-muted">({formatBytes(attachment.sizeBytes)})</span>
                     <a
-                      href={`/api/attachments/${attachment.id}/download?requesterId=${requester?.id}`}
+                      href={`/api/attachments/${attachment.id}/download`}
                       className="btn btn-tt-tertiary btn-sm"
                     >
                       Download

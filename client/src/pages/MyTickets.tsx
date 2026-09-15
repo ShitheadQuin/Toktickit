@@ -1,11 +1,21 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { useRequester } from '../context/RequesterContext';
+import { useAuth } from '../context/AuthContext';
 
 interface ReferenceItem {
   id: number;
   name: string;
 }
+
+type CurrentStatus =
+  | 'NEW'
+  | 'OPEN'
+  | 'IN_PROGRESS'
+  | 'WAITING_FOR_REQUESTER'
+  | 'RESOLVED'
+  | 'CLOSED'
+  | 'REOPENED'
+  | 'CANCELLED';
 
 interface TicketListItem {
   id: number;
@@ -14,7 +24,7 @@ interface TicketListItem {
   ticketDate: string;
   updatedAt: string;
   requestedPriority: 'LOW' | 'MEDIUM' | 'HIGH';
-  currentStatus: 'NEW';
+  currentStatus: CurrentStatus;
   category: ReferenceItem;
 }
 
@@ -37,8 +47,19 @@ const SORT_OPTIONS = [
 ];
 
 // ui-spec.md 12: every badge shows its word, so state is never carried by color alone.
+// #34's migration extended CurrentStatus to all 8 values (labsheet 4.5) - #36 catches this
+// screen up so a seeded Ticket in any status renders a real label instead of the raw enum text.
 const PRIORITY_LABEL: Record<string, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' };
-const STATUS_LABEL: Record<string, string> = { NEW: 'New' };
+const STATUS_LABEL: Record<string, string> = {
+  NEW: 'New',
+  OPEN: 'Open',
+  IN_PROGRESS: 'In Progress',
+  WAITING_FOR_REQUESTER: 'Waiting for Requester',
+  RESOLVED: 'Resolved',
+  CLOSED: 'Closed',
+  REOPENED: 'Reopened',
+  CANCELLED: 'Cancelled',
+};
 
 const EMPTY_FILTERS = { category: '', relatedSystem: '', currentStatus: '', requestedPriority: '' };
 
@@ -65,7 +86,7 @@ function formatDateTime(iso: string): string {
 }
 
 export function MyTickets() {
-  const { requester } = useRequester();
+  const { user } = useAuth();
 
   // The text in the box, and the term actually applied. Kept apart so typing does not fire a
   // request per keystroke; the form submit promotes one to the other.
@@ -110,7 +131,7 @@ export function MyTickets() {
   }, []);
 
   useEffect(() => {
-    if (!requester) return;
+    if (!user) return;
 
     const seq = ++requestSeq.current;
     setLoading(true);
@@ -123,11 +144,9 @@ export function MyTickets() {
     if (filters.currentStatus) params.set('currentStatus', filters.currentStatus);
     if (filters.requestedPriority) params.set('requestedPriority', filters.requestedPriority);
 
-    fetch(`/api/tickets?${params.toString()}`, {
-      // api-spec.md 1: the current Requester travels in the header, and the backend - not this
-      // component - decides what belongs to them (BR-08).
-      headers: { 'X-Requester-Id': String(requester.id) },
-    })
+    // api-spec.md 1: identity comes from the sid session cookie, sent automatically; the
+    // backend - not this component - decides what belongs to the caller (BR-08).
+    fetch(`/api/tickets?${params.toString()}`, { credentials: 'include' })
       .then(async (response) => {
         const body = await response.json().catch(() => null);
         if (!response.ok || !body || !Array.isArray(body.data)) {
@@ -148,7 +167,7 @@ export function MyTickets() {
         setResult(null);
         setLoading(false);
       });
-  }, [requester, search, filters, sort, order, page, retryToken]);
+  }, [user, search, filters, sort, order, page, retryToken]);
 
   const hasActiveQuery =
     search !== '' || Object.values(filters).some((value) => value !== '');
@@ -285,7 +304,11 @@ export function MyTickets() {
                     onChange={handleFilterChange('currentStatus')}
                   >
                     <option value="">All statuses</option>
-                    <option value="NEW">New</option>
+                    {Object.entries(STATUS_LABEL).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -441,7 +464,7 @@ export function MyTickets() {
                   >
                     Previous
                   </button>
-                  {Array.from({ length: totalPages }, (unused, index) => index + 1).map((pageNumber) => (
+                  {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
                     <button
                       key={pageNumber}
                       type="button"
