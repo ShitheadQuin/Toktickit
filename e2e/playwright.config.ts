@@ -4,7 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
 // Starts both dev servers so tests hit the real app through the Vite proxy, exactly like a
 // Requester would - no mocked fetches here, unlike the Vitest UI suites in client/tests.
 export default defineConfig({
-  testDir: './lab-02',
+  testDir: '.',
   fullyParallel: false,
   // One worker, not just one test at a time within a file. Separate describes are handed to
   // separate workers otherwise, so requester-ticket-flow can be creating its fixture Tickets
