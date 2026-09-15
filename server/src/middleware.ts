@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { getSessionUser } from './auth/session';
+import { getSessionUser, COOKIE_OPTIONS } from './auth/session';
 import type { User } from './generated/prisma/models/User';
 
 declare global {
@@ -16,13 +16,18 @@ declare global {
 // routes themselves (see docs/lab-03/specification.md's decision to keep Issues #35/#36 separate).
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = req.cookies?.sid;
-  const user = typeof token === 'string' ? await getSessionUser(token) : null;
+  const session = typeof token === 'string' ? await getSessionUser(token) : null;
 
-  if (!user || !user.isActive) {
+  if (!session || !session.user.isActive) {
     return res.status(401).json({ error: { code: 'UNAUTHENTICATED', message: 'Not logged in' } });
   }
 
-  req.user = user;
+  // PR #43 review: getSessionUser already extended the DB row's expiry (sliding session); the
+  // cookie's own Expires must be refreshed too, or the browser drops it at the original 12h mark
+  // regardless of how active the user has been.
+  res.cookie('sid', token as string, { ...COOKIE_OPTIONS, expires: session.expiresAt });
+
+  req.user = session.user;
   next();
 }
 

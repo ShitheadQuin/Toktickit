@@ -52,6 +52,14 @@ describe('requirePasswordChanged gate (API-08, AC-02, BR-02)', () => {
     expect(response.status).toBe(200);
   });
 
+  // PR #43 review: the DB-side sliding expiry is worthless if the browser's own copy of the
+  // cookie still expires at the original login time - requireAuth must refresh it every request.
+  it('refreshes the sid cookie expiry on every authenticated request', async () => {
+    const response = await request(testApp).get('/protected').set('Cookie', normalCookie);
+    expect(response.status).toBe(200);
+    expect(response.headers['set-cookie']?.[0]).toMatch(/^sid=/);
+  });
+
   it('requireAuth alone rejects a missing or invalid session with 401', async () => {
     const missing = await request(testApp).get('/protected');
     expect(missing.status).toBe(401);

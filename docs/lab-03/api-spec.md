@@ -88,7 +88,7 @@ in Section 4 instead).
   Attachment that exists but belongs to a different Requester is indistinguishable from one that
   doesn't exist at all. This is the one behavior change to `server/tests/lab-02/ticket-detail.api.
   test.ts`, `attachments.api.test.ts`, and `client/tests/lab-02/RequesterTicketDetail.test.tsx` —
-  they currently assert `403` and must be updated on purpose (see PR for Issue #35).
+  they currently assert `403` and must be updated on purpose (see PR for Issue #36).
 - `GET /api/tickets/:id` response gains `requesterConfirmedAt` (null until the Requester marks
   "problem appears resolved").
 - New: `POST /api/tickets/:id/resolution-signal` — Requester only, must own the Ticket (else

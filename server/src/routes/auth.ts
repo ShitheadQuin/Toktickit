@@ -2,29 +2,27 @@ import { Router } from 'express';
 import { prisma } from '../prisma';
 import { requireAuth } from '../middleware';
 import { comparePassword, hashPassword, DUMMY_PASSWORD_HASH } from '../auth/password-hash';
-import { createSession, deleteSession } from '../auth/session';
+import { createSession, deleteSession, COOKIE_OPTIONS } from '../auth/session';
 import { isThrottled, recordFailedAttempt, resetAttempts } from '../auth/login-throttle';
 import { validatePassword } from '../auth/password-rules';
 
 const router = Router();
-
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  sameSite: 'lax' as const,
-  secure: process.env.NODE_ENV === 'production',
-};
 
 function userShape(user: { id: number; name: string; email: string; role: string; mustChangePassword: boolean }) {
   return { id: user.id, name: user.name, email: user.email, role: user.role, mustChangePassword: user.mustChangePassword };
 }
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body ?? {};
-  if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
+  const { email: rawEmail, password } = req.body ?? {};
+  if (typeof rawEmail !== 'string' || typeof password !== 'string' || !rawEmail || !password) {
     return res.status(400).json({
       error: { code: 'VALIDATION_ERROR', message: 'email and password are required' },
     });
   }
+
+  // PR #43 review, BR-19: email is unique case-insensitively, so login and throttling must
+  // compare on the same normalized form or a user typing a different case gets a false rejection.
+  const email = rawEmail.trim().toLowerCase();
 
   if (isThrottled(email)) {
     return res.status(429).json({

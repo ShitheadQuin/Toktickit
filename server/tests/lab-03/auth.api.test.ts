@@ -57,6 +57,16 @@ describe('auth API (API-01 to API-08)', () => {
     expect(response.headers['set-cookie']?.[0]).toMatch(/^sid=/);
   });
 
+  // PR #43 review, BR-19: email is unique case-insensitively; login must match regardless of case.
+  it('logs in successfully when the submitted email differs only in case', async () => {
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ email: activeEmail.toUpperCase(), password: PASSWORD });
+
+    expect(response.status).toBe(200);
+    expect(response.body.email).toBe(activeEmail);
+  });
+
   // API-02, BR-06
   it('returns the identical generic message for an unknown email and a wrong password', async () => {
     const unknown = await request(app).post('/api/auth/login').send({ email: 'nobody@toktickit.dev', password: PASSWORD });
