@@ -140,7 +140,7 @@ Response `200`:
   ],
   "page": 1,
   "pageSize": 20,
-  "totalItems": 87,
+  "totalCount": 87,
   "totalPages": 5
 }
 ```

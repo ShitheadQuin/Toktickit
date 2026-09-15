@@ -72,12 +72,12 @@ Lab 2 didn't need that distinction because it had no real identity to protect; L
   pagination.
 - FR-11: The system shall let IT Staff open Ticket Detail for any Ticket.
 - FR-12: The system shall let IT Staff claim an unassigned Ticket or reassign a Ticket's owner to
-  another active IT Staff/Administrator.
-- FR-13: The system shall let IT Staff/Administrator set IT Priority independent of Requested
+  another active IT Staff member.
+- FR-13: The system shall let IT Staff set IT Priority independent of Requested
   Priority.
 - FR-14: The system shall let the Ticket's current Owner perform the status transitions permitted
   by the matrix in Section 5.
-- FR-15: The system shall let IT Staff/Administrator post Public Comments and Internal Notes.
+- FR-15: The system shall let IT Staff post Public Comments and Internal Notes.
 - FR-16: The system shall keep Internal Notes invisible to Requesters at both API and UI layers,
   including anywhere Ticket Detail embeds them inline.
 
@@ -207,7 +207,7 @@ Summary of new/changed endpoints:
 - `POST /staff/tickets/:id/claim`, `POST /staff/tickets/:id/reassign`
 - `PATCH /staff/tickets/:id/priority`, `PATCH /staff/tickets/:id/status`
 - `POST /tickets/:id/comments`, `GET /tickets/:id/comments`
-- `POST /tickets/:id/notes`, `GET /tickets/:id/notes` (IT Staff/Administrator only)
+- `POST /tickets/:id/notes` (IT Staff only), `GET /tickets/:id/notes` (IT Staff/Administrator only)
 - `POST /tickets/:id/resolution-signal` (Requester "problem appears resolved")
 - `GET /users`, `POST /users`, `PATCH /users/:id`, `POST /users/:id/reset-password`
 
@@ -324,7 +324,7 @@ a wildcard) for the credentialed client — no separate CSRF token is issued in 
   | New / Open | Cancelled | IT Staff | no | yes |
 
   Claiming and reassignment (changing the Owner) are ownership changes, not status transitions,
-  and are available to any active IT Staff/Administrator at any status (BR-13).
+  and are available to any active IT Staff member at any status (BR-13).
 - **"Problem Appears Resolved"** sets `requesterConfirmedAt` on the Ticket; it never touches
   `currentStatus` (BR-05). Only IT Staff can move a Ticket to Resolved.
 - **Queue query contract:** searchable — ticket number, summary/description text, requester name/
@@ -341,7 +341,8 @@ a wildcard) for the credentialed client — no separate CSRF token is issued in 
   default. The `ticketOwnerId` foreign key is still typed to accept either an `IT_STAFF` or
   `ADMINISTRATOR` user (per labsheet §4.5, which allows either), but no Lab 3 UI or API path lets
   an Administrator claim, reassign, or change a Ticket's status — only the schema stays open for a
-  later lab.
+  later lab. Labsheet §4.5 permits Administrator ownership and IT Priority changes; this
+  authorization matrix, as §4.3 allows, restricts both to IT Staff.
 - **Migration of existing Requesters:** every Lab 2 Requester becomes a `User` with role
   `REQUESTER`, `mustChangePassword: true`, and a shared local-dev initial password documented in
   the seed script and `ai-use.md` — never a real credential, never committed as a secret beyond
