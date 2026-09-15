@@ -137,8 +137,10 @@ Lab 2 didn't need that distinction because it had no real identity to protect; L
   `/users` or an Internal Note endpoint).
 - BR-13: Any active IT Staff member may claim an unassigned Ticket or reassign a Ticket's owner
   to another active IT Staff member, regardless of current status.
-- BR-14: Status transitions beyond claiming may only be performed by the Ticket's current Owner;
-  an unowned Ticket must be claimed first.
+- BR-14: Status transitions may only be performed by the Ticket's current Owner, except the two the
+  §11 matrix marks as not requiring ownership — Cancelling a New or Open Ticket, and Reopening a
+  Resolved or Closed Ticket — which any active IT Staff member may perform. An unowned Ticket must
+  be claimed or reassigned before any other transition.
 - BR-15: IT Priority may be set only by an active IT Staff member; Requested Priority is fixed at
   creation. (Administrator has read-only access to Tickets per BR-04 but performs no ticket
   actions — see Section 11.)
@@ -315,18 +317,31 @@ a wildcard) for the credentialed client — no separate CSRF token is issued in 
   | From | To | Who | Requires ownership | UI confirms |
   |---|---|---|---|---|
   | New | Open | IT Staff (claim) | no | no |
+  | New | Open | IT Staff (owner, after a reassign) | yes | no |
   | Open | In Progress | IT Staff | yes | no |
   | In Progress | Waiting for Requester | IT Staff | yes | no |
   | Waiting for Requester | In Progress | IT Staff | yes | no |
   | In Progress / Waiting for Requester | Resolved | IT Staff | yes | no |
   | Resolved | Closed | IT Staff | yes | no |
   | Resolved / Closed | Reopened | IT Staff | no | yes |
+  | Reopened | In Progress | IT Staff | yes | no |
   | New / Open | Cancelled | IT Staff | no | yes |
 
   Claiming and reassignment (changing the Owner) are ownership changes, not status transitions,
-  and are available to any active IT Staff member at any status (BR-13).
+  and are available to any active IT Staff member at any status (BR-13). Two rows were added in
+  Issue #38 after checking the matrix against seeded data: without **Reopened → In Progress** a
+  reopened Ticket had no way forward, and without the owner's **New → Open** a New Ticket that was
+  reassigned before anyone claimed it could never be opened (claim only accepts unassigned Tickets).
 - **"Problem Appears Resolved"** sets `requesterConfirmedAt` on the Ticket; it never touches
-  `currentStatus` (BR-05). Only IT Staff can move a Ticket to Resolved.
+  `currentStatus` (BR-05). Only IT Staff can move a Ticket to Resolved. It is refused on a Closed
+  or Cancelled Ticket, and a repeat keeps the first time, since the signal records when the
+  Requester first saw the problem as fixed.
+- **Posting an Internal Note does not change the Ticket's `updatedAt`**; a Public Comment and every
+  IT Staff Ticket action do. Otherwise a Requester's "Last Updated" would move with no visible
+  reason and reveal that private activity happened (BR-26).
+- **Claim is atomic:** the owner and status are written only if the Ticket is still unassigned and
+  New at that moment, so two IT Staff claiming at the same instant get one success and one
+  `409 ALREADY_ASSIGNED`, never two owners in turn.
 - **Queue query contract:** searchable — ticket number, summary/description text, requester name/
   email. Filterable — status, IT Priority, and owner (a specific IT Staff member, or unassigned); a
   requester is found through search, not a separate filter. Sortable — createdAt, IT

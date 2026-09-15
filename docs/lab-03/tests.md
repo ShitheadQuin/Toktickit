@@ -58,6 +58,11 @@ evidence submitted for Part 3.
 | API-36 | API | AC-21 | `PATCH /api/users/:id` deactivating, or changing the role of, the last active Administrator | `409 CONFLICT`, code `LAST_ACTIVE_ADMIN_BLOCKED` | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
 | API-37 | Security | AC-28, BR-22 | `PATCH /api/users/:id` body includes `passwordHash` and `mustChangePassword` alongside valid fields | Only name/email/role/isActive applied; extra fields silently ignored | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
 | API-38 | Security | AC-22 | `GET`/`POST`/`PATCH /api/users*` called by a Requester and by IT Staff | `403 FORBIDDEN` for both, no user data returned | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
+| API-39 | API | BR-13 | `GET /api/staff/assignable-users` as IT Staff, then as a Requester and an Administrator | Active IT Staff only, as `{id, name}`, inactive IT Staff excluded; `403 FORBIDDEN` for the other two roles | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| API-40 | API | `api-spec.md` §4 | `GET /api/staff/attachments/:id/download` as IT Staff for an active and a soft-removed Attachment, then as a Requester | Active file served; removed `404 NOT_FOUND`; Requester `403 FORBIDDEN` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| API-41 | Security | AC-27, BR-26 | Post an Internal Note, then a Public Comment, reading the Ticket's `updatedAt` as the Requester after each | Unchanged after the Internal Note; later after the Public Comment | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
+| API-42 | API | AC-17, BR-05 | `POST /api/tickets/:id/resolution-signal` twice on an open Ticket, then on a Closed and a Cancelled one | Second call keeps the first `requesterConfirmedAt`; Closed and Cancelled `409 CONFLICT`, code `TICKET_CLOSED` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| API-43 | API | AC-11, BR-13 | Two IT Staff members claim the same unassigned `NEW` Ticket at the same time | Exactly one `200` and one `409 ALREADY_ASSIGNED`; the owner is the one that succeeded | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
 | MIG-01 | Migration | AC-23, BR-24 | Run the Lab 2→3 migration against a copy of seeded Lab 2 data | Every Ticket/Attachment still references its correct original User; row counts match pre-migration | `server/tests/lab-03/migration.regression.test.ts` | Pass |
 | MIG-02 | Migration | `specification.md` §11 | Migrated (pre-Lab-3) Requesters after the migration runs on a copy of Lab 2 data | Each keeps email and active state, has role `REQUESTER` and `mustChangePassword: true`, and its non-null `passwordHash` verifies against the documented initial password (logging in with it is API-level, Issue #35) | `server/tests/lab-03/migration.regression.test.ts` | Pass |
 | MIG-03 | Migration | labsheet §5.3 | Run the seed script twice in a row | Second run makes no duplicate rows; identical row counts after each run | `server/tests/lab-03/migration.regression.test.ts` | Pass |
@@ -104,13 +109,13 @@ home to be tested at all — the same reasoning `docs/lab-02/tests.md` used for 
 | AC-08 | API-06 |
 | AC-09 | API-09 |
 | AC-10 | API-16, UI-03 |
-| AC-11 | API-19, E2E-02 |
+| AC-11 | API-19, API-43, E2E-02 |
 | AC-12 | API-22, UI-04 |
 | AC-13 | API-23, E2E-02 |
 | AC-14 | API-24 |
 | AC-15 | API-27, E2E-02 |
 | AC-16 | API-28, E2E-02 |
-| AC-17 | API-26, UI-08 |
+| AC-17 | API-26, API-42, UI-08 |
 | AC-18 | API-32, UI-06, E2E-03 |
 | AC-19 | API-33, API-34, UI-07, E2E-03 |
 | AC-20 | API-35, UI-06, E2E-03 |
@@ -120,7 +125,7 @@ home to be tested at all — the same reasoning `docs/lab-02/tests.md` used for 
 | AC-24 | RESP-01 |
 | AC-25 | API-04, UNIT-04 |
 | AC-26 | API-30, UI-05 |
-| AC-27 | API-31 |
+| AC-27 | API-31, API-41 |
 | AC-28 | API-37 |
 
 Every AC in `specification.md` §9 maps to at least one test above.
@@ -147,8 +152,5 @@ Issue merges, not written once at the end.
 
 - Actions Taken, SLA/escalation, dashboards, and email delivery are out of scope per
   `specification.md` §3 and have no tests here.
-- Concurrent claim attempts on the same Ticket by two IT Staff members at the exact same instant
-  (a race rather than a sequential API-20 conflict) are not explicitly tested in Lab 3. This is a
-  known limitation, not a hidden requirement — flagged here rather than left undocumented.
 - Login-throttle state (BR-08) is assumed in-memory/per-process for Lab 3's single-server local
   setup; multi-instance throttle sharing is out of scope.
