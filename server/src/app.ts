@@ -54,8 +54,8 @@ app.get('/api/categories', async (req, res) => {
 
 app.get('/api/requesters', async (req, res) => {
     try {
-        const requesters = await prisma.requester.findMany({
-            where: { isActive: true },
+        const requesters = await prisma.user.findMany({
+            where: { isActive: true, role: 'REQUESTER' },
             orderBy: { id: 'asc' },
             select: { id: true, name: true },
         });
@@ -94,7 +94,7 @@ app.post('/api/tickets', async (req, res) => {
         });
     }
 
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
+    const requester = await prisma.user.findFirst({ where: { id: requesterId, role: 'REQUESTER' } });
     if (!requester || !requester.isActive) {
         return res.status(404).json({
             error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
@@ -146,6 +146,8 @@ app.post('/api/tickets', async (req, res) => {
         summary: text.summary,
         description: text.description,
         requestedPriority,
+        // labsheet §4.5: IT Priority starts as a copy of Requested Priority
+        itPriority: requestedPriority,
       },
       select: {
         id: true,
@@ -179,7 +181,7 @@ app.get('/api/tickets', async (req, res) => {
     }
 
     // BR-06/BR-20: an unknown or inactive Requester is unreachable, and its Tickets with it.
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
+    const requester = await prisma.user.findFirst({ where: { id: requesterId, role: 'REQUESTER' } });
     if (!requester || !requester.isActive) {
       return res.status(404).json({
         error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
@@ -276,7 +278,7 @@ app.get('/api/tickets/:id', async (req, res) => {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
     }
 
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
+    const requester = await prisma.user.findFirst({ where: { id: requesterId, role: 'REQUESTER' } });
     if (!requester || !requester.isActive) {
       return res.status(404).json({
         error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
@@ -338,7 +340,7 @@ app.post('/api/tickets/:id/attachments', upload.single('file'), async (req, res)
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
     }
 
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
+    const requester = await prisma.user.findFirst({ where: { id: requesterId, role: 'REQUESTER' } });
     if (!requester || !requester.isActive) {
       return res.status(404).json({
         error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
@@ -431,7 +433,7 @@ app.get('/api/attachments/:id', async (req, res) => {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
     }
 
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
+    const requester = await prisma.user.findFirst({ where: { id: requesterId, role: 'REQUESTER' } });
     if (!requester || !requester.isActive) {
       return res.status(404).json({
         error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
@@ -476,7 +478,7 @@ app.get('/api/attachments/:id/download', async (req, res) => {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
     }
 
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
+    const requester = await prisma.user.findFirst({ where: { id: requesterId, role: 'REQUESTER' } });
     if (!requester || !requester.isActive) {
       return res.status(404).json({
         error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
@@ -526,7 +528,7 @@ app.delete('/api/attachments/:id', async (req, res) => {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
     }
 
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
+    const requester = await prisma.user.findFirst({ where: { id: requesterId, role: 'REQUESTER' } });
     if (!requester || !requester.isActive) {
       return res.status(404).json({
         error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },

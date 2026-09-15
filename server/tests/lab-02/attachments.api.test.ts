@@ -28,8 +28,8 @@ describe('Attachment lifecycle', () => {
     request(app).post(`/api/tickets/${id}/attachments`).set('X-Requester-Id', String(requesterId));
 
   beforeAll(async () => {
-    const [requesterA, requesterB] = await prisma.requester.findMany({
-      where: { isActive: true },
+    const [requesterA, requesterB] = await prisma.user.findMany({
+      where: { isActive: true, role: 'REQUESTER' },
       orderBy: { id: 'asc' },
       take: 2,
     });
@@ -48,6 +48,7 @@ describe('Attachment lifecycle', () => {
         summary: `${MARK} Laptop battery drains quickly`,
         description: 'Fixture Ticket created by the Attachment lifecycle suite.',
         requestedPriority: 'MEDIUM',
+        itPriority: 'MEDIUM',
       },
     });
     ticketId = ticket.id;
@@ -61,6 +62,7 @@ describe('Attachment lifecycle', () => {
         summary: `${MARK} Requester B's own ticket`,
         description: 'Fixture Ticket created by the Attachment lifecycle suite.',
         requestedPriority: 'MEDIUM',
+        itPriority: 'MEDIUM',
       },
     });
     otherOwnerTicketId = otherTicket.id;
@@ -152,6 +154,7 @@ describe('Attachment lifecycle', () => {
         summary: `${MARK} Attachment limit fixture`,
         description: 'Fixture Ticket created by the Attachment lifecycle suite.',
         requestedPriority: 'MEDIUM',
+        itPriority: 'MEDIUM',
       },
     });
 

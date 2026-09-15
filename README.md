@@ -57,14 +57,29 @@ DATABASE_URL="postgresql://<username>:<password>@localhost:5432/toktickit?schema
 
 ```bash
 cd server
-npx prisma migrate dev
+npx prisma migrate deploy
+npx prisma generate
 npx prisma db seed
 ```
 
-Applies the Prisma migrations (Category, Requester, RelatedSystem, Ticket, Attachment tables) and
-seeds the reference data: the four required categories (Account and Access, Hardware, Software,
-Network), several Related Systems, and a mix of active/inactive Development Requesters. The seed
-uses `upsert`/idempotent inserts, so running it more than once is safe and won't create duplicates.
+Applies the Prisma migrations, including Lab 3's `lab3_user_model`, which turns the Lab 2
+`Requester` table into `User` in place so existing Tickets keep their owners. It then seeds the
+reference data, the local accounts, sample Tickets in every status, and example Public Comments
+and Internal Notes. The seed only creates what is missing and never overwrites an existing account
+or Ticket, so running it more than once is safe.
+
+### Local development accounts
+
+**Local development only.** Every seeded account, and every Requester migrated from Lab 2, starts
+with the password `TokTick2026` and must change it at first login. It is not a real credential.
+
+| Role | Email (all `@toktickit.dev`) | Active |
+|---|---|---|
+| Requester | `anong.srisai`, `kritsada.boonmee`, `suphachai.wattana`, `nalinee.chaiyaporn` | yes |
+| Requester | `ratchanee.somsak` | no |
+| IT Staff | `pimchanok.rattana`, `thanawat.kittisak`, `wiriya.charoen` | yes |
+| IT Staff | `somporn.inthara` | no |
+| Administrator | `duangjai.meesuk` | yes |
 
 ## 4. Run the backend
 

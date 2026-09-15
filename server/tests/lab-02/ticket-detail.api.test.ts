@@ -19,8 +19,8 @@ describe('GET /api/tickets/:id', () => {
     request(app).get(`/api/tickets/${id}`).set('X-Requester-Id', String(requesterId));
 
   beforeAll(async () => {
-    const [requesterA, requesterB] = await prisma.requester.findMany({
-      where: { isActive: true },
+    const [requesterA, requesterB] = await prisma.user.findMany({
+      where: { isActive: true, role: 'REQUESTER' },
       orderBy: { id: 'asc' },
       take: 2,
     });
@@ -41,6 +41,7 @@ describe('GET /api/tickets/:id', () => {
         summary: `${MARK} Laptop battery drains quickly`,
         description: 'Fixture Ticket created by the Ticket Detail API suite.',
         requestedPriority: 'MEDIUM',
+        itPriority: 'MEDIUM',
       },
     });
     ticketId = ticket.id;
