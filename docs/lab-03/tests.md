@@ -32,7 +32,7 @@ evidence submitted for Part 3.
 | API-10 | Security | AC-03, BR-03 | `POST /api/tickets` with a `requesterId` in the body pointing at another Requester | Ticket is created under the *session's* Requester regardless of the body value | `server/tests/lab-03/authorization.api.test.ts` | Pass |
 | API-11 | Security | AC-04, BR-04 | `GET /api/tickets/:id/notes` called by a Requester on their own Ticket | `403 FORBIDDEN`, no note content in the response | `server/tests/lab-03/authorization.api.test.ts` | Pass |
 | API-12 | Security | BR-20 | `GET /api/staff/tickets` called by a Requester and by an Administrator | `403 FORBIDDEN` for both roles | `server/tests/lab-03/authorization.api.test.ts` | Pass |
-| API-13 | Security | AC-22, BR-20 | `GET /api/users` called by IT Staff | `403 FORBIDDEN`, no user data returned | `server/tests/lab-03/authorization.api.test.ts` | Planned |
+| API-13 | Security | AC-22, BR-20 | `GET /api/users` called by IT Staff | `403 FORBIDDEN`, no user data returned | `server/tests/lab-03/authorization.api.test.ts` | Pass |
 | API-14 | Security | `specification.md` §11 | `POST /api/staff/tickets/:id/claim` called by an Administrator | `403 FORBIDDEN` — Administrator performs no ticket actions | `server/tests/lab-03/authorization.api.test.ts` | Pass |
 | API-15 | Security | AC-01 (inverse) | Any protected endpoint called with no `sid` cookie | `401 UNAUTHENTICATED` | `server/tests/lab-03/authorization.api.test.ts` | Pass |
 | API-16 | API | AC-10 | `GET /api/staff/tickets` with search/status/itPriority/owner/sort/page params | Correct filtered/sorted subset and accurate pagination metadata | `server/tests/lab-03/staff-queue.api.test.ts` | Pass |
@@ -51,13 +51,16 @@ evidence submitted for Part 3.
 | API-29 | API | BR-16 | `POST` a comment/note that is empty, whitespace-only, or 2,001 characters | `400 VALIDATION_ERROR` in each case | `server/tests/lab-03/comments-notes.api.test.ts` | Pass |
 | API-30 | Security | AC-26, BR-16 | `POST` a comment containing `<script>alert(1)</script>` | Stored and returned as literal text, no markup interpretation server-side | `server/tests/lab-03/comments-notes.api.test.ts` | Pass |
 | API-31 | Security | AC-27, BR-26 | `GET /api/tickets/:id` (Requester's own Ticket Detail) response body inspected | No Internal Note field or content present anywhere in the payload | `server/tests/lab-03/comments-notes.api.test.ts` | Pass |
-| API-32 | API | AC-18, BR-19 | `POST /api/users` with an email already in use | `409 CONFLICT`, code `EMAIL_ALREADY_EXISTS` | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-33 | API | AC-19 | `POST /api/users` with valid data | `201`; one-time `initialPassword` present in this response only | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-34 | API | AC-19 | New user (from API-33) logs in with the returned initial password | Login succeeds; `mustChangePassword: true` forces API-07's flow | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-35 | API | AC-20, BR-23 | `PATCH /api/users/:id` setting `isActive:false` on the caller's own account | `409 CONFLICT`, code `SELF_DEACTIVATION_BLOCKED` | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-36 | API | AC-21 | `PATCH /api/users/:id` deactivating, or changing the role of, the last active Administrator | `409 CONFLICT`, code `LAST_ACTIVE_ADMIN_BLOCKED` | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-37 | Security | AC-28, BR-22 | `PATCH /api/users/:id` body includes `passwordHash` and `mustChangePassword` alongside valid fields | Only name/email/role/isActive applied; extra fields silently ignored | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-38 | Security | AC-22 | `GET`/`POST`/`PATCH /api/users*` called by a Requester and by IT Staff | `403 FORBIDDEN` for both, no user data returned | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
+| API-32 | API | AC-18, BR-19 | `POST /api/users` with an email already in use | `409 CONFLICT`, code `EMAIL_ALREADY_EXISTS` | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-33 | API | AC-19 | `POST /api/users` with valid data | `201`; one-time `initialPassword` present in this response only | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-34 | API | AC-19 | New user (from API-33) logs in with the returned initial password | Login succeeds; `mustChangePassword: true` forces API-07's flow | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-35 | API | AC-20, BR-23 | `PATCH /api/users/:id` setting `isActive:false` on the caller's own account | `409 CONFLICT`, code `SELF_DEACTIVATION_BLOCKED` | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-36 | API | AC-21 | `PATCH /api/users/:id` deactivating, or changing the role of, the last active Administrator | `409 CONFLICT`, code `LAST_ACTIVE_ADMIN_BLOCKED` | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-37 | Security | AC-28, BR-22 | `PATCH /api/users/:id` body includes `passwordHash` and `mustChangePassword` alongside valid fields | Only name/email/role/isActive applied; extra fields silently ignored | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-38 | Security | AC-22 | `GET`/`POST`/`PATCH /api/users*` called by a Requester and by IT Staff | `403 FORBIDDEN` for both, no user data returned | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-45 | API | FR-17 | `GET /api/users` as an Administrator with `search` and `role` | Only matching users, each as `{id, name, email, role, isActive}`; no password fields | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-46 | API | FR-19, BR-23 | `PATCH /api/users/:id` changing name, email, role and `isActive`, then logging in as that user | Changes applied; a deactivated user cannot log in and a reactivated one can | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-47 | API | AC-19, FR-20 | `POST /api/users/:id/reset-password`, then the old session and the new password | New one-time `initialPassword`; `mustChangePassword` true; old session refused; new password logs in | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
 | API-39 | API | BR-13 | `GET /api/staff/assignable-users` as IT Staff, then as a Requester and an Administrator | Active IT Staff only, as `{id, name}`, inactive IT Staff excluded; `403 FORBIDDEN` for the other two roles | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Pass |
 | API-40 | API | `api-spec.md` §4 | `GET /api/staff/attachments/:id/download` as IT Staff for an active and a soft-removed Attachment, then as a Requester | Active file served; removed `404 NOT_FOUND`; Requester `403 FORBIDDEN` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Pass |
 | API-41 | Security | AC-27, BR-26 | Post an Internal Note, then a Public Comment, reading the Ticket's `updatedAt` as the Requester after each | Unchanged after the Internal Note; later after the Public Comment | `server/tests/lab-03/comments-notes.api.test.ts` | Pass |
@@ -73,8 +76,8 @@ evidence submitted for Part 3.
 | UI-03 | UI | AC-10 | StaffTicketQueue component: search/filter/sort/pagination controls, and empty/no-results states | List reflects each control; empty vs. no-results are visually distinct | `client/tests/lab-03/StaffTicketQueue.test.tsx` | Pass |
 | UI-04 | UI | AC-12 | StaffTicketDetail component: status control when the viewer is not the Ticket's owner | Owner-required options rendered disabled with a tooltip, not hidden | `client/tests/lab-03/StaffTicketDetail.test.tsx` | Pass |
 | UI-05 | UI | AC-26 | StaffTicketDetail component: a comment/note containing HTML-like text | Rendered as visible literal text, not executed | `client/tests/lab-03/StaffTicketDetail.test.tsx` | Pass |
-| UI-06 | UI | AC-18, AC-20, AC-21 | UserManagement component: duplicate-email, self-deactivation, and last-admin attempts | Inline error specific to each case, not a generic failure banner | `client/tests/lab-03/UserManagement.test.tsx` | Planned |
-| UI-07 | UI | AC-19 | UserManagement component: create and reset-password flows | One-time password callout shown once, not retrievable after dismissal | `client/tests/lab-03/UserManagement.test.tsx` | Planned |
+| UI-06 | UI | AC-18, AC-20, AC-21 | UserManagement component: duplicate-email, self-deactivation, and last-admin attempts | Inline error specific to each case, not a generic failure banner | `client/tests/lab-03/UserManagement.test.tsx` | Pass |
+| UI-07 | UI | AC-19 | UserManagement component: create and reset-password flows | One-time password callout shown once, not retrievable after dismissal | `client/tests/lab-03/UserManagement.test.tsx` | Pass |
 | UI-08 | UI | AC-17 | Requester Ticket Detail: "Problem Appears Resolved" action | Confirmation shown; status badge unchanged after confirming | `client/tests/lab-03/RequesterTicketDetail.test.tsx` | Pass |
 | UI-09 | UI | `ui-spec.md` §3 | AppShell navigation rendered for each of the three roles | Only that role's permitted links are present in the DOM, not just visually hidden | `client/tests/lab-02/AppShell.test.tsx` (the Lab 2 shell test, rewritten in #36) | Pass |
 | STYLE-01 | UI Style | `ui-spec.md` §9 | Status/Priority/Role badge markup across Queue, Staff Ticket Detail, and User Management | Badge classes/colors match §9 for every value | `e2e/lab-03/ui-style.spec.ts` | Planned |
@@ -84,7 +87,7 @@ evidence submitted for Part 3.
 | A11Y-01 | Accessibility | `ui-spec.md` §11 | Keyboard only, no mouse: Login, Change Password, Queue search/filter/sort/pagination, Staff Ticket Detail owner/IT Priority/status controls and comment/note composers, User Management list and panel | Every control reachable with Tab, operable with Enter/Space/arrow keys, with a visible focus indicator | `e2e/lab-03/accessibility.spec.ts` | Planned |
 | E2E-01 | E2E | AC-01, AC-02, AC-07 | Log in with an initial password, forced change, reach the app, log out, attempt to revisit a protected URL | Change required before entry; app reachable after; blocked after logout (verified against the session cookie directly — no client-side protected route exists until #36) | `e2e/lab-03/authentication.spec.ts` | Pass |
 | E2E-02 | E2E | AC-11, AC-13, AC-15, AC-16 | IT Staff claims an unassigned Ticket, sets IT Priority, posts a Public Comment and an Internal Note, transitions status through the permitted matrix | Ownership, priority, comments/notes, and status all reflect correctly end-to-end | `e2e/lab-03/staff-ticket-flow.spec.ts` | Pass |
-| E2E-03 | E2E | AC-18, AC-19, AC-20, AC-21 | Administrator creates a user (one role + initial password), the new user logs in and is forced to change it, Administrator edits another user, then attempts self-deactivation and last-admin deactivation | Create/edit succeed; both blocked attempts show the specific error, not a generic one | `e2e/lab-03/user-administration.spec.ts` | Planned |
+| E2E-03 | E2E | AC-18, AC-19, AC-20, AC-21 | Administrator creates a user (one role + initial password), the new user logs in and is forced to change it, Administrator edits another user, then attempts self-deactivation and last-admin deactivation | Create/edit succeed; both blocked attempts show the specific error, not a generic one | `e2e/lab-03/user-administration.spec.ts` | Pass |
 
 `password-rules.unit.test.ts`, `status-transitions.unit.test.ts`, `queue-query.unit.test.ts`,
 `login-throttle.unit.test.ts`, `migration.regression.test.ts`, `AppShell.test.tsx`,
@@ -118,7 +121,7 @@ home to be tested at all — the same reasoning `docs/lab-02/tests.md` used for 
 | AC-16 | API-28, E2E-02 |
 | AC-17 | API-26, API-42, UI-08 |
 | AC-18 | API-32, UI-06, E2E-03 |
-| AC-19 | API-33, API-34, UI-07, E2E-03 |
+| AC-19 | API-33, API-34, API-47, UI-07, E2E-03 |
 | AC-20 | API-35, UI-06, E2E-03 |
 | AC-21 | API-36, UI-06, E2E-03 |
 | AC-22 | API-13, API-38 |
