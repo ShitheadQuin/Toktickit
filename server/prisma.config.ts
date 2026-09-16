@@ -10,6 +10,8 @@ export default defineConfig({
     seed: "npx tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // exactOptionalPropertyTypes: the key is omitted entirely when unset, rather than set to
+    // undefined, which the Prisma config type does not accept.
+    ...(process.env["DATABASE_URL"] ? { url: process.env["DATABASE_URL"] } : {}),
   },
 });

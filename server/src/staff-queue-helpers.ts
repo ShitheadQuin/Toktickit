@@ -20,10 +20,10 @@ export type StaffQueueSort = (typeof STAFF_QUEUE_SORTS)[number];
 export const STAFF_QUEUE_PAGE_SIZE = 20;
 
 export interface StaffQueueQuery {
-  search?: string;
-  status?: CurrentStatusValue;
-  itPriority?: RequestedPriorityValue;
-  owner?: number | 'unassigned';
+  search?: string | undefined;
+  status?: CurrentStatusValue | undefined;
+  itPriority?: RequestedPriorityValue | undefined;
+  owner?: number | 'unassigned' | undefined;
   sort: StaffQueueSort;
   order: TicketListOrder;
   page: number;

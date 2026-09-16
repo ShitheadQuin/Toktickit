@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import { getSessionUser, COOKIE_OPTIONS } from './auth/session';
-import type { User } from './generated/prisma/models/User';
+// Prisma 7 generates this row type as `UserModel`; there is no `User` export. The old import
+// silently resolved to an error type, so `req.user` was never actually typechecked.
+import type { UserModel as User } from './generated/prisma/models/User';
 import type { Role } from './generated/prisma/enums';
 
 declare global {

@@ -105,7 +105,12 @@ app.post('/api/tickets', ...requireRequester, async (req, res) => {
         });
     }
 
-    const [{ nextval }] = await prisma.$queryRaw<{ nextval: bigint }[]>`SELECT nextval('ticket_number_seq') AS nextval`;
+    // noUncheckedIndexedAccess: indexing the raw result gives `| undefined`, so the sequence read
+    // is checked rather than assumed. A missing row here means the sequence is gone, which should
+    // fail loudly instead of producing a Ticket Number built from `undefined`.
+    const sequenceRows = await prisma.$queryRaw<{ nextval: bigint }[]>`SELECT nextval('ticket_number_seq') AS nextval`;
+    const nextval = sequenceRows[0]?.nextval;
+    if (nextval === undefined) throw new Error('ticket_number_seq returned no value');
     const ticketNumber = formatTicketNumber(new Date().getFullYear(), nextval);
 
     const ticket = await prisma.ticket.create({
