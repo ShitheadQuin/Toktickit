@@ -286,7 +286,11 @@ body {
 .tt-ticket-table thead th.tt-head-number { width: 8.25rem; }
 .tt-ticket-table thead th.tt-head-category { width: 7.5rem; }
 .tt-ticket-table thead th.tt-head-priority { width: 7rem; }
-.tt-ticket-table thead th.tt-head-status { width: 6.5rem; }
+/* #40: 6.5rem was sized in Lab 2, when New was the only status this table could show. #36 taught
+   it all eight Lab 3 statuses without revisiting the width, so "Waiting for Requester" - 170px as
+   a nowrap pill - overflowed a 104px cell and painted over Ticket Date. Matches the Queue's
+   .tt-queue-head-status, which was sized for the long labels from the start. */
+.tt-ticket-table thead th.tt-head-status { width: 11rem; }
 .tt-ticket-table thead th.tt-head-date { width: 6rem; }
 .tt-ticket-table thead th.tt-head-updated { width: 8.5rem; }
 .tt-ticket-table thead th.tt-head-action { width: 4.75rem; }
@@ -725,8 +729,12 @@ body {
   padding: 1rem;
 }
 
+/* #40: was overflow-wrap: anywhere, which let an address break at any character - "…@toktick" /
+   "it.dev" - and read as two collided words in the narrow Email column. break-word only breaks a
+   word that cannot fit on a line of its own, and UserManagement.tsx marks the one sensible break
+   point inside an address with <wbr>, so it wraps after the "@" instead (ui-spec.md 12). */
 .tt-user-table .tt-user-email {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 /* The one place an initial password is ever shown (api-spec.md 6). */
