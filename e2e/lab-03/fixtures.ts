@@ -104,3 +104,49 @@ export async function tearDownStaffFlowFixtures() {
     await client.end();
   }
 }
+
+// E2E-03 (Issue #39): a fixture Administrator made the only active Administrator for this spec,
+// because the last-active-Administrator rule depends on that count - any other active Administrator
+// is set inactive in setup and restored in teardown. Plus a Requester to edit, and cleanup of the user
+// the spec creates.
+export const E2E_ADMIN_EMAIL = 'e2e-lab3-admin@toktickit.dev';
+export const E2E_ADMIN_PASSWORD = 'E2EAdminFlow1';
+export const E2E_EDIT_TARGET_EMAIL = 'e2e-lab3-admin-edit-target@toktickit.dev';
+export const E2E_CREATED_USER_EMAIL = 'e2e-lab3-admin-created@toktickit.dev';
+
+const USER_ADMIN_EMAILS = [E2E_ADMIN_EMAIL, E2E_EDIT_TARGET_EMAIL, E2E_CREATED_USER_EMAIL];
+let otherAdminIdsDeactivated: number[] = [];
+
+async function removeUserAdminRows(client: Client) {
+  await client.query(`DELETE FROM "Session" WHERE "userId" IN (SELECT id FROM "User" WHERE email = ANY($1))`, [USER_ADMIN_EMAILS]);
+  await client.query(`DELETE FROM "User" WHERE email = ANY($1)`, [USER_ADMIN_EMAILS]);
+}
+
+export async function setUpUserAdminFixtures() {
+  const client = await connect();
+  try {
+    await removeUserAdminRows(client);
+    const others = await client.query(
+      `UPDATE "User" SET "isActive" = false, "updatedAt" = now() WHERE role = 'ADMINISTRATOR' AND "isActive" RETURNING id`,
+    );
+    otherAdminIdsDeactivated = others.rows.map((row: { id: number }) => row.id);
+
+    const passwordHash = await bcrypt.hash(E2E_ADMIN_PASSWORD, 12);
+    const insertUser = `INSERT INTO "User" (name, email, "passwordHash", role, "mustChangePassword", "isActive", "updatedAt")
+       VALUES ($1, $2, $3, $4, false, true, now())`;
+    await client.query(insertUser, ['E2E Admin', E2E_ADMIN_EMAIL, passwordHash, 'ADMINISTRATOR']);
+    await client.query(insertUser, ['E2E Edit Target', E2E_EDIT_TARGET_EMAIL, passwordHash, 'REQUESTER']);
+  } finally {
+    await client.end();
+  }
+}
+
+export async function tearDownUserAdminFixtures() {
+  const client = await connect();
+  try {
+    await removeUserAdminRows(client);
+    await client.query(`UPDATE "User" SET "isActive" = true, "updatedAt" = now() WHERE id = ANY($1)`, [otherAdminIdsDeactivated]);
+  } finally {
+    await client.end();
+  }
+}

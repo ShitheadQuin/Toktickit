@@ -6,6 +6,7 @@ import { MyTickets } from './pages/MyTickets';
 import { RequesterTicketDetail } from './pages/RequesterTicketDetail';
 import { StaffTicketQueue } from './pages/StaffTicketQueue';
 import { StaffTicketDetail } from './pages/StaffTicketDetail';
+import { UserManagement } from './pages/UserManagement';
 import { Login } from './pages/Login';
 import { ChangePassword } from './pages/ChangePassword';
 import { AppShell } from './components/AppShell';
@@ -33,14 +34,6 @@ function Home() {
 
   // Same one-route-per-screen reasoning for the other two roles' landing screens.
   return <Navigate to={user.role === 'IT_STAFF' ? '/staff/queue' : '/users'} replace />;
-}
-
-// PR #44 review: a link to a route that doesn't exist yet renders a blank page. Such routes exist
-// now, role-guarded and inside the shell (so nav/identity/logout all work), holding a placeholder
-// until #39 (User Management) replaces it
-// with the real screen.
-function ScreenInLaterIssue({ screen }: { screen: string }) {
-  return <p>The {screen} screen arrives in a later Issue.</p>;
 }
 
 function App() {
@@ -106,7 +99,7 @@ function App() {
             element={
               <RequireRole roles={['ADMINISTRATOR']}>
                 <AppShell>
-                  <ScreenInLaterIssue screen="User Management" />
+                  <UserManagement />
                 </AppShell>
               </RequireRole>
             }

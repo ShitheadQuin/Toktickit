@@ -252,6 +252,10 @@ initial password server-side (specification.md §11) — the client never suppli
 `initialPassword` is returned **only in this response** — it is hashed for storage and never
 retrievable again. The Administrator relays it to the user directly (no email in Lab 3).
 
+Emails are trimmed and lowercased before the uniqueness check and before storage. The generated
+password is 12 characters of letters and digits, leaving out look-alike characters, with at least
+one letter and one digit, so it meets BR-10.
+
 ### `PATCH /api/users/:id` — edit
 Body: any of `{ "name", "email", "role", "isActive" }`. Any other field present in the body (e.g.
 `passwordHash`, `mustChangePassword`, `id`) is silently ignored, never applied (BR-22). `email`
@@ -260,13 +264,17 @@ uniqueness re-checked excluding this user → `409 CONFLICT`. `role` validated a
   `SELF_DEACTIVATION_BLOCKED` (BR-23/AC-20).
 - Deactivating, or changing the role away from `ADMINISTRATOR` for, the last remaining active
   Administrator → `409 CONFLICT`, code `LAST_ACTIVE_ADMIN_BLOCKED` (AC-21).
+  The caller is always an active Administrator, and the self-deactivation check runs first, so in
+  practice this is the only active Administrator changing their own role. The count and the change
+  run in one serializable transaction, so two changes at once can never leave zero.
 
 Response `200`: updated user shape (same as the list-item shape). `404 NOT_FOUND` if the id
 doesn't exist.
 
 ### `POST /api/users/:id/reset-password` — set a new initial password
 No body. Generates a new random password the same way as creation, sets `mustChangePassword:
-true`. Response `200`: `{ "initialPassword": "..." }`, same one-time-only rule as creation.
+true`. Response `200`: `{ "initialPassword": "..." }`, same one-time-only rule as creation. Any
+sessions that user already has are ended, so they must log in again with the new password.
 `404 NOT_FOUND` if the id doesn't exist.
 
 ## 7. Authorization matrix

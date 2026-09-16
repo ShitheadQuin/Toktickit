@@ -20,3 +20,9 @@ export const ROLE_BADGE_CLASS: Record<string, string> = {
   IT_STAFF: 'tt-badge-role-it-staff',
   ADMINISTRATOR: 'tt-badge-role-administrator',
 };
+
+// docs/lab-03/ui-spec.md 9/14: a user's Active or Inactive state on User Management.
+export const USER_STATUS_BADGE_CLASS: Record<'ACTIVE' | 'INACTIVE', string> = {
+  ACTIVE: 'tt-badge-user-active',
+  INACTIVE: 'tt-badge-user-inactive',
+};

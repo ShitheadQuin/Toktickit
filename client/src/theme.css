@@ -692,3 +692,84 @@ body {
   width: 100%;
   max-width: 28rem;
 }
+
+/* Administrator User Management (docs/lab-03/ui-spec.md 8, 9). */
+.tt-badge-user-active {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-badge-user-inactive {
+  background: var(--tt-readonly-bg);
+  color: var(--tt-text);
+}
+
+/* List and panel side by side on desktop; below 992px the panel stacks under the list as a
+   full-width sheet (ui-spec.md 11). */
+.tt-user-management {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 992px) {
+  .tt-user-management.tt-panel-open {
+    grid-template-columns: minmax(0, 1fr) 24rem;
+    align-items: start;
+  }
+}
+
+.tt-user-panel {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.tt-user-table .tt-user-email {
+  overflow-wrap: anywhere;
+}
+
+/* The one place an initial password is ever shown (api-spec.md 6). */
+.tt-initial-password-reveal {
+  background: var(--tt-pale);
+  border: 1px solid var(--tt-secondary);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.tt-initial-password-reveal code {
+  background: #FFFFFF;
+  color: var(--tt-text);
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+/* Below 768px each user becomes a card, so the list never scrolls sideways. */
+@media (max-width: 767.98px) {
+  .tt-user-table thead {
+    display: none;
+  }
+
+  .tt-user-table,
+  .tt-user-table tbody,
+  .tt-user-table tr,
+  .tt-user-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .tt-user-table tr {
+    background: #FFFFFF;
+    border: 1px solid var(--tt-surface-border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tt-user-table td {
+    border: 0;
+    padding: 0.125rem 0;
+  }
+}
