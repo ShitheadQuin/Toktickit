@@ -43,7 +43,9 @@ describe('Staff Ticket Detail API', () => {
         itPriority: 'MEDIUM',
         currentStatus: over.status ?? 'NEW',
         ticketOwnerId: over.ownerId ?? null,
-        requesterConfirmedAt: over.requesterConfirmedAt,
+        // exactOptionalPropertyTypes: omit the key entirely when the caller did not set it, rather
+        // than passing an explicit undefined, which Prisma's create input does not accept.
+        ...(over.requesterConfirmedAt ? { requesterConfirmedAt: over.requesterConfirmedAt } : {}),
       },
     });
   }

@@ -51,18 +51,18 @@ describe('GET /api/tickets', () => {
     });
     const relatedSystem = await prisma.relatedSystem.findFirst({ where: { isActive: true } });
 
-    categoryOneId = categoryOne.id;
-    categoryTwoId = categoryTwo.id;
+    categoryOneId = categoryOne!.id;
+    categoryTwoId = categoryTwo!.id;
     relatedSystemId = relatedSystem!.id;
 
     const fixtures = [
-      { ticketNumber: A_NUMBERS[0], summary: `${MARK} Laptop battery drains quickly`, categoryId: categoryOneId, requestedPriority: 'LOW' as const, day: 1 },
-      { ticketNumber: A_NUMBERS[1], summary: `${MARK} Wi-Fi drops in the library`, categoryId: categoryTwoId, requestedPriority: 'MEDIUM' as const, day: 2 },
-      { ticketNumber: A_NUMBERS[2], summary: `${MARK} Printer jams on duplex`, categoryId: categoryOneId, requestedPriority: 'HIGH' as const, day: 3 },
-      { ticketNumber: A_NUMBERS[3], summary: `${MARK} Cannot reset my password`, categoryId: categoryTwoId, requestedPriority: 'LOW' as const, day: 4 },
-      { ticketNumber: A_NUMBERS[4], summary: `${MARK} VPN disconnects hourly`, categoryId: categoryOneId, requestedPriority: 'MEDIUM' as const, day: 5 },
-      { ticketNumber: A_NUMBERS[5], summary: `${MARK} Portal shows a blank page`, categoryId: categoryTwoId, requestedPriority: 'HIGH' as const, day: 6 },
-      { ticketNumber: A_NUMBERS[6], summary: `${MARK} Email sync stopped overnight`, categoryId: categoryOneId, requestedPriority: 'LOW' as const, day: 7 },
+      { ticketNumber: A_NUMBERS[0]!, summary: `${MARK} Laptop battery drains quickly`, categoryId: categoryOneId, requestedPriority: 'LOW' as const, day: 1 },
+      { ticketNumber: A_NUMBERS[1]!, summary: `${MARK} Wi-Fi drops in the library`, categoryId: categoryTwoId, requestedPriority: 'MEDIUM' as const, day: 2 },
+      { ticketNumber: A_NUMBERS[2]!, summary: `${MARK} Printer jams on duplex`, categoryId: categoryOneId, requestedPriority: 'HIGH' as const, day: 3 },
+      { ticketNumber: A_NUMBERS[3]!, summary: `${MARK} Cannot reset my password`, categoryId: categoryTwoId, requestedPriority: 'LOW' as const, day: 4 },
+      { ticketNumber: A_NUMBERS[4]!, summary: `${MARK} VPN disconnects hourly`, categoryId: categoryOneId, requestedPriority: 'MEDIUM' as const, day: 5 },
+      { ticketNumber: A_NUMBERS[5]!, summary: `${MARK} Portal shows a blank page`, categoryId: categoryTwoId, requestedPriority: 'HIGH' as const, day: 6 },
+      { ticketNumber: A_NUMBERS[6]!, summary: `${MARK} Email sync stopped overnight`, categoryId: categoryOneId, requestedPriority: 'LOW' as const, day: 7 },
     ];
 
     for (const fixture of fixtures) {

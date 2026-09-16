@@ -47,11 +47,11 @@ export const TICKET_LIST_DEFAULTS = {
 };
 
 export interface TicketListQuery {
-  search?: string;
-  categoryId?: number;
-  relatedSystemId?: number;
-  currentStatus?: CurrentStatusValue;
-  requestedPriority?: RequestedPriorityValue;
+  search?: string | undefined;
+  categoryId?: number | undefined;
+  relatedSystemId?: number | undefined;
+  currentStatus?: CurrentStatusValue | undefined;
+  requestedPriority?: RequestedPriorityValue | undefined;
   sort: TicketListSort;
   order: TicketListOrder;
   page: number;
