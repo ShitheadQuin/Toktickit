@@ -141,6 +141,40 @@ export async function setUpUserAdminFixtures() {
   }
 }
 
+// RESP-01 (Issue #40) needs an Administrator only to *look* at User Management, and must not use
+// setUpUserAdminFixtures: that one deactivates every active Administrator so its own fixture is the
+// last one standing, which is exactly what E2E-03's blocked-change test needs and exactly wrong for
+// a screenshot - the first RESP-01 captures showed the seeded Administrator as Inactive. This
+// fixture only adds a row, never changes anyone else's.
+export const E2E_VIEW_ADMIN_EMAIL = 'e2e-lab3-view-admin@toktickit.dev';
+export const E2E_VIEW_ADMIN_PASSWORD = 'E2EViewAdmin1';
+
+export async function setUpViewAdminFixture() {
+  const client = await connect();
+  try {
+    const passwordHash = await bcrypt.hash(E2E_VIEW_ADMIN_PASSWORD, 12);
+    await client.query(`DELETE FROM "Session" WHERE "userId" IN (SELECT id FROM "User" WHERE email = $1)`, [E2E_VIEW_ADMIN_EMAIL]);
+    await client.query(`DELETE FROM "User" WHERE email = $1`, [E2E_VIEW_ADMIN_EMAIL]);
+    await client.query(
+      `INSERT INTO "User" (name, email, "passwordHash", role, "mustChangePassword", "isActive", "updatedAt")
+       VALUES ($1, $2, $3, 'ADMINISTRATOR', false, true, now())`,
+      ['E2E View Admin', E2E_VIEW_ADMIN_EMAIL, passwordHash],
+    );
+  } finally {
+    await client.end();
+  }
+}
+
+export async function tearDownViewAdminFixture() {
+  const client = await connect();
+  try {
+    await client.query(`DELETE FROM "Session" WHERE "userId" IN (SELECT id FROM "User" WHERE email = $1)`, [E2E_VIEW_ADMIN_EMAIL]);
+    await client.query(`DELETE FROM "User" WHERE email = $1`, [E2E_VIEW_ADMIN_EMAIL]);
+  } finally {
+    await client.end();
+  }
+}
+
 export async function tearDownUserAdminFixtures() {
   const client = await connect();
   try {
