@@ -2,21 +2,22 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import app from '../../src/app';
 import { prisma } from '../../src/prisma';
+import { makeRequesterFixture, sessionCookieFor } from './auth-fixtures';
 
 // Every Ticket this suite creates uses this Summary, so afterAll can remove exactly the rows
 // it made. Without cleanup each run leaves more rows behind, which is how the database reached
 // 32 identical Tickets and made the Part 7 search, filter and sort screenshots meaningless.
 const FIXTURE_SUMMARY = 'Laptop battery drains quickly';
+const EMAIL_PREFIX = 'lab2-create-ticket-test-';
 
 describe('POST /api/tickets', () => {
   let suiteStartedAt: Date;
-  let activeRequesterId: number;
-  let inactiveRequesterId: number;
+  let requesterId: number;
+  let requesterCookie: string;
   let activeCategoryId: number;
   let activeRelatedSystemId: number;
 
   const validBody = () => ({
-    requesterId: activeRequesterId,
     categoryId: activeCategoryId,
     relatedSystemId: activeRelatedSystemId,
     summary: FIXTURE_SUMMARY,
@@ -27,13 +28,12 @@ describe('POST /api/tickets', () => {
   beforeAll(async () => {
     suiteStartedAt = new Date();
 
-    const activeRequester = await prisma.requester.findFirst({ where: { isActive: true } });
-    const inactiveRequester = await prisma.requester.findFirst({ where: { isActive: false } });
+    const requester = await makeRequesterFixture(`${EMAIL_PREFIX}active@toktickit.dev`);
+    requesterId = requester.id;
+    requesterCookie = await sessionCookieFor(requesterId);
+
     const category = await prisma.category.findFirst({ where: { isActive: true } });
     const relatedSystem = await prisma.relatedSystem.findFirst({ where: { isActive: true } });
-
-    activeRequesterId = activeRequester!.id;
-    inactiveRequesterId = inactiveRequester!.id;
     activeCategoryId = category!.id;
     activeRelatedSystemId = relatedSystem!.id;
   });
@@ -44,20 +44,22 @@ describe('POST /api/tickets', () => {
     await prisma.ticket.deleteMany({
       where: { summary: FIXTURE_SUMMARY, createdAt: { gte: suiteStartedAt } },
     });
+    await prisma.session.deleteMany({ where: { user: { email: { startsWith: EMAIL_PREFIX } } } });
+    await prisma.user.deleteMany({ where: { email: { startsWith: EMAIL_PREFIX } } });
   });
 
-  it('creates a Ticket owned by the given Requester, starting with status New', async () => {
-    const response = await request(app).post('/api/tickets').send(validBody());
+  it('creates a Ticket owned by the authenticated Requester, starting with status New', async () => {
+    const response = await request(app).post('/api/tickets').set('Cookie', requesterCookie).send(validBody());
 
     expect(response.status).toBe(201);
-    expect(response.body.requesterId).toBe(activeRequesterId);
+    expect(response.body.requesterId).toBe(requesterId);
     expect(response.body.currentStatus).toBe('NEW');
     expect(response.body.ticketNumber).toMatch(/^TKT-\d{4}-\d{6}$/);
   });
 
   it('generates a unique Ticket Number for each Ticket', async () => {
-    const first = await request(app).post('/api/tickets').send(validBody());
-    const second = await request(app).post('/api/tickets').send(validBody());
+    const first = await request(app).post('/api/tickets').set('Cookie', requesterCookie).send(validBody());
+    const second = await request(app).post('/api/tickets').set('Cookie', requesterCookie).send(validBody());
 
     expect(first.body.ticketNumber).not.toBe(second.body.ticketNumber);
   });
@@ -65,6 +67,7 @@ describe('POST /api/tickets', () => {
   it('rejects a missing summary with a field-level message and no Ticket created', async () => {
     const response = await request(app)
       .post('/api/tickets')
+      .set('Cookie', requesterCookie)
       .send({ ...validBody(), summary: '' });
 
     expect(response.status).toBe(400);
@@ -77,6 +80,7 @@ describe('POST /api/tickets', () => {
   it('reports every failing field at once, not just the first', async () => {
     const response = await request(app)
       .post('/api/tickets')
+      .set('Cookie', requesterCookie)
       .send({ ...validBody(), summary: '', description: 'x', requestedPriority: 'URGENT' });
 
     expect(response.status).toBe(400);
@@ -86,27 +90,28 @@ describe('POST /api/tickets', () => {
     );
   });
 
-  it('rejects an unknown requesterId with 404 REQUESTER_NOT_FOUND', async () => {
-    const response = await request(app)
-      .post('/api/tickets')
-      .send({ ...validBody(), requesterId: 999999 });
-
-    expect(response.status).toBe(404);
-    expect(response.body.error.code).toBe('REQUESTER_NOT_FOUND');
+  it('rejects the request with 401 when there is no session', async () => {
+    const response = await request(app).post('/api/tickets').send(validBody());
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe('UNAUTHENTICATED');
   });
 
-  it('rejects an inactive Requester with 404 REQUESTER_NOT_FOUND', async () => {
+  // API-10 (authorization.api.test.ts has the full coverage): a body-supplied requesterId is
+  // ignored, per api-spec.md 3 and BR-03 - ownership always comes from the session.
+  it('ignores a requesterId in the body and uses the authenticated session instead', async () => {
     const response = await request(app)
       .post('/api/tickets')
-      .send({ ...validBody(), requesterId: inactiveRequesterId });
+      .set('Cookie', requesterCookie)
+      .send({ ...validBody(), requesterId: 999999 });
 
-    expect(response.status).toBe(404);
-    expect(response.body.error.code).toBe('REQUESTER_NOT_FOUND');
+    expect(response.status).toBe(201);
+    expect(response.body.requesterId).toBe(requesterId);
   });
 
   it('never accepts a client-supplied ticketNumber, ticketDate or currentStatus', async () => {
     const response = await request(app)
       .post('/api/tickets')
+      .set('Cookie', requesterCookie)
       .send({
         ...validBody(),
         ticketNumber: 'TKT-0000-000000',
@@ -127,20 +132,18 @@ describe('POST /api/tickets', () => {
   // API-17 - BR-19: a Ticket created successfully is kept even when a following attachment
   // upload for it fails - creation and attachment upload are never one transaction.
   it('keeps a created Ticket when a following attachment upload is rejected (BR-19)', async () => {
-    const createResponse = await request(app).post('/api/tickets').send(validBody());
+    const createResponse = await request(app).post('/api/tickets').set('Cookie', requesterCookie).send(validBody());
     expect(createResponse.status).toBe(201);
     const ticketId = createResponse.body.id;
 
     const uploadResponse = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set('X-Requester-Id', String(activeRequesterId))
+      .set('Cookie', requesterCookie)
       .attach('file', Buffer.from('not an allowed type'), { filename: 'notes.txt', contentType: 'text/plain' });
 
     expect(uploadResponse.status).toBe(415);
 
-    const getResponse = await request(app)
-      .get(`/api/tickets/${ticketId}`)
-      .set('X-Requester-Id', String(activeRequesterId));
+    const getResponse = await request(app).get(`/api/tickets/${ticketId}`).set('Cookie', requesterCookie);
 
     expect(getResponse.status).toBe(200);
     expect(getResponse.body.ticketNumber).toBe(createResponse.body.ticketNumber);

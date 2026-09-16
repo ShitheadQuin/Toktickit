@@ -69,12 +69,23 @@ describe('parseTicketListQuery (UNIT-04, api-spec.md 4)', () => {
     expect(query.matchesNothing).toBe(false);
   });
 
+  // #36: labsheet 4.5's full 8-value status set, not just NEW - a Lab 3 Ticket seeded in any
+  // other status must still be filterable, not silently treated as an impossible filter.
+  it('accepts every status in the full 8-value CurrentStatus enum', () => {
+    const statuses = ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'RESOLVED', 'CLOSED', 'REOPENED', 'CANCELLED'];
+    for (const currentStatus of statuses) {
+      const query = parseTicketListQuery({ currentStatus });
+      expect(query.currentStatus).toBe(currentStatus);
+      expect(query.matchesNothing).toBe(false);
+    }
+  });
+
   it('flags a malformed filter as matching nothing rather than dropping it', () => {
     // api-spec.md 4: a filter value no Ticket can carry yields zero results. Dropping it would
     // widen the result set instead of narrowing it, showing more than the Requester asked for.
     expect(parseTicketListQuery({ category: 'abc' }).matchesNothing).toBe(true);
     expect(parseTicketListQuery({ relatedSystem: '12x' }).matchesNothing).toBe(true);
-    expect(parseTicketListQuery({ currentStatus: 'CLOSED' }).matchesNothing).toBe(true);
+    expect(parseTicketListQuery({ currentStatus: 'BOGUS' }).matchesNothing).toBe(true);
     expect(parseTicketListQuery({ requestedPriority: 'URGENT' }).matchesNothing).toBe(true);
   });
 
@@ -91,7 +102,7 @@ describe('parseTicketListQuery (UNIT-04, api-spec.md 4)', () => {
   });
 
   it('still applies presentation defaults on a query whose filter matches nothing', () => {
-    const query = parseTicketListQuery({ currentStatus: 'CLOSED', sort: 'nonsense', page: 'x' });
+    const query = parseTicketListQuery({ currentStatus: 'BOGUS', sort: 'nonsense', page: 'x' });
 
     expect(query.matchesNothing).toBe(true);
     expect(query.sort).toBe('ticketDate');

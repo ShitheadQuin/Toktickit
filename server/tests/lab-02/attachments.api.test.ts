@@ -5,12 +5,14 @@ import request from 'supertest';
 import app from '../../src/app';
 import { prisma } from '../../src/prisma';
 import { UPLOAD_DIR, attachmentFilePath, deleteAttachmentFile } from '../../src/attachment-storage';
+import { makeRequesterFixture, sessionCookieFor } from './auth-fixtures';
 
 // Marker keeps this suite's fixture rows identifiable and safe to delete, without disturbing
 // whatever else is in the database (same convention as the other lab-02 API suites).
 const MARK = 'ZQ9A';
 const TICKET_NUMBER = 'TKT-2099-900301';
 const OTHER_TICKET_NUMBER = 'TKT-2099-900302';
+const EMAIL_PREFIX = 'lab2-attachments-test-';
 
 const validImage = () => Buffer.from('fixture png bytes');
 
@@ -20,34 +22,34 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe('Attachment lifecycle', () => {
   let requesterAId: number;
-  let requesterBId: number;
+  let requesterACookie: string;
+  let requesterBCookie: string;
   let ticketId: number;
   let otherOwnerTicketId: number;
 
-  const uploadAs = (requesterId: number | string, id: number | string) =>
-    request(app).post(`/api/tickets/${id}/attachments`).set('X-Requester-Id', String(requesterId));
+  const uploadAs = (cookie: string, id: number | string) =>
+    request(app).post(`/api/tickets/${id}/attachments`).set('Cookie', cookie);
 
   beforeAll(async () => {
-    const [requesterA, requesterB] = await prisma.requester.findMany({
-      where: { isActive: true },
-      orderBy: { id: 'asc' },
-      take: 2,
-    });
+    const requesterA = await makeRequesterFixture(`${EMAIL_PREFIX}a@toktickit.dev`);
+    const requesterB = await makeRequesterFixture(`${EMAIL_PREFIX}b@toktickit.dev`);
+    requesterAId = requesterA.id;
+    requesterACookie = await sessionCookieFor(requesterA.id);
+    requesterBCookie = await sessionCookieFor(requesterB.id);
+
     const category = await prisma.category.findFirst({ where: { isActive: true } });
     const relatedSystem = await prisma.relatedSystem.findFirst({ where: { isActive: true } });
-
-    requesterAId = requesterA.id;
-    requesterBId = requesterB.id;
 
     const ticket = await prisma.ticket.create({
       data: {
         ticketNumber: TICKET_NUMBER,
-        requesterId: requesterAId,
+        requesterId: requesterA.id,
         categoryId: category!.id,
         relatedSystemId: relatedSystem!.id,
         summary: `${MARK} Laptop battery drains quickly`,
         description: 'Fixture Ticket created by the Attachment lifecycle suite.',
         requestedPriority: 'MEDIUM',
+        itPriority: 'MEDIUM',
       },
     });
     ticketId = ticket.id;
@@ -55,12 +57,13 @@ describe('Attachment lifecycle', () => {
     const otherTicket = await prisma.ticket.create({
       data: {
         ticketNumber: OTHER_TICKET_NUMBER,
-        requesterId: requesterBId,
+        requesterId: requesterB.id,
         categoryId: category!.id,
         relatedSystemId: relatedSystem!.id,
         summary: `${MARK} Requester B's own ticket`,
         description: 'Fixture Ticket created by the Attachment lifecycle suite.',
         requestedPriority: 'MEDIUM',
+        itPriority: 'MEDIUM',
       },
     });
     otherOwnerTicketId = otherTicket.id;
@@ -76,6 +79,8 @@ describe('Attachment lifecycle', () => {
     await prisma.attachment.deleteMany({ where: { ticketId: { in: ids } } });
     await prisma.ticket.deleteMany({ where: { id: { in: ids } } });
     await Promise.allSettled(attachments.map((a) => deleteAttachmentFile(a.storedFilename)));
+    await prisma.session.deleteMany({ where: { user: { email: { startsWith: EMAIL_PREFIX } } } });
+    await prisma.user.deleteMany({ where: { email: { startsWith: EMAIL_PREFIX } } });
   });
 
   afterEach(() => {
@@ -84,7 +89,7 @@ describe('Attachment lifecycle', () => {
 
   // API-13 - AC-22: a valid attachment upload
   it('uploads a valid attachment and marks it active (AC-22)', async () => {
-    const response = await uploadAs(requesterAId, ticketId)
+    const response = await uploadAs(requesterACookie, ticketId)
       .attach('file', validImage(), { filename: 'screenshot.png', contentType: 'image/png' });
 
     expect(response.status).toBe(201);
@@ -107,7 +112,7 @@ describe('Attachment lifecycle', () => {
   it('rejects a disallowed file type with 415, creating no attachment', async () => {
     const before = await prisma.attachment.count({ where: { ticketId } });
 
-    const response = await uploadAs(requesterAId, ticketId)
+    const response = await uploadAs(requesterACookie, ticketId)
       .attach('file', Buffer.from('not an allowed type'), { filename: 'archive.zip', contentType: 'application/zip' });
 
     expect(response.status).toBe(415);
@@ -119,7 +124,7 @@ describe('Attachment lifecycle', () => {
     const before = await prisma.attachment.count({ where: { ticketId } });
     const oversized = Buffer.alloc(5 * 1024 * 1024 + 1, 'a');
 
-    const response = await uploadAs(requesterAId, ticketId)
+    const response = await uploadAs(requesterACookie, ticketId)
       .attach('file', oversized, { filename: 'big.png', contentType: 'image/png' });
 
     expect(response.status).toBe(413);
@@ -131,7 +136,7 @@ describe('Attachment lifecycle', () => {
   it('reports only 415 for a file that is both a disallowed type and oversized (BR-27)', async () => {
     const oversizedZip = Buffer.alloc(5 * 1024 * 1024 + 1, 'a');
 
-    const response = await uploadAs(requesterAId, ticketId)
+    const response = await uploadAs(requesterACookie, ticketId)
       .attach('file', oversizedZip, { filename: 'big.zip', contentType: 'application/zip' });
 
     expect(response.status).toBe(415);
@@ -152,16 +157,17 @@ describe('Attachment lifecycle', () => {
         summary: `${MARK} Attachment limit fixture`,
         description: 'Fixture Ticket created by the Attachment lifecycle suite.',
         requestedPriority: 'MEDIUM',
+        itPriority: 'MEDIUM',
       },
     });
 
     for (let i = 0; i < 5; i += 1) {
-      const response = await uploadAs(requesterAId, limitTicket.id)
+      const response = await uploadAs(requesterACookie, limitTicket.id)
         .attach('file', validImage(), { filename: `limit-${i}.png`, contentType: 'image/png' });
       expect(response.status).toBe(201);
     }
 
-    const sixth = await uploadAs(requesterAId, limitTicket.id)
+    const sixth = await uploadAs(requesterACookie, limitTicket.id)
       .attach('file', validImage(), { filename: 'limit-6.png', contentType: 'image/png' });
 
     expect(sixth.status).toBe(409);
@@ -174,17 +180,17 @@ describe('Attachment lifecycle', () => {
     await prisma.ticket.delete({ where: { id: limitTicket.id } });
   });
 
-  // API-16 - BR-18: upload/remove on a Ticket owned by someone else
-  it('rejects an upload to a Ticket owned by another Requester with 403 (BR-18)', async () => {
-    const response = await uploadAs(requesterAId, otherOwnerTicketId)
+  // API-16 - BR-12 (Lab 3 supersedes Lab 2's 403 - see PR for Issue #36), BR-18
+  it('rejects an upload to a Ticket owned by another Requester with 404 (BR-12, BR-18)', async () => {
+    const response = await uploadAs(requesterACookie, otherOwnerTicketId)
       .attach('file', validImage(), { filename: 'not-mine.png', contentType: 'image/png' });
 
-    expect(response.status).toBe(403);
-    expect(response.body.error.code).toBe('FORBIDDEN');
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe('NOT_FOUND');
   });
 
   it('returns 404 when uploading to a nonexistent Ticket', async () => {
-    const response = await uploadAs(requesterAId, 999999999)
+    const response = await uploadAs(requesterACookie, 999999999)
       .attach('file', validImage(), { filename: 'nowhere.png', contentType: 'image/png' });
 
     expect(response.status).toBe(404);
@@ -198,7 +204,7 @@ describe('Attachment lifecycle', () => {
 
     const failure = vi.spyOn(prisma, '$transaction').mockRejectedValueOnce(new Error('simulated database failure'));
 
-    const response = await uploadAs(requesterAId, ticketId)
+    const response = await uploadAs(requesterACookie, ticketId)
       .attach('file', validImage(), { filename: 'will-fail.png', contentType: 'image/png' });
 
     expect(response.status).toBe(500);
@@ -214,30 +220,30 @@ describe('Attachment lifecycle', () => {
     let attachmentId: number;
 
     beforeAll(async () => {
-      const response = await uploadAs(requesterAId, ticketId)
+      const response = await uploadAs(requesterACookie, ticketId)
         .attach('file', validImage(), { filename: 'removable.png', contentType: 'image/png' });
       attachmentId = response.body.id;
     });
 
-    // API-16 - BR-18: remove on someone else's attachment
-    it('rejects removal of an attachment on another Requester’s Ticket with 403 (BR-18)', async () => {
+    // API-16 - BR-12 (supersedes Lab 2's 403), BR-18: remove on someone else's attachment
+    it('rejects removal of an attachment on another Requester’s Ticket with 404 (BR-12, BR-18)', async () => {
       const response = await request(app)
         .delete(`/api/attachments/${attachmentId}`)
-        .set('X-Requester-Id', String(requesterBId))
+        .set('Cookie', requesterBCookie)
         .send({ reason: 'Not mine to remove' });
 
-      expect(response.status).toBe(403);
-      expect(response.body.error.code).toBe('FORBIDDEN');
+      expect(response.status).toBe(404);
+      expect(response.body.error.code).toBe('NOT_FOUND');
     });
 
     it('rejects removal with a missing or blank reason (BR-17)', async () => {
       const missing = await request(app)
         .delete(`/api/attachments/${attachmentId}`)
-        .set('X-Requester-Id', String(requesterAId))
+        .set('Cookie', requesterACookie)
         .send({});
       const blank = await request(app)
         .delete(`/api/attachments/${attachmentId}`)
-        .set('X-Requester-Id', String(requesterAId))
+        .set('Cookie', requesterACookie)
         .send({ reason: '   ' });
 
       expect(missing.status).toBe(400);
@@ -252,7 +258,7 @@ describe('Attachment lifecycle', () => {
       await wait(5);
       const response = await request(app)
         .delete(`/api/attachments/${attachmentId}`)
-        .set('X-Requester-Id', String(requesterAId))
+        .set('Cookie', requesterACookie)
         .send({ reason: 'Wrong file attached by mistake' });
 
       expect(response.status).toBe(200);
@@ -277,7 +283,7 @@ describe('Attachment lifecycle', () => {
     it('returns 404 for an already-removed attachment, even to its owner', async () => {
       const response = await request(app)
         .delete(`/api/attachments/${attachmentId}`)
-        .set('X-Requester-Id', String(requesterAId))
+        .set('Cookie', requesterACookie)
         .send({ reason: 'Trying again' });
 
       expect(response.status).toBe(404);
@@ -286,8 +292,8 @@ describe('Attachment lifecycle', () => {
 
     // API-15 - AC-24, BR-16: a removed attachment cannot be downloaded
     it('returns 404, not 403, when downloading a removed attachment - indistinguishable from missing', async () => {
-      const asOwner = await request(app).get(`/api/attachments/${attachmentId}/download?requesterId=${requesterAId}`);
-      const asOther = await request(app).get(`/api/attachments/${attachmentId}/download?requesterId=${requesterBId}`);
+      const asOwner = await request(app).get(`/api/attachments/${attachmentId}/download`).set('Cookie', requesterACookie);
+      const asOther = await request(app).get(`/api/attachments/${attachmentId}/download`).set('Cookie', requesterBCookie);
 
       expect(asOwner.status).toBe(404);
       expect(asOwner.body.error.code).toBe('NOT_FOUND');
@@ -296,9 +302,7 @@ describe('Attachment lifecycle', () => {
     });
 
     it('still returns removed attachment metadata, unlike download (BR-16)', async () => {
-      const response = await request(app)
-        .get(`/api/attachments/${attachmentId}`)
-        .set('X-Requester-Id', String(requesterAId));
+      const response = await request(app).get(`/api/attachments/${attachmentId}`).set('Cookie', requesterACookie);
 
       expect(response.status).toBe(200);
       expect(response.body.isActive).toBe(false);
@@ -309,38 +313,34 @@ describe('Attachment lifecycle', () => {
     let activeAttachmentId: number;
 
     beforeAll(async () => {
-      const response = await uploadAs(requesterAId, ticketId)
+      const response = await uploadAs(requesterACookie, ticketId)
         .attach('file', validImage(), { filename: 'downloadable.png', contentType: 'image/png' });
       activeAttachmentId = response.body.id;
     });
 
     it('returns 200 with the file body for the owning Requester', async () => {
-      const response = await request(app).get(
-        `/api/attachments/${activeAttachmentId}/download?requesterId=${requesterAId}`,
-      );
+      const response = await request(app)
+        .get(`/api/attachments/${activeAttachmentId}/download`)
+        .set('Cookie', requesterACookie);
 
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toContain('image/png');
     });
 
-    it('rejects a missing or non-numeric requesterId with 400', async () => {
-      const missing = await request(app).get(`/api/attachments/${activeAttachmentId}/download`);
-      const malformed = await request(app).get(
-        `/api/attachments/${activeAttachmentId}/download?requesterId=not-a-number`,
-      );
-
-      expect(missing.status).toBe(400);
-      expect(malformed.status).toBe(400);
+    it('rejects the request with 401 when there is no session', async () => {
+      const response = await request(app).get(`/api/attachments/${activeAttachmentId}/download`);
+      expect(response.status).toBe(401);
+      expect(response.body.error.code).toBe('UNAUTHENTICATED');
     });
 
-    // API-16 - BR-18
-    it('rejects download by a Requester who does not own the Ticket with 403', async () => {
-      const response = await request(app).get(
-        `/api/attachments/${activeAttachmentId}/download?requesterId=${requesterBId}`,
-      );
+    // API-16 - BR-12 (supersedes Lab 2's 403), BR-18
+    it('rejects download by a Requester who does not own the Ticket with 404', async () => {
+      const response = await request(app)
+        .get(`/api/attachments/${activeAttachmentId}/download`)
+        .set('Cookie', requesterBCookie);
 
-      expect(response.status).toBe(403);
-      expect(response.body.error.code).toBe('FORBIDDEN');
+      expect(response.status).toBe(404);
+      expect(response.body.error.code).toBe('NOT_FOUND');
     });
   });
 
@@ -349,7 +349,7 @@ describe('Attachment lifecycle', () => {
     const before = await prisma.ticket.findUnique({ where: { id: ticketId } });
 
     await wait(5);
-    const uploadResponse = await uploadAs(requesterAId, ticketId)
+    const uploadResponse = await uploadAs(requesterACookie, ticketId)
       .attach('file', validImage(), { filename: 'timeline.png', contentType: 'image/png' });
     const afterUpload = await prisma.ticket.findUnique({ where: { id: ticketId } });
 
@@ -358,7 +358,7 @@ describe('Attachment lifecycle', () => {
     await wait(5);
     await request(app)
       .delete(`/api/attachments/${uploadResponse.body.id}`)
-      .set('X-Requester-Id', String(requesterAId))
+      .set('Cookie', requesterACookie)
       .send({ reason: 'Cleaning up the timeline fixture' });
     const afterRemoval = await prisma.ticket.findUnique({ where: { id: ticketId } });
 

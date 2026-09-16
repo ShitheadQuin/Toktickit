@@ -1,28 +1,15 @@
 import { test, expect, type Page } from '@playwright/test';
 import { E2E_MARK } from './fixtures';
+import { E2E_REQUESTER_A_EMAIL, E2E_REQUESTER_B_EMAIL, loginAs, setUpE2ERequesters } from './auth-helper';
 
 // E2E-01/02/03 (Issue #17): the full Requester ticket flow against the real app - real dev
 // servers, real Postgres, no mocked fetches, unlike the Vitest UI suites in client/tests.
+// #36: logs in as a real session-based Requester instead of the removed Development Requester
+// selector.
 
-async function requesterOptions(page: Page): Promise<{ value: string; label: string }[]> {
-  await page.goto('/');
-  await page.locator('#requester-select').waitFor({ state: 'visible' });
-  await expect(page.locator('#requester-select')).toBeEnabled();
-  return page.locator('#requester-select option[value]:not([value=""])').evaluateAll((options) =>
-    options.map((option) => ({
-      value: (option as HTMLOptionElement).value,
-      label: option.textContent ?? '',
-    })),
-  );
-}
-
-async function selectRequester(page: Page, value: string) {
-  await page.goto('/');
-  await page.locator('#requester-select').waitFor({ state: 'visible' });
-  await expect(page.locator('#requester-select')).toBeEnabled();
-  await page.selectOption('#requester-select', value);
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await page.waitForURL('**/my-tickets');
+async function logout(page: Page) {
+  await page.getByRole('button', { name: /logout/i }).click();
+  await page.waitForURL('**/login');
 }
 
 async function createTicket(page: Page, summary: string): Promise<string> {
@@ -43,10 +30,13 @@ async function createTicket(page: Page, summary: string): Promise<string> {
 }
 
 test.describe('Requester ticket flow', () => {
-  // E2E-01 - AC-01, AC-07: select a Requester, create a Ticket, find it in My Tickets
+  test.beforeAll(async () => {
+    await setUpE2ERequesters();
+  });
+
+  // E2E-01 - AC-01, AC-07: log in, create a Ticket, find it in My Tickets
   test('a created Ticket appears in the creating Requester’s My Tickets', async ({ page }) => {
-    const [requesterA] = await requesterOptions(page);
-    await selectRequester(page, requesterA.value);
+    await loginAs(page, E2E_REQUESTER_A_EMAIL);
 
     const summary = `${E2E_MARK} E2E-01 ${Date.now()}`;
     const ticketNumber = await createTicket(page, summary);
@@ -58,13 +48,9 @@ test.describe('Requester ticket flow', () => {
     await expect(page.getByText(ticketNumber)).toBeVisible();
   });
 
-  // E2E-02 - AC-03, AC-15: another Requester cannot see or directly open the Ticket
-  test('another Requester cannot find the Ticket or open it directly (BR-08, BR-22)', async ({ page }) => {
-    const options = await requesterOptions(page);
-    test.skip(options.length < 2, 'Needs at least two active Requesters seeded.');
-    const [requesterA, requesterB] = options;
-
-    await selectRequester(page, requesterA.value);
+  // E2E-02 - AC-03, AC-09/BR-12: another Requester cannot see or directly open the Ticket
+  test('another Requester cannot find the Ticket or open it directly (BR-08, BR-12)', async ({ page }) => {
+    await loginAs(page, E2E_REQUESTER_A_EMAIL);
     const summary = `${E2E_MARK} E2E-02 ${Date.now()}`;
     const ticketNumber = await createTicket(page, summary);
 
@@ -75,28 +61,35 @@ test.describe('Requester ticket flow', () => {
     // satisfy getByRole('link', { name: 'Open' }) before the re-fetch lands, which would open the
     // wrong Ticket and silently test the wrong id below. Same fix as responsive.spec.ts.
     await page.getByText(ticketNumber).waitFor({ state: 'visible' });
+    // #40: the summary turning visible is not the same as the old rows leaving - the search result
+    // paints while the previous page of rows is still in the table, so Open matched several links
+    // and strict mode failed intermittently. One table, one Open link per row (MyTickets.tsx), so
+    // waiting for exactly one is waiting for the list to have finished redrawing.
+    await expect(page.getByRole('link', { name: 'Open' })).toHaveCount(1);
     await page.getByRole('link', { name: 'Open' }).click();
     await page.waitForURL('**/tickets/**');
     const url = page.url();
     const ticketId = url.split('/tickets/')[1];
 
-    // Switch to Requester B.
-    await page.getByRole('button', { name: 'Change Requester' }).click();
-    await selectRequester(page, requesterB.value);
+    // Switch to Requester B - a real logout/login, since identity is now a real session. B is a
+    // fresh fixture that owns no Tickets at all, so My Tickets correctly shows the true empty
+    // state (search controls only render once there is something to search - ui-spec.md 13),
+    // not a searchable list with A's Ticket absent from it.
+    await logout(page);
+    await loginAs(page, E2E_REQUESTER_B_EMAIL);
+    await expect(page.getByText(/haven't created any tickets yet/i)).toBeVisible();
+    await expect(page.getByText(ticketNumber)).not.toBeVisible();
 
-    await page.getByLabel('Search').fill(ticketNumber);
-    await page.getByRole('button', { name: 'Search' }).click();
-    await expect(page.getByText(/no tickets match/i)).toBeVisible();
-
+    // BR-12 (Lab 3): a Ticket that belongs to someone else is indistinguishable from one that
+    // doesn't exist - the same "does not exist" message the Lab 2 not-found case showed.
     await page.goto(`/tickets/${ticketId}`);
-    await expect(page.getByText(/don't have access/i)).toBeVisible();
+    await expect(page.getByText(/does not exist/i)).toBeVisible();
     await expect(page.getByText(summary)).not.toBeVisible();
   });
 
   // E2E-03 - AC-22, AC-23, AC-24: add an attachment, soft-remove it, then attempt to download it
   test('an attachment can be added, then soft-removed, then blocked from download', async ({ page }) => {
-    const [requesterA] = await requesterOptions(page);
-    await selectRequester(page, requesterA.value);
+    await loginAs(page, E2E_REQUESTER_A_EMAIL);
 
     const summary = `${E2E_MARK} E2E-03 ${Date.now()}`;
     await createTicket(page, summary);
@@ -104,8 +97,10 @@ test.describe('Requester ticket flow', () => {
     await page.goto('/my-tickets');
     await page.getByLabel('Search').fill(summary);
     await page.getByRole('button', { name: 'Search' }).click();
-    // Same wait as E2E-02: an unfiltered or still-empty list must not satisfy the Open link.
+    // Same wait as E2E-02: an unfiltered or still-empty list must not satisfy the Open link, and
+    // exactly one Open link means the filtered list has finished redrawing (#40).
     await page.getByText(summary).waitFor({ state: 'visible' });
+    await expect(page.getByRole('link', { name: 'Open' })).toHaveCount(1);
     await page.getByRole('link', { name: 'Open' }).click();
 
     await page.getByLabel('Add attachment').setInputFiles({

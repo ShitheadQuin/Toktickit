@@ -1,12 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useRequester } from '../context/RequesterContext';
+import { useAuth } from '../context/AuthContext';
 import { AttachmentSection, type Attachment } from '../components/AttachmentSection';
+import { STATUS_BADGE_CLASS } from '../components/badge-classes';
+import { ConversationPanel, type ConversationEntry } from '../components/ConversationPanel';
 
 interface ReferenceItem {
   id: number;
   name: string;
 }
+
+type CurrentStatus =
+  | 'NEW'
+  | 'OPEN'
+  | 'IN_PROGRESS'
+  | 'WAITING_FOR_REQUESTER'
+  | 'RESOLVED'
+  | 'CLOSED'
+  | 'REOPENED'
+  | 'CANCELLED';
 
 interface TicketDetail {
   id: number;
@@ -16,15 +28,26 @@ interface TicketDetail {
   summary: string;
   description: string;
   requestedPriority: 'LOW' | 'MEDIUM' | 'HIGH';
-  currentStatus: 'NEW';
+  currentStatus: CurrentStatus;
   category: ReferenceItem;
   relatedSystem: ReferenceItem;
   attachments: Attachment[];
+  requesterConfirmedAt: string | null;
 }
 
-// ui-spec.md 12: every badge shows its word, so state is never carried by color alone.
+// ui-spec.md 12: every badge shows its word, so state is never carried by color alone. See
+// MyTickets.tsx for why the full 8-value set is here, not just NEW.
 const PRIORITY_LABEL: Record<string, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' };
-const STATUS_LABEL: Record<string, string> = { NEW: 'New' };
+const STATUS_LABEL: Record<string, string> = {
+  NEW: 'New',
+  OPEN: 'Open',
+  IN_PROGRESS: 'In Progress',
+  WAITING_FOR_REQUESTER: 'Waiting for Requester',
+  RESOLVED: 'Resolved',
+  CLOSED: 'Closed',
+  REOPENED: 'Reopened',
+  CANCELLED: 'Cancelled',
+};
 
 function formatDate(iso: string): string {
   const date = new Date(iso);
@@ -32,37 +55,38 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-type Status = 'loading' | 'success' | 'not-found' | 'forbidden' | 'error';
+type Status = 'loading' | 'success' | 'not-found' | 'error';
 
 // ui-spec.md 14: Requester Ticket Detail, read-only. AC-21: full detail for an owned Ticket.
-// BR-22: ownership is enforced server-side (app.ts); this screen only renders whatever the
-// backend already decided the caller may see, and never partial data on a 403/404 (UI-13).
+// BR-12 (Lab 3): a Ticket that exists but belongs to someone else is 404, identical to one that
+// doesn't exist - so there is no separate "forbidden" state here anymore, only not-found.
 export function RequesterTicketDetail() {
   const { id } = useParams();
-  const { requester } = useRequester();
+  const { user } = useAuth();
 
   const [status, setStatus] = useState<Status>('loading');
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [retryToken, setRetryToken] = useState(0);
 
+  // Lab 3 (#38): the Public Comments panel and the "Problem Appears Resolved" signal.
+  const [comments, setComments] = useState<ConversationEntry[] | null>(null);
+  const [commentsFailed, setCommentsFailed] = useState(false);
+  const [confirmingSignal, setConfirmingSignal] = useState(false);
+  const [signalBusy, setSignalBusy] = useState(false);
+  const [signalFeedback, setSignalFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
+
   useEffect(() => {
-    if (!requester) return;
+    if (!user) return;
 
     let cancelled = false;
     setStatus('loading');
     setTicket(null);
 
-    fetch(`/api/tickets/${id}`, {
-      headers: { 'X-Requester-Id': String(requester.id) },
-    })
+    fetch(`/api/tickets/${id}`, { credentials: 'include' })
       .then(async (response) => {
         if (cancelled) return;
         if (response.status === 404) {
           setStatus('not-found');
-          return;
-        }
-        if (response.status === 403) {
-          setStatus('forbidden');
           return;
         }
         if (!response.ok) {
@@ -85,7 +109,50 @@ export function RequesterTicketDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, requester, retryToken]);
+  }, [id, user, retryToken]);
+
+  // ui-spec.md 5: the Public Comments panel loads once the Ticket itself has. A failure here only
+  // affects the panel - the Ticket stays on screen. Internal Notes are never requested (BR-04).
+  useEffect(() => {
+    if (!user || status !== 'success') return;
+
+    let cancelled = false;
+    fetch(`/api/tickets/${id}/comments`, { credentials: 'include' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Comments request failed');
+        const body = await response.json().catch(() => null);
+        if (!cancelled) setComments(Array.isArray(body) ? (body as ConversationEntry[]) : []);
+      })
+      .catch(() => {
+        if (!cancelled) setCommentsFailed(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user, status]);
+
+  // BR-05, api-spec.md 3: records the signal only. The status badge on this screen never changes -
+  // IT Staff still formally resolve the Ticket.
+  const sendResolutionSignal = async () => {
+    setConfirmingSignal(false);
+    setSignalBusy(true);
+    setSignalFeedback(null);
+    try {
+      const response = await fetch(`/api/tickets/${id}/resolution-signal`, { method: 'POST', credentials: 'include' });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload) {
+        setSignalFeedback({ tone: 'error', message: payload?.error?.message ?? 'Unable to send this right now.' });
+        return;
+      }
+      setTicket((current) => (current ? { ...current, requesterConfirmedAt: payload.requesterConfirmedAt } : current));
+      setSignalFeedback({ tone: 'success', message: 'Thanks — IT Staff can now see that the problem looks fixed.' });
+    } catch {
+      setSignalFeedback({ tone: 'error', message: 'Unable to reach the server. Please try again.' });
+    } finally {
+      setSignalBusy(false);
+    }
+  };
 
   return (
     <section className="tt-ticket-detail">
@@ -103,15 +170,6 @@ export function RequesterTicketDetail() {
       {status === 'not-found' && (
         <div className="alert tt-alert-error" role="alert">
           <p className="mb-2">This Ticket does not exist.</p>
-          <Link to="/my-tickets" className="btn btn-tt-secondary">
-            Back to My Tickets
-          </Link>
-        </div>
-      )}
-
-      {status === 'forbidden' && (
-        <div className="alert tt-alert-error" role="alert">
-          <p className="mb-2">You don't have access to this Ticket.</p>
           <Link to="/my-tickets" className="btn btn-tt-secondary">
             Back to My Tickets
           </Link>
@@ -161,11 +219,36 @@ export function RequesterTicketDetail() {
             </div>
             <div className="col-12 col-md-4">
               <span className="form-label d-block">Current Status</span>
-              <span className={`tt-badge tt-badge-status-${ticket.currentStatus.toLowerCase()}`}>
-                {STATUS_LABEL[ticket.currentStatus] ?? ticket.currentStatus}
-              </span>
+              <div className="d-flex flex-wrap align-items-center gap-2">
+                <span className={`tt-badge ${STATUS_BADGE_CLASS[ticket.currentStatus] ?? ''}`}>
+                  {STATUS_LABEL[ticket.currentStatus] ?? ticket.currentStatus}
+                </span>
+                {/* ui-spec.md 5: once sent, the button is replaced by a tag; a Closed or Cancelled
+                    Ticket has nothing left to signal (api-spec.md 3). */}
+                {ticket.requesterConfirmedAt ? (
+                  <span className="tt-badge tt-requester-confirmed">Requester confirmed</span>
+                ) : ticket.currentStatus !== 'CLOSED' && ticket.currentStatus !== 'CANCELLED' ? (
+                  <button
+                    type="button"
+                    className="btn btn-tt-secondary btn-sm"
+                    disabled={signalBusy}
+                    onClick={() => setConfirmingSignal(true)}
+                  >
+                    Problem Appears Resolved
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
+
+          {signalFeedback && (
+            <div
+              className={`alert ${signalFeedback.tone === 'success' ? 'tt-alert-success' : 'tt-alert-error'} mb-3`}
+              role={signalFeedback.tone === 'success' ? 'status' : 'alert'}
+            >
+              {signalFeedback.message}
+            </div>
+          )}
 
           {/* Classification block: Category, Related System, Requested Priority. */}
           <div className="row mb-3">
@@ -253,11 +336,43 @@ export function RequesterTicketDetail() {
             }
           />
 
+          {/* ui-spec.md 5: Public Comments below Attachments, with its own heading and divider. */}
+          <section className="tt-requester-comments mt-4">
+            <hr className="tt-attachment-divider" />
+            <h2 className="h5 mb-3">Public Comments</h2>
+            <ConversationPanel
+              kind="comment"
+              ticketId={ticket.id}
+              entries={comments}
+              loadFailed={commentsFailed}
+              onPosted={(entry) => setComments((current) => [...(current ?? []), entry])}
+            />
+          </section>
+
           <div className="mt-4">
             <Link to="/my-tickets" className="btn btn-tt-secondary">
               Back to My Tickets
             </Link>
           </div>
+
+          {confirmingSignal && (
+            <div className="tt-confirm-backdrop">
+              <div className="tt-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="signal-confirm-title">
+                <h2 id="signal-confirm-title" className="h5 mb-2">
+                  Let IT Staff know this looks fixed?
+                </h2>
+                <p className="mb-3">This doesn't close the Ticket. IT Staff still confirm it is resolved.</p>
+                <div className="d-flex justify-content-end gap-2">
+                  <button type="button" className="btn btn-tt-tertiary" onClick={() => setConfirmingSignal(false)}>
+                    Go back
+                  </button>
+                  <button type="button" className="btn btn-tt-primary" onClick={() => void sendResolutionSignal()}>
+                    Yes, let them know
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </section>

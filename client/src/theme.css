@@ -213,6 +213,55 @@ body {
   color: var(--tt-secondary);
 }
 
+/* Lab 3 statuses and roles (docs/lab-03/ui-spec.md 9, class names per 14). The class for each
+   value comes from components/badge-classes.ts. */
+.tt-badge-status-open,
+.tt-badge-status-resolved {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-badge-status-in-progress,
+.tt-badge-status-waiting {
+  background: #FFF4DE;
+  color: #92600D;
+}
+
+.tt-badge-status-closed,
+.tt-badge-status-cancelled {
+  background: var(--tt-readonly-bg);
+  color: var(--tt-text);
+}
+
+.tt-badge-status-reopened {
+  background: var(--tt-error-bg);
+  color: var(--tt-error-text);
+}
+
+/* ui-spec.md 9: Resolved and Cancelled pair their word with an icon, not just a color. */
+.tt-badge-status-resolved::before {
+  content: '✓ ';
+}
+
+.tt-badge-status-cancelled::before {
+  content: '⊘ ';
+}
+
+.tt-badge-role-requester {
+  background: var(--tt-readonly-bg);
+  color: var(--tt-text);
+}
+
+.tt-badge-role-it-staff {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-badge-role-administrator {
+  background: #FFF4DE;
+  color: #92600D;
+}
+
 /* Header text wraps. With table-layout: fixed a nowrap header that outgrows its column spills
    over the next one instead of being clipped, which is the overlap AC-25 fails on - "Requested
    Priority" and "Current Status" are both wider than any value beneath them. */
@@ -237,7 +286,11 @@ body {
 .tt-ticket-table thead th.tt-head-number { width: 8.25rem; }
 .tt-ticket-table thead th.tt-head-category { width: 7.5rem; }
 .tt-ticket-table thead th.tt-head-priority { width: 7rem; }
-.tt-ticket-table thead th.tt-head-status { width: 6.5rem; }
+/* #40: 6.5rem was sized in Lab 2, when New was the only status this table could show. #36 taught
+   it all eight Lab 3 statuses without revisiting the width, so "Waiting for Requester" - 170px as
+   a nowrap pill - overflowed a 104px cell and painted over Ticket Date. Matches the Queue's
+   .tt-queue-head-status, which was sized for the long labels from the start. */
+.tt-ticket-table thead th.tt-head-status { width: 11rem; }
 .tt-ticket-table thead th.tt-head-date { width: 6rem; }
 .tt-ticket-table thead th.tt-head-updated { width: 8.5rem; }
 .tt-ticket-table thead th.tt-head-action { width: 4.75rem; }
@@ -397,5 +450,334 @@ body {
   .tt-ticket-table .tt-col-action .btn {
     width: 100%;
     min-height: 44px;
+  }
+}
+
+
+/* IT Staff Ticket Queue (docs/lab-03/ui-spec.md 6/11). Its own class rather than reusing
+   .tt-ticket-table, whose card layout is built around My Tickets' different columns. Same
+   approach: fixed layout with explicit widths so seven columns can't overflow the shell, and
+   Summary as the one flexible column that truncates. Status is wide enough for the longest badge,
+   "Waiting for Requester", on one line. */
+.tt-queue-table {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.9375rem;
+}
+
+.tt-queue-table thead th {
+  color: var(--tt-text);
+  border-bottom-color: var(--tt-surface-border);
+  white-space: normal;
+  vertical-align: bottom;
+}
+
+.tt-queue-table thead th.tt-queue-head-number { width: 8.75rem; }
+.tt-queue-table thead th.tt-queue-head-requester { width: 8.5rem; }
+.tt-queue-table thead th.tt-queue-head-status { width: 10.75rem; }
+.tt-queue-table thead th.tt-queue-head-priority { width: 6rem; }
+.tt-queue-table thead th.tt-queue-head-owner { width: 8.5rem; }
+.tt-queue-table thead th.tt-queue-head-created { width: 7.25rem; }
+
+.tt-queue-row {
+  cursor: pointer;
+}
+
+.tt-queue-row:hover > td {
+  background: var(--tt-pale);
+}
+
+.tt-queue-table .tt-queue-number {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.tt-queue-table .tt-queue-summary,
+.tt-queue-table .tt-queue-requester,
+.tt-queue-table .tt-queue-owner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tt-queue-table .tt-queue-created {
+  white-space: nowrap;
+}
+
+.tt-queue-unassigned {
+  color: #5B6B62;
+  font-style: italic;
+}
+
+/* Below 992px each Ticket becomes a card (ui-spec.md 6): Ticket # and Status badge on the first
+   line, Summary below, Requester and IT Priority badge as a secondary line, Assigned To and
+   Created as a third muted line. One DOM, two presentations. */
+@media (max-width: 991.98px) {
+  .tt-queue-table {
+    table-layout: auto;
+    font-size: 1rem;
+  }
+
+  .tt-queue-table thead {
+    display: none;
+  }
+
+  .tt-queue-table,
+  .tt-queue-table tbody,
+  .tt-queue-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .tt-queue-table tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 0.75rem;
+    grid-template-areas:
+      "number    status"
+      "summary   summary"
+      "requester priority"
+      "owner     created";
+    border: 1px solid var(--tt-surface-border);
+    border-radius: 0.5rem;
+    background: #FFFFFF;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tt-queue-table td {
+    border: 0;
+    padding: 0;
+    min-width: 0;
+  }
+
+  .tt-queue-table .tt-queue-number { grid-area: number; }
+  .tt-queue-table .tt-queue-status { grid-area: status; justify-self: end; text-align: right; }
+  .tt-queue-table .tt-queue-requester { grid-area: requester; }
+  .tt-queue-table .tt-queue-priority { grid-area: priority; justify-self: end; text-align: right; }
+  .tt-queue-table .tt-queue-owner { grid-area: owner; }
+  .tt-queue-table .tt-queue-created { grid-area: created; justify-self: end; text-align: right; }
+
+  /* The card has room to wrap, so the desktop ellipsis is lifted instead of hiding text. */
+  .tt-queue-table .tt-queue-summary {
+    grid-area: summary;
+    white-space: normal;
+    overflow: visible;
+  }
+
+  .tt-queue-table .tt-queue-owner,
+  .tt-queue-table .tt-queue-created {
+    font-size: 0.875rem;
+    color: #5B6B62;
+  }
+
+  .tt-queue-table .tt-queue-owner::before,
+  .tt-queue-table .tt-queue-created::before {
+    content: attr(data-label) ": ";
+  }
+}
+
+/* IT Staff Ticket Detail (docs/lab-03/ui-spec.md 7). The editable controls sit in their own white
+   panel, apart from the read-only Ticket fields above them. */
+.tt-staff-controls {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+/* Success feedback pairs with .tt-alert-error above; the message text carries the meaning. */
+.tt-alert-success {
+  color: var(--tt-secondary);
+  background: var(--tt-pale);
+  border-color: var(--tt-secondary);
+}
+
+/* ui-spec.md 7: an owner-required status option stays in the list, greyed out. */
+.tt-disabled-not-owner {
+  color: #8A968F;
+}
+
+/* ui-spec.md 5: the Requester's "problem appears resolved" signal, shown next to the status badge. */
+.tt-requester-confirmed {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-requester-confirmed::before {
+  content: '✓ ';
+}
+
+.tt-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--tt-surface-border);
+}
+
+.tt-tab {
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 0.5rem 0.75rem;
+  color: var(--tt-text);
+}
+
+.tt-tab[aria-selected="true"] {
+  border-bottom-color: var(--tt-secondary);
+  color: var(--tt-secondary);
+  font-weight: 600;
+}
+
+.tt-tab:focus-visible {
+  outline: 2px solid var(--tt-secondary);
+  outline-offset: 2px;
+}
+
+/* ui-spec.md 7: Public Comments and Internal Notes are distinct by design, not by label alone - a
+   white card with the pale-green edge for comments, an amber card with a lock and caption for notes. */
+.tt-comment-public {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-left: 6px solid var(--tt-pale);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.tt-note-internal {
+  background: #FFF4DE;
+  border: 1px solid #EAD29F;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.tt-note-caption {
+  color: #92600D;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.tt-composer-internal {
+  background: #FFF4DE;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.tt-conversation-meta,
+.tt-composer-counter {
+  color: #5B6B62;
+  font-size: 0.8125rem;
+}
+
+/* BR-16: plain text keeps its own line breaks, and a long unbroken string can't widen the page. */
+.tt-conversation-body {
+  margin: 0.25rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* BR-18: Cancel and Reopen confirm in a centered dialog over a dimmed page. */
+.tt-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(27, 43, 34, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1050;
+}
+
+.tt-confirm-dialog {
+  background: #FFFFFF;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 1.25rem;
+  width: 100%;
+  max-width: 28rem;
+}
+
+/* Administrator User Management (docs/lab-03/ui-spec.md 8, 9). */
+.tt-badge-user-active {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-badge-user-inactive {
+  background: var(--tt-readonly-bg);
+  color: var(--tt-text);
+}
+
+/* List and panel side by side on desktop; below 992px the panel stacks under the list as a
+   full-width sheet (ui-spec.md 11). */
+.tt-user-management {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 992px) {
+  .tt-user-management.tt-panel-open {
+    grid-template-columns: minmax(0, 1fr) 24rem;
+    align-items: start;
+  }
+}
+
+.tt-user-panel {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+/* #40: was overflow-wrap: anywhere, which let an address break at any character - "…@toktick" /
+   "it.dev" - and read as two collided words in the narrow Email column. break-word only breaks a
+   word that cannot fit on a line of its own, and UserManagement.tsx marks the one sensible break
+   point inside an address with <wbr>, so it wraps after the "@" instead (ui-spec.md 12). */
+.tt-user-table .tt-user-email {
+  overflow-wrap: break-word;
+}
+
+/* The one place an initial password is ever shown (api-spec.md 6). */
+.tt-initial-password-reveal {
+  background: var(--tt-pale);
+  border: 1px solid var(--tt-secondary);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.tt-initial-password-reveal code {
+  background: #FFFFFF;
+  color: var(--tt-text);
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+/* Below 768px each user becomes a card, so the list never scrolls sideways. */
+@media (max-width: 767.98px) {
+  .tt-user-table thead {
+    display: none;
+  }
+
+  .tt-user-table,
+  .tt-user-table tbody,
+  .tt-user-table tr,
+  .tt-user-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .tt-user-table tr {
+    background: #FFFFFF;
+    border: 1px solid var(--tt-surface-border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tt-user-table td {
+    border: 0;
+    padding: 0.125rem 0;
   }
 }

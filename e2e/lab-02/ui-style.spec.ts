@@ -1,22 +1,20 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { E2E_MARK } from './fixtures';
+import { E2E_REQUESTER_A_EMAIL, loginAs, setUpE2ERequesters } from './auth-helper';
 
 // STYLE-01/02 (Issue #17): automated assertions for the required CSS classes, field states and
 // button behavior documented in ui-spec.md §18, against the real rendered app.
+// #36: logs in as a real session-based Requester instead of the removed selector; the "Change
+// Requester" button it checked for no longer exists (the shell shows Change Password/Logout
+// instead - covered by AppShell.test.tsx's UI-09 coverage, not this suite).
 
-async function selectFirstRequester(page: Page) {
-  await page.goto('/');
-  await page.locator('#requester-select').waitFor({ state: 'visible' });
-  await expect(page.locator('#requester-select')).toBeEnabled();
-  const value = await page.locator('#requester-select option[value]:not([value=""])').first().getAttribute('value');
-  await page.selectOption('#requester-select', value!);
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await page.waitForURL('**/my-tickets');
-}
+test.beforeAll(async () => {
+  await setUpE2ERequesters();
+});
 
 test.describe('UI style — Create Ticket (STYLE-01, ui-spec.md 18)', () => {
   test.beforeEach(async ({ page }) => {
-    await selectFirstRequester(page);
+    await loginAs(page, E2E_REQUESTER_A_EMAIL);
     await page.goto('/create-ticket');
   });
 
@@ -64,8 +62,8 @@ test.describe('UI style — Create Ticket (STYLE-01, ui-spec.md 18)', () => {
     await expect(page.getByRole('button', { name: 'Remove' })).toHaveClass(/btn-tt-tertiary/);
   });
 
-  test('the secondary Change Requester button carries its documented class', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'Change Requester' })).toHaveClass(/btn-tt-secondary/);
+  test('the secondary Logout button carries its documented class', async ({ page }) => {
+    await expect(page.getByRole('button', { name: 'Logout' })).toHaveClass(/btn-tt-secondary/);
   });
 
   test('Submit shows the busy .tt-busy state and is disabled while the request is in flight', async ({ page }) => {
@@ -99,7 +97,7 @@ test.describe('UI style — Create Ticket (STYLE-01, ui-spec.md 18)', () => {
 
 test.describe('UI style — My Tickets badges (STYLE-02, ui-spec.md 12)', () => {
   test('Requested Priority and Current Status badges carry their documented classes and always show their word', async ({ page }) => {
-    await selectFirstRequester(page);
+    await loginAs(page, E2E_REQUESTER_A_EMAIL);
 
     // Each summary carries this run's own timestamp, so a row lookup by its exact summary text
     // never collides with a fixture Ticket left behind by an earlier run of this same suite.

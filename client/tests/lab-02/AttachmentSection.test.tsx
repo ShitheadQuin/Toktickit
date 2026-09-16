@@ -1,13 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
-import { RequesterProvider } from '../../src/context/RequesterContext';
 import { AttachmentSection, type Attachment } from '../../src/components/AttachmentSection';
-
-const STORAGE_KEY = 'toktickit.selectedRequester';
-
-function selectStoredRequester(id = 1) {
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ id, name: 'Anong Srisai' }));
-}
 
 const attachment = (over: Partial<Attachment> = {}): Attachment => ({
   id: 7,
@@ -26,15 +19,13 @@ function renderSection(attachments: Attachment[], overrides: Partial<Parameters<
   const onAttachmentAdded = vi.fn();
   const onAttachmentRemoved = vi.fn();
   const utils = render(
-    <RequesterProvider>
-      <AttachmentSection
-        ticketId={42}
-        attachments={attachments}
-        onAttachmentAdded={onAttachmentAdded}
-        onAttachmentRemoved={onAttachmentRemoved}
-        {...overrides}
-      />
-    </RequesterProvider>,
+    <AttachmentSection
+      ticketId={42}
+      attachments={attachments}
+      onAttachmentAdded={onAttachmentAdded}
+      onAttachmentRemoved={onAttachmentRemoved}
+      {...overrides}
+    />,
   );
   return { ...utils, onAttachmentAdded, onAttachmentRemoved };
 }
@@ -43,11 +34,9 @@ describe('AttachmentSection', () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
-    sessionStorage.clear();
   });
 
   it('shows "No attachments." when there are none', () => {
-    selectStoredRequester();
     renderSection([]);
 
     expect(screen.getByText(/no attachments/i)).toBeInTheDocument();
@@ -55,7 +44,6 @@ describe('AttachmentSection', () => {
 
   // UI-14 - AC-22: adding a new attachment
   it('uploads a valid selected file and reports it via onAttachmentAdded', async () => {
-    selectStoredRequester();
     const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => attachment({ id: 9, originalFilename: 'new-file.png' }),
@@ -70,11 +58,10 @@ describe('AttachmentSection', () => {
 
     const [url, init] = fetchSpy.mock.calls[0];
     expect(url).toBe('/api/tickets/42/attachments');
-    expect((init as RequestInit).headers).toMatchObject({ 'X-Requester-Id': '1' });
+    expect((init as RequestInit).credentials).toBe('include');
   });
 
   it('rejects a disallowed file type inline, without uploading it', async () => {
-    selectStoredRequester();
     const fetchSpy = vi.spyOn(global, 'fetch');
 
     renderSection([]);
@@ -87,7 +74,6 @@ describe('AttachmentSection', () => {
   });
 
   it('shows a Retry action when an upload fails', async () => {
-    selectStoredRequester();
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: false,
       json: async () => ({ error: { code: 'INTERNAL_ERROR', message: 'Upload failed.' } }),
@@ -103,7 +89,6 @@ describe('AttachmentSection', () => {
 
   // UI-15 - AC-24: a removed attachment has no download control
   it('shows no Download or Remove control for a removed attachment', () => {
-    selectStoredRequester();
     renderSection([attachment({ isActive: false, removedAt: '2026-08-31T00:00:00.000Z', removalReason: 'Wrong file' })]);
 
     expect(screen.getByText(/removed/i)).toBeInTheDocument();
@@ -114,7 +99,6 @@ describe('AttachmentSection', () => {
 
   // UI-14 - AC-23, BR-17: soft removal requires confirmation and a reason
   it('requires a reason before confirming removal, then reports it via onAttachmentRemoved', async () => {
-    selectStoredRequester();
     const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => attachment({ isActive: false, removalReason: 'Wrong file attached' }),
@@ -138,11 +122,11 @@ describe('AttachmentSection', () => {
     const [url, init] = fetchSpy.mock.calls[0];
     expect(url).toBe('/api/attachments/7');
     expect((init as RequestInit).method).toBe('DELETE');
+    expect((init as RequestInit).credentials).toBe('include');
     expect(JSON.parse((init as RequestInit).body as string)).toEqual({ reason: 'Wrong file attached' });
   });
 
   it('disables the add-attachment picker once 5 attachments are active (BR-15)', () => {
-    selectStoredRequester();
     const fiveActive = Array.from({ length: 5 }, (_, i) => attachment({ id: i + 1 }));
 
     renderSection(fiveActive);

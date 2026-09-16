@@ -1,36 +1,34 @@
 import express from 'express';
 import multer from 'multer';
+import cookieParser from 'cookie-parser';
 import { prisma } from './prisma';
 import { formatTicketNumber, validateTicketText } from './ticket-helpers';
 import { parseTicketListQuery } from './ticket-list-helpers';
-import { MAX_ATTACHMENT_BYTES, attachmentFilePath, deleteAttachmentFile, generateStoredFilename, saveAttachmentFile } from './attachment-storage';
+import { parseStaffQueueQuery } from './staff-queue-helpers';
+import { ATTACHMENT_METADATA_SELECT, MAX_ATTACHMENT_BYTES, attachmentFilePath, deleteAttachmentFile, generateStoredFilename, saveAttachmentFile } from './attachment-storage';
 import { validateAttachmentUpload } from './attachment-validation';
+import { requireAuth, requirePasswordChanged, requireRole } from './middleware';
+import authRouter from './routes/auth';
+import staffTicketsRouter from './routes/staff-tickets';
+import ticketConversationRouter from './routes/ticket-conversation';
+import usersRouter from './routes/users';
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
+app.use('/api/auth', authRouter);
+app.use('/api/staff', staffTicketsRouter);
+app.use('/api/tickets', ticketConversationRouter);
+app.use('/api/users', usersRouter);
 
 // BR-15/BR-27: multer's own limit is a memory backstop only, set above the real 5 MB rule so an
 // oversized-and-wrong-type file still reaches the handler and gets the documented check order -
 // type before size - rather than a generic multer rejection before either runs.
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_ATTACHMENT_BYTES * 2 } });
 
-const ATTACHMENT_METADATA_SELECT = {
-  id: true,
-  ticketId: true,
-  originalFilename: true,
-  mimeType: true,
-  sizeBytes: true,
-  uploadedAt: true,
-  isActive: true,
-  removedAt: true,
-  removalReason: true,
-} as const;
-
-function parseRequesterId(value: string | undefined): number | null {
-  const requesterId = Number(value);
-  if (!value || !Number.isInteger(requesterId) || requesterId < 1) return null;
-  return requesterId;
-}
+// api-spec.md 3: Requester-scoped, restricted to role REQUESTER - IT Staff/Administrator get
+// their own Ticket Detail in #38 instead (403 here, per the authorization matrix in §7).
+const requireRequester = [requireAuth, requirePasswordChanged, requireRole('REQUESTER')];
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({
@@ -52,19 +50,6 @@ app.get('/api/categories', async (req, res) => {
     }
 });
 
-app.get('/api/requesters', async (req, res) => {
-    try {
-        const requesters = await prisma.requester.findMany({
-            where: { isActive: true },
-            orderBy: { id: 'asc' },
-            select: { id: true, name: true },
-        });
-        res.status(200).json(requesters);
-    } catch (error) {
-        res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unable to retrieve requesters' } });
-    }
-});
-
 app.get('/api/related-systems', async (req, res) => {
     try {
         const relatedSystems = await prisma.relatedSystem.findMany({
@@ -80,26 +65,12 @@ app.get('/api/related-systems', async (req, res) => {
 
 const REQUESTED_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'];
 
-app.post('/api/tickets', async (req, res) => {
+app.post('/api/tickets', ...requireRequester, async (req, res) => {
   try {
-    const { requesterId, categoryId, relatedSystemId, summary, description, requestedPriority } = req.body;
-
-    if (typeof requesterId !== 'number') {
-        return res.status(400).json({
-            error: {
-                code: 'VALIDATION_ERROR',
-                message: 'requesterId is required',
-                fields: [{ field: 'requesterId', message: 'requesterId is required' }],
-            },
-        });
-    }
-
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
-    if (!requester || !requester.isActive) {
-        return res.status(404).json({
-            error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
-        });
-    }
+    // BR-03/api-spec.md 3: ownership comes from the session, never the request body - any
+    // requesterId the client sends is ignored.
+    const requesterId = req.user!.id;
+    const { categoryId, relatedSystemId, summary, description, requestedPriority } = req.body;
 
     const fields: { field: string; message: string }[] = [];
 
@@ -134,7 +105,12 @@ app.post('/api/tickets', async (req, res) => {
         });
     }
 
-    const [{ nextval }] = await prisma.$queryRaw<{ nextval: bigint }[]>`SELECT nextval('ticket_number_seq') AS nextval`;
+    // noUncheckedIndexedAccess: indexing the raw result gives `| undefined`, so the sequence read
+    // is checked rather than assumed. A missing row here means the sequence is gone, which should
+    // fail loudly instead of producing a Ticket Number built from `undefined`.
+    const sequenceRows = await prisma.$queryRaw<{ nextval: bigint }[]>`SELECT nextval('ticket_number_seq') AS nextval`;
+    const nextval = sequenceRows[0]?.nextval;
+    if (nextval === undefined) throw new Error('ticket_number_seq returned no value');
     const ticketNumber = formatTicketNumber(new Date().getFullYear(), nextval);
 
     const ticket = await prisma.ticket.create({
@@ -146,6 +122,8 @@ app.post('/api/tickets', async (req, res) => {
         summary: text.summary,
         description: text.description,
         requestedPriority,
+        // labsheet §4.5: IT Priority starts as a copy of Requested Priority
+        itPriority: requestedPriority,
       },
       select: {
         id: true,
@@ -168,24 +146,9 @@ app.post('/api/tickets', async (req, res) => {
   }
 });
 
-app.get('/api/tickets', async (req, res) => {
+app.get('/api/tickets', ...requireRequester, async (req, res) => {
   try {
-    // api-spec.md 1: every Requester-scoped endpoint identifies the caller by header.
-    const requesterId = parseRequesterId(req.header('X-Requester-Id'));
-    if (requesterId === null) {
-      return res.status(400).json({
-        error: { code: 'VALIDATION_ERROR', message: 'X-Requester-Id header is required' },
-      });
-    }
-
-    // BR-06/BR-20: an unknown or inactive Requester is unreachable, and its Tickets with it.
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
-    if (!requester || !requester.isActive) {
-      return res.status(404).json({
-        error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
-      });
-    }
-
+    const requesterId = req.user!.id;
     const query = parseTicketListQuery(req.query as Record<string, unknown>);
 
     // api-spec.md 4: a filter no Ticket can satisfy is zero results, not an error and not a
@@ -261,26 +224,13 @@ app.get('/api/tickets', async (req, res) => {
   }
 });
 
-app.get('/api/tickets/:id', async (req, res) => {
+app.get('/api/tickets/:id', ...requireRequester, async (req, res) => {
   try {
-    // api-spec.md 1: every Requester-scoped endpoint identifies the caller by header.
-    const requesterId = parseRequesterId(req.header('X-Requester-Id'));
-    if (requesterId === null) {
-      return res.status(400).json({
-        error: { code: 'VALIDATION_ERROR', message: 'X-Requester-Id header is required' },
-      });
-    }
+    const requesterId = req.user!.id;
 
     const ticketId = Number(req.params.id);
     if (!Number.isInteger(ticketId) || ticketId < 1) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
-    }
-
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
-    if (!requester || !requester.isActive) {
-      return res.status(404).json({
-        error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
-      });
     }
 
     const ticket = await prisma.ticket.findUnique({
@@ -295,6 +245,7 @@ app.get('/api/tickets/:id', async (req, res) => {
         description: true,
         requestedPriority: true,
         currentStatus: true,
+        requesterConfirmedAt: true,
         category: { select: { id: true, name: true } },
         relatedSystem: { select: { id: true, name: true } },
         attachments: {
@@ -306,14 +257,10 @@ app.get('/api/tickets/:id', async (req, res) => {
       },
     });
 
-    if (!ticket) {
+    // BR-12 (Lab 3, supersedes Lab 2's 403): missing and belongs-to-someone-else are now
+    // identical - a Requester cannot tell a nonexistent Ticket from one they don't own.
+    if (!ticket || ticket.requesterId !== requesterId) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
-    }
-
-    // api-spec.md 3, BR-22: an unowned Ticket is 403, never disclosed as 404 - Part 6/8 need
-    // evidence that ownership was actively checked, not just that the id looked wrong.
-    if (ticket.requesterId !== requesterId) {
-      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This Ticket does not belong to you' } });
     }
 
     const { requesterId: _ownerId, ...body } = ticket;
@@ -324,35 +271,56 @@ app.get('/api/tickets/:id', async (req, res) => {
   }
 });
 
-app.post('/api/tickets/:id/attachments', upload.single('file'), async (req, res) => {
+// api-spec.md 3, BR-05: the Requester records that the problem appears resolved. Never changes
+// status - only IT Staff formally resolve.
+app.post('/api/tickets/:id/resolution-signal', ...requireRequester, async (req, res) => {
   try {
-    const requesterId = parseRequesterId(req.header('X-Requester-Id'));
-    if (requesterId === null) {
-      return res.status(400).json({
-        error: { code: 'VALIDATION_ERROR', message: 'X-Requester-Id header is required' },
-      });
+    const requesterId = req.user!.id;
+    const ticketId = Number(req.params.id);
+    if (!Number.isInteger(ticketId) || ticketId < 1) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
     }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { requesterId: true, currentStatus: true, requesterConfirmedAt: true },
+    });
+    // BR-12: someone else's Ticket is the same 404 as a missing one.
+    if (!ticket || ticket.requesterId !== requesterId) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    }
+    if (ticket.currentStatus === 'CLOSED' || ticket.currentStatus === 'CANCELLED') {
+      return res.status(409).json({ error: { code: 'TICKET_CLOSED', message: 'This Ticket is already closed' } });
+    }
+
+    const select = { id: true, ticketNumber: true, currentStatus: true, requesterConfirmedAt: true, updatedAt: true } as const;
+    // specification.md 11: a repeat keeps the first time - the signal records when the Requester
+    // first saw the problem as fixed.
+    const updated = ticket.requesterConfirmedAt
+      ? await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId }, select })
+      : await prisma.ticket.update({ where: { id: ticketId }, data: { requesterConfirmedAt: new Date() }, select });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error('POST /api/tickets/:id/resolution-signal failed:', error);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unable to record resolution signal' } });
+  }
+});
+
+app.post('/api/tickets/:id/attachments', ...requireRequester, upload.single('file'), async (req, res) => {
+  try {
+    const requesterId = req.user!.id;
 
     const ticketId = Number(req.params.id);
     if (!Number.isInteger(ticketId) || ticketId < 1) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
     }
 
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
-    if (!requester || !requester.isActive) {
-      return res.status(404).json({
-        error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
-      });
-    }
-
-    // api-spec.md 5: existence and ownership are settled before the file is examined, so a
-    // rejection never reveals whether another Requester's Ticket exists.
+    // api-spec.md 5/BR-12: existence and ownership are settled before the file is examined, and
+    // both a missing and an unowned Ticket return the same 404.
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
-    if (!ticket) {
+    if (!ticket || ticket.requesterId !== requesterId) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
-    }
-    if (ticket.requesterId !== requesterId) {
-      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This Ticket does not belong to you' } });
     }
 
     const file = req.file;
@@ -417,37 +385,24 @@ app.post('/api/tickets/:id/attachments', upload.single('file'), async (req, res)
   }
 });
 
-app.get('/api/attachments/:id', async (req, res) => {
+app.get('/api/attachments/:id', ...requireRequester, async (req, res) => {
   try {
-    const requesterId = parseRequesterId(req.header('X-Requester-Id'));
-    if (requesterId === null) {
-      return res.status(400).json({
-        error: { code: 'VALIDATION_ERROR', message: 'X-Requester-Id header is required' },
-      });
-    }
+    const requesterId = req.user!.id;
 
     const attachmentId = Number(req.params.id);
     if (!Number.isInteger(attachmentId) || attachmentId < 1) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
     }
 
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
-    if (!requester || !requester.isActive) {
-      return res.status(404).json({
-        error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
-      });
-    }
-
     const attachment = await prisma.attachment.findUnique({
       where: { id: attachmentId },
       select: { ...ATTACHMENT_METADATA_SELECT, ticket: { select: { requesterId: true } } },
     });
-    if (!attachment) {
+
+    // BR-12/BR-16: missing and belongs-to-someone-else are identical (404); removed attachments
+    // still return their metadata here - only download hides them.
+    if (!attachment || attachment.ticket.requesterId !== requesterId) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
-    }
-    // BR-16: removed attachments still return their metadata here - only download hides them.
-    if (attachment.ticket.requesterId !== requesterId) {
-      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This Attachment does not belong to you' } });
     }
 
     const { ticket: _ticket, ...body } = attachment;
@@ -458,29 +413,15 @@ app.get('/api/attachments/:id', async (req, res) => {
   }
 });
 
-app.get('/api/attachments/:id/download', async (req, res) => {
+app.get('/api/attachments/:id/download', ...requireRequester, async (req, res) => {
   try {
-    // api-spec.md 1: download is the one endpoint that takes the Requester id as a query
-    // parameter, since it is used directly in an <a href> link.
-    const requesterId = parseRequesterId(
-      typeof req.query.requesterId === 'string' ? req.query.requesterId : undefined,
-    );
-    if (requesterId === null) {
-      return res.status(400).json({
-        error: { code: 'VALIDATION_ERROR', message: 'requesterId query parameter is required' },
-      });
-    }
+    // api-spec.md 3: the sid cookie travels automatically on a plain <a href> navigation, so the
+    // Lab 2 requesterId query-parameter workaround is gone.
+    const requesterId = req.user!.id;
 
     const attachmentId = Number(req.params.id);
     if (!Number.isInteger(attachmentId) || attachmentId < 1) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
-    }
-
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
-    if (!requester || !requester.isActive) {
-      return res.status(404).json({
-        error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
-      });
     }
 
     const attachment = await prisma.attachment.findUnique({
@@ -495,12 +436,10 @@ app.get('/api/attachments/:id/download', async (req, res) => {
     });
 
     // BR-16: missing and soft-removed are deliberately identical here - a removed file must not
-    // be told apart from one that never existed.
-    if (!attachment || !attachment.isActive) {
+    // be told apart from one that never existed. BR-12 folds "belongs to someone else" into the
+    // same 404.
+    if (!attachment || !attachment.isActive || attachment.ticket.requesterId !== requesterId) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
-    }
-    if (attachment.ticket.requesterId !== requesterId) {
-      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This Attachment does not belong to you' } });
     }
 
     res.status(200).download(attachmentFilePath(attachment.storedFilename), attachment.originalFilename, {
@@ -512,25 +451,13 @@ app.get('/api/attachments/:id/download', async (req, res) => {
   }
 });
 
-app.delete('/api/attachments/:id', async (req, res) => {
+app.delete('/api/attachments/:id', ...requireRequester, async (req, res) => {
   try {
-    const requesterId = parseRequesterId(req.header('X-Requester-Id'));
-    if (requesterId === null) {
-      return res.status(400).json({
-        error: { code: 'VALIDATION_ERROR', message: 'X-Requester-Id header is required' },
-      });
-    }
+    const requesterId = req.user!.id;
 
     const attachmentId = Number(req.params.id);
     if (!Number.isInteger(attachmentId) || attachmentId < 1) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
-    }
-
-    const requester = await prisma.requester.findUnique({ where: { id: requesterId } });
-    if (!requester || !requester.isActive) {
-      return res.status(404).json({
-        error: { code: 'REQUESTER_NOT_FOUND', message: 'Requester not found or inactive' },
-      });
     }
 
     const attachment = await prisma.attachment.findUnique({
@@ -538,13 +465,10 @@ app.delete('/api/attachments/:id', async (req, res) => {
       select: { id: true, ticketId: true, isActive: true, ticket: { select: { requesterId: true } } },
     });
 
-    // api-spec.md 5: missing or already-removed are both 404 here, ahead of the ownership check -
-    // an inactive attachment behaves like a missing one for this endpoint regardless of owner.
-    if (!attachment || !attachment.isActive) {
+    // api-spec.md 5/BR-12: missing, already-removed, and belongs-to-someone-else are all the same
+    // 404, ahead of the reason check.
+    if (!attachment || !attachment.isActive || attachment.ticket.requesterId !== requesterId) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
-    }
-    if (attachment.ticket.requesterId !== requesterId) {
-      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This Attachment does not belong to you' } });
     }
 
     // BR-17: a non-empty reason is required to soft-remove.
@@ -574,6 +498,86 @@ app.delete('/api/attachments/:id', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/attachments/:id failed:', error);
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unable to remove attachment' } });
+  }
+});
+
+// api-spec.md 4/7: every /api/staff/tickets* endpoint is IT Staff only. Requester and
+// Administrator both get 403 - specification.md 11: Administrator performs no ticket operations.
+const requireItStaff = [requireAuth, requirePasswordChanged, requireRole('IT_STAFF')];
+
+app.get('/api/staff/tickets', ...requireItStaff, async (req, res) => {
+  try {
+    const query = parseStaffQueueQuery(req.query as Record<string, unknown>);
+
+    // api-spec.md 4: a filter no Ticket can satisfy is zero results, not an error. Short-circuiting
+    // avoids handing Prisma a value its enum cannot accept.
+    if (query.matchesNothing) {
+      return res.status(200).json({ data: [], page: query.page, pageSize: query.pageSize, totalCount: 0, totalPages: 0 });
+    }
+
+    const contains = (text: string) => ({ contains: text, mode: 'insensitive' as const });
+
+    const where = {
+      ...(query.status !== undefined ? { currentStatus: query.status } : {}),
+      ...(query.itPriority !== undefined ? { itPriority: query.itPriority } : {}),
+      ...(query.owner === 'unassigned'
+        ? { ticketOwnerId: null }
+        : query.owner !== undefined
+          ? { ticketOwnerId: query.owner }
+          : {}),
+      // specification.md 11: ticket number, summary/description text, requester name/email -
+      // partial and case-insensitive. A requester is found here rather than by a separate filter.
+      ...(query.search !== undefined
+        ? {
+            OR: [
+              { ticketNumber: contains(query.search) },
+              { summary: contains(query.search) },
+              { description: contains(query.search) },
+              { requester: { name: contains(query.search) } },
+              { requester: { email: contains(query.search) } },
+            ],
+          }
+        : {}),
+    };
+
+    // api-spec.md 4: the chosen sort (enum columns sort in their declared order), then Ticket id
+    // ascending as the tie-breaker so a Ticket can never appear on two pages.
+    const sortField = query.sort === 'status' ? 'currentStatus' : query.sort;
+    const orderBy = [{ [sortField]: query.order }, { id: 'asc' as const }];
+
+    const totalCount = await prisma.ticket.count({ where });
+
+    const rows = await prisma.ticket.findMany({
+      where,
+      orderBy,
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+      // specification.md 11: the 7 Queue columns plus id - nothing else leaves the server.
+      select: {
+        id: true,
+        ticketNumber: true,
+        summary: true,
+        currentStatus: true,
+        itPriority: true,
+        createdAt: true,
+        requester: { select: { id: true, name: true } },
+        ticketOwner: { select: { id: true, name: true } },
+      },
+    });
+
+    // api-spec.md 4 calls the field `owner`; the schema's relation is `ticketOwner`.
+    const data = rows.map(({ ticketOwner, ...row }) => ({ ...row, owner: ticketOwner }));
+
+    res.status(200).json({
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      totalCount,
+      totalPages: Math.ceil(totalCount / query.pageSize),
+    });
+  } catch (error) {
+    console.error('GET /api/staff/tickets failed:', error);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unable to retrieve the ticket queue' } });
   }
 });
 
