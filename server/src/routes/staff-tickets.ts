@@ -13,6 +13,19 @@ const staffOnly = [requireAuth, requirePasswordChanged, requireRole('IT_STAFF')]
 
 const TICKET_NOT_FOUND = { error: { code: 'NOT_FOUND', message: 'Ticket not found' } };
 
+// The words IT Staff see for each status (ui-spec.md 9), so an error message shown as-is never
+// exposes enum codes.
+const STATUS_LABEL: Record<string, string> = {
+  NEW: 'New',
+  OPEN: 'Open',
+  IN_PROGRESS: 'In Progress',
+  WAITING_FOR_REQUESTER: 'Waiting for Requester',
+  RESOLVED: 'Resolved',
+  CLOSED: 'Closed',
+  REOPENED: 'Reopened',
+  CANCELLED: 'Cancelled',
+};
+
 // Express types a route parameter loosely (string | string[] | undefined); anything that isn't a
 // single whole number of at least 1 is treated as a Ticket that doesn't exist.
 function parseId(raw: unknown): number | null {
@@ -172,7 +185,7 @@ router.patch('/tickets/:id/status', ...staffOnly, async (req, res) => {
     const check = checkTransition(ticket.currentStatus, status as CurrentStatusValue);
     if (!check.allowed) {
       return res.status(409).json({
-        error: { code: 'INVALID_TRANSITION', message: `A ${ticket.currentStatus} Ticket cannot move to ${status}` },
+        error: { code: 'INVALID_TRANSITION', message: `This Ticket is ${STATUS_LABEL[ticket.currentStatus]} and cannot move to ${STATUS_LABEL[status as string]}.` },
       });
     }
     // BR-14: every transition needs the owner except Cancel and Reopen, which the matrix marks.

@@ -434,10 +434,13 @@ function StaffControls({
         <div className="col-12 col-lg-4">
           <span className="form-label d-block">Ticket Owner</span>
           <p className="mb-2">{ticket.owner ? ticket.owner.name : <span className="tt-queue-unassigned">Unassigned</span>}</p>
+          {/* Its own block, so "Assign to" below starts on a new line instead of running on beside it. */}
           {canClaim && (
-            <button type="button" className="btn btn-tt-primary btn-sm mb-2" disabled={busy} onClick={onClaim}>
-              Claim
-            </button>
+            <div className="mb-2">
+              <button type="button" className="btn btn-tt-primary btn-sm" disabled={busy} onClick={onClaim}>
+                Claim
+              </button>
+            </div>
           )}
           <label htmlFor="staff-assign-to" className="form-label">
             Assign to

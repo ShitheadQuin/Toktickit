@@ -34,8 +34,15 @@ test.describe('IT Staff ticket flow (E2E-02)', () => {
     await page.waitForURL('**/staff/tickets/*');
     const ticketId = new URL(page.url()).pathname.split('/').pop();
 
+    // Staff Ticket Detail polish: the "Assign to" label starts below the Claim button rather than
+    // running on beside it - a layout check jsdom can't make, so it lives here in the real browser.
+    const claim = page.getByRole('button', { name: 'Claim', exact: true });
+    const claimBox = await claim.boundingBox();
+    const assignLabelBox = await page.locator('label[for="staff-assign-to"]').boundingBox();
+    expect(assignLabelBox!.y).toBeGreaterThanOrEqual(claimBox!.y + claimBox!.height);
+
     // AC-11: claiming makes the caller the owner and opens the Ticket.
-    await page.getByRole('button', { name: 'Claim', exact: true }).click();
+    await claim.click();
     await expect(page.getByRole('status')).toHaveText('Ticket claimed.');
     await expect(page.locator('.tt-badge-status-open')).toBeVisible();
 

@@ -272,6 +272,8 @@ describe('Staff Ticket Detail API', () => {
 
       expect(response.status).toBe(409);
       expect(response.body.error.code).toBe('INVALID_TRANSITION');
+      // Staff Ticket Detail polish: the message is shown to IT Staff as-is, so it uses status names, not enum codes.
+      expect(response.body.error.message).toBe('This Ticket is Open and cannot move to Closed.');
       expect((await reload(ticket.id)).currentStatus).toBe('OPEN');
     });
 

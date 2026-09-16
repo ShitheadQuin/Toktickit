@@ -147,7 +147,10 @@ describe('StaffTicketDetail', () => {
       }));
       renderDetail();
 
-      fireEvent.change(await screen.findByLabelText(/assign to/i), { target: { value: '13' } });
+      // The staff list loads after the Ticket. Choosing before its option exists selects nothing, which
+      // left Reassign disabled and made this test fail intermittently under full-suite load.
+      await screen.findByRole('option', { name: 'Wiriya Charoen' });
+      fireEvent.change(screen.getByLabelText(/assign to/i), { target: { value: '13' } });
       fireEvent.click(screen.getByRole('button', { name: /^reassign$/i }));
 
       expect(await screen.findByRole('status')).toHaveTextContent(/reassigned/i);
