@@ -40,7 +40,9 @@ five button kinds (primary/secondary/tertiary/destructive/busy). Two additions f
   - IT Staff: My Queue, Create Ticket is **not** shown (IT Staff don't file tickets in Lab 3)
   - Administrator: Users
 - Right: current user's **name and role badge**, replacing Lab 2's Development Requester display,
-  with a Profile menu containing Change Password and Logout.
+  followed by Change Password and Logout as direct controls in the header. (Drafted as a Profile
+  menu; built flat, because two items behind a menu is a click and a keyboard stop for nothing.
+  Corrected here in #40 so the spec matches the app.)
 - Mobile: nav collapses behind a menu control; name/role and Logout remain reachable without
   opening it.
 
@@ -57,9 +59,11 @@ true, replacing the rest of the app (no nav, no way to skip it). Current (tempor
 new password, confirm new password. A live checklist under the new-password field mirrors BR-10:
 "At least 8 characters," "Contains a letter," "Contains a number" — each turns green with a check
 as satisfied, matching the Zen Green success token, never color alone (the check icon carries the
-meaning). Continue is disabled until all three are satisfied and confirm matches. Same screen
-layout serves a voluntary password change from the Profile menu later — the only difference is a
-Cancel option is available (there's nothing to force in that case).
+meaning). Continue is disabled until all three are satisfied and confirm matches. The same screen
+serves the voluntary change reached from the header's Change Password control. It offers no Cancel
+in either case: the forced change must not be skippable, and a voluntary one is left by navigating
+away, so a Cancel button would only be a second way to do what the nav already does. (Corrected
+here in #40 — the draft said a Cancel appeared for the voluntary case.)
 
 ## 5. Requester screens — regression + additions
 
@@ -180,15 +184,40 @@ comment/note composers — are keyboard-reachable, and every badge pairs color w
 
 ## 12. Visual inspection checklist
 
-- [ ] No clipped labels at any viewport, on any new Lab 3 screen
-- [ ] No overlapping validation, status, or toast messages
-- [ ] No unintended horizontal scrolling on Queue, Staff Ticket Detail, or User Management
-- [ ] Role-based nav never renders a link the current role cannot use
-- [ ] Every badge (status/priority/role) pairs color with text or icon
-- [ ] Public Comments and Internal Notes are visually distinguishable at a glance, not just by caption
-- [ ] Editable vs. read-only field styling is consistent with Lab 2's tokens across every new screen
-- [ ] Every state in §10 is represented, not just the happy path
-- [ ] Desktop table and mobile card behavior both checked for the Queue
+Completed in Issue #40. Each line names what was actually checked, so a reader can go and look
+rather than take the tick on trust.
+
+- [x] No clipped labels at any viewport, on any new Lab 3 screen — every screen measured at 1280,
+      768 and 375px for content wider than its own cell; the only hit was `span.visually-hidden`,
+      which is the intended screen-reader-only pattern, not a clipped label
+- [x] No overlapping validation, status, or toast messages — measured by comparing rendered
+      bounding boxes on every screen at all three widths. **One real defect found and fixed:** on
+      My Tickets the `Waiting for Requester` badge was 170px in a 104px column and painted over
+      Ticket Date. `.tt-head-status` was still at Lab 2's 6.5rem, sized when `New` was the only
+      status this table could show; widened to 11rem to match the Queue's equivalent column
+- [x] No unintended horizontal scrolling on Queue, Staff Ticket Detail, or User Management —
+      asserted on every capture by RESP-01 (`e2e/lab-03/responsive.spec.ts`), not checked by eye
+- [x] Role-based nav never renders a link the current role cannot use — UI-09
+      (`client/tests/lab-02/AppShell.test.tsx`)
+- [x] Every badge (status/priority/role) pairs color with text or icon — STYLE-01 asserts every
+      badge carries a §14 class *and* renders non-empty text; STYLE-03 asserts the class map is
+      complete and every class has a CSS rule
+- [x] Public Comments and Internal Notes are visually distinguishable at a glance, not just by
+      caption — STYLE-02 asserts different classes, different computed backgrounds, and that the
+      Note states its own restriction in words for a reader who sees neither colour
+- [x] Editable vs. read-only field styling is consistent with Lab 2's tokens across every new
+      screen — checked by eye against the Part 7 captures (read-only Ticket fields shaded, editable
+      controls on the Zen Green field token). No automated check: "looks read-only" is a judgement
+      a script cannot make honestly
+- [x] Every state in §10 is represented, not just the happy path — the Part 5-8 capture sets, one
+      shot per state, listed in their `p*-notes.txt`
+- [x] Desktop table and mobile card behavior both checked for the Queue — RESP-01's
+      `staff-queue/{desktop,tablet,mobile}.png`; below 992px the same table restyles into cards,
+      with no horizontal scroll at any width
+- [x] Keyboard-only operation across Login, Change Password, Queue, Staff Ticket Detail and User
+      Management, with a visible focus indicator — A11Y-01
+      (`e2e/lab-03/accessibility.spec.ts`), added in #40 to replace the `keyboard-nav.spec.ts` that
+      #36 removed with the Development Requester selector
 
 ## 13. Screenshot paths
 

@@ -28,6 +28,21 @@ const ROLE_LABEL: Record<string, string> = { REQUESTER: 'Requester', IT_STAFF: '
 
 const EMPTY_FORM: FormState = { name: '', email: '', role: 'REQUESTER', isActive: true };
 
+// An email address contains no spaces, so the only break opportunities are the ones given to it.
+// Without this the Email column breaks mid-word at narrow widths; <wbr> after the "@" moves the
+// break to the boundary a reader expects (ui-spec.md 12, Issue #40).
+function breakableEmail(email: string) {
+  const at = email.lastIndexOf('@');
+  if (at < 0) return email;
+  return (
+    <>
+      {email.slice(0, at + 1)}
+      <wbr />
+      {email.slice(at + 1)}
+    </>
+  );
+}
+
 // ui-spec.md 8: the anticipated refusals get their own sentence next to what caused them, never a
 // generic failure banner.
 const KNOWN_ERRORS: Record<string, string> = {
@@ -340,7 +355,7 @@ export function UserManagement() {
                 {users.map((row) => (
                   <tr key={row.id}>
                     <td>{row.name}</td>
-                    <td className="tt-user-email">{row.email}</td>
+                    <td className="tt-user-email">{breakableEmail(row.email)}</td>
                     <td>
                       <span className={`tt-badge ${ROLE_BADGE_CLASS[row.role] ?? ''}`}>{ROLE_LABEL[row.role] ?? row.role}</span>
                     </td>
