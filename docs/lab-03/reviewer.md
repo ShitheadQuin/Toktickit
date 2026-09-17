@@ -14,7 +14,8 @@ at the end.
 
 ## Reviews I gave on my partner's PRs
 
-Pull Requests Chanat authored and I reviewed, all targeting his `lab3-staging`:
+Pull Requests Chanat authored and I reviewed, targeting his `lab3-staging` except the release PR
+into `main`:
 
 | PR | Branch | My verdict |
 |----|--------|------------|
@@ -24,10 +25,13 @@ Pull Requests Chanat authored and I reviewed, all targeting his `lab3-staging`:
 | [#49](https://github.com/Chanat-888/TokTickIT/pull/49) | feature/lab3-auth | Requested changes (3 points), fixed in `4dc3abe`, approved, merged |
 | [#50](https://github.com/Chanat-888/TokTickIT/pull/50) | feature/lab3-requester-regression | Requested changes (2 points, then missing tests), fixed in `fb793c0` and `c1e0719`, approved, merged |
 | [#51](https://github.com/Chanat-888/TokTickIT/pull/51) | feature/lab3-staff-queue | Requested changes (3 points), fixed in `f798ee4`, approved, merged |
-| [#52](https://github.com/Chanat-888/TokTickIT/pull/52) | feature/lab3-staff-ticket-detail | Requested changes (3 points, one of which I had misread), fixed on the branch, approved, merged |
-| [#53](https://github.com/Chanat-888/TokTickIT/pull/53) | feature/lab3-admin-users | Requested changes (3 points), fixed on the branch, approved, merged |
+| [#52](https://github.com/Chanat-888/TokTickIT/pull/52) | feature/lab3-staff-ticket-detail | Requested changes (3 points, one of which I had misread), fixed in `a30c583`, approved, merged |
+| [#53](https://github.com/Chanat-888/TokTickIT/pull/53) | feature/lab3-admin-users | Requested changes (3 points), fixed in `bb1dad0`, approved, merged |
 | [#54](https://github.com/Chanat-888/TokTickIT/pull/54) | feature/lab3-test-suite | Approved with no changes requested, merged |
 | [#55](https://github.com/Chanat-888/TokTickIT/pull/55) | feature/lab3-screenshots | Approved with no changes requested, merged |
+| [#56](https://github.com/Chanat-888/TokTickIT/pull/56) | feature/lab3-lab2-e2e-fix | Approved with 1 non-blocking note, merged |
+| [#57](https://github.com/Chanat-888/TokTickIT/pull/57) | feature/lab3-ai-use | Requested changes (1 point), approved with the point still open, fixed in `a2ea5bd`, confirmed, merged |
+| [#58](https://github.com/Chanat-888/TokTickIT/pull/58) | lab3-staging → main | Approved with no changes requested, merged (release) |
 
 Chanat's repository numbers its own business rules and tests (BR-35, API-18 and so on). Every
 reference below is to **his** `specification.md` / `api-spec.md` / `tests.md`, not to this
@@ -76,7 +80,8 @@ session getting `403` on that endpoint.
 **My approval:** All points addressed: BR-36 gives API-18 a source in the specification, and
 API-65, API-66 and UI-24 cover BR-35 and the `assignable-users` endpoint. The test plan is complete
 and traceable. Approved and merged. The Requester-`403` row for `assignable-users` was left as a
-non-blocking follow-up for his next test-plan change. _(Update this line once Chanat adds it.)_
+non-blocking follow-up. It was not added before his release: his final `tests.md` on `main` still
+has only the `200` case (API-66).
 
 ### Data model and migration, [Chanat-888/TokTickIT#48](https://github.com/Chanat-888/TokTickIT/pull/48)
 
@@ -189,7 +194,7 @@ side of the lab.
    state**, so a change another staff member made since page load stays stale on screen. Suggested
    replacing the whole ticket from the response, or refetching after a successful write.
 
-**Chanat's response:** Fixed the conditional update and the stale-state merge, and pointed out that
+**Chanat's response:** Fixed the conditional update and the stale-state merge in `a30c583`, and pointed out that
 I had misread the Requester handler on point 2, both views intentionally return removed rows with
 `isRemoved`, and the UI marks them. He also dropped a flaky spy-based test rather than leave
 unstable mocks in place.
@@ -213,7 +218,7 @@ His Administrator screen: listing, creation, editing, activation and a new initi
 3. **`client/src/screens/UserManagement.tsx` had no stale-response guard**, unlike his
    `StaffTicketQueue`, so fast typing in the search box can let an older result land last.
 
-**Chanat's response:** Used `deleteAllSessions` for the reset, moved the admin check to Serializable
+**Chanat's response:** Fixed all three in `bb1dad0`. Used `deleteAllSessions` for the reset, moved the admin check to Serializable
 isolation with `P2034` mapped to the same 409, and reused the `latestRequestId` pattern in the
 search box.
 
@@ -227,8 +232,8 @@ cover it. Approved; merged 16 Sep.
 His unit, API, component, style and E2E suites for Lab 3.
 
 **My review (approved, no changes requested):** I cross-checked every Test ID in his `tests.md`
-against the files actually on the branch, all covered, and the new suites match his spec rather
-than merely passing. I also agreed that his Lab 2 E2E-06/07/08 rewrite belongs in a separate task
+against the files actually on the branch, all covered, and the new suites match his spec. I also
+agreed that his Lab 2 E2E-06/07/08 rewrite belongs in a separate task
 rather than being folded into this PR, and noted his catch on the login fixture hang.
 
 **Chanat's response:** None needed.
@@ -251,6 +256,59 @@ the original four. I also noted his catch that the `/admin/users` forbidden stat
 
 **My approval:** Approved and merged into his `lab3-staging` at 2026-09-16 14:58:47 UTC.
 
+### Lab 2 E2E repair, [Chanat-888/TokTickIT#56](https://github.com/Chanat-888/TokTickIT/pull/56)
+
+Removing the Development Requester selector broke his Lab 2 E2E-06, E2E-07 and E2E-08 and the Lab 2
+Requester Selection screenshot checklist. E2E-06 and E2E-08 now switch Requester through a real
+login, E2E-07 was rewritten against the Login screen, and the checklist block for the removed
+screen was dropped. One commit (`49eb716`).
+
+**My review (approved, no changes requested):** The rewrites describe accurately what changed, and
+documenting E2E-07's reachability limit inline follows the same approach as his API-58/59 tests.
+Non-blocking note: his Phase 10 Definition of Done asks for the Lab 2 E2E suite to pass
+*unmodified*, but this PR has to modify it because BR-15 removed the screen those tests targeted.
+I asked him to say so in the release PR, so it doesn't look like tests were changed just to make
+them pass. I also noted that he reverted the Lab 2 PNGs a full run had regenerated by accident,
+rather than silently changing already-graded Lab 2 evidence.
+
+**Chanat's response:** None needed.
+
+**My approval:** Approved and merged into his `lab3-staging` at 2026-09-16 15:38:48 UTC.
+
+### AI use, [Chanat-888/TokTickIT#57](https://github.com/Chanat-888/TokTickIT/pull/57)
+
+His `docs/lab-03/ai-use.md`: eight prompts from across the sprint and his reflection.
+
+**My comment (requested changes):** The intro pointed to `docs/lab-03/reviewer.md`, and that link
+returned 404. A broken link in the intro is the first thing a grader would click.
+
+**Chanat's response:** He answered that the file existed and the 404 was a delay on GitHub's side,
+with `curl` checks returning `200 OK`. His checks were against `ai-use.md` itself, though, not the
+`reviewer.md` path the intro linked to.
+
+**My approval:** The format matches his Lab 2 `ai-use.md` and the prompts are real, so I approved,
+but said the `reviewer.md` link was still unresolved because we had been checking different files,
+and asked him to fix the path or drop it before submission.
+
+**Chanat's response:** He confirmed `docs/lab-03/reviewer.md` had never been pushed to any branch,
+and reworded the intro without the path in `a2ea5bd`.
+
+**My follow-up:** Confirmed the reworded intro has no path left to 404. Merged into his
+`lab3-staging` at 2026-09-17 09:17:35 UTC.
+
+### Lab 3 release, [Chanat-888/TokTickIT#58](https://github.com/Chanat-888/TokTickIT/pull/58)
+
+His release from `lab3-staging` into `main`.
+
+**My review (approved, no changes requested):** Every phase PR had already been reviewed and
+approved individually, so this is a roll-up of checked work. The Lab 2 E2E modification from #56 is
+called out explicitly, which was the one thing I wanted carried into the release notes. Full suite
+green (220 server, 77 client, 45 E2E), and the evidence and `ai-use.md` are in place.
+
+**Chanat's response:** None needed.
+
+**My approval:** Approved and merged into his `main` at 2026-09-17 09:21:31 UTC.
+
 ## Reviews my partner gave on my PRs
 
 Pull Requests I authored and Chanat reviewed:
@@ -266,6 +324,9 @@ Pull Requests I authored and Chanat reviewed:
 | [#48](https://github.com/ShitheadQuin/Toktickit/pull/48) | feature/47-staff-detail-polish | lab3-staging | Approved with no changes requested, merged into lab3-staging |
 | [#49](https://github.com/ShitheadQuin/Toktickit/pull/49) | feature/39-user-admin | lab3-staging | Approved with no changes requested, merged into lab3-staging |
 | [#50](https://github.com/ShitheadQuin/Toktickit/pull/50) | feature/40-e2e-visual | lab3-staging | Approved with no changes requested, merged into lab3-staging |
+| [#51](https://github.com/ShitheadQuin/Toktickit/pull/51) | feature/41-release | lab3-staging | Approved with no changes requested, merged into lab3-staging |
+| [#52](https://github.com/ShitheadQuin/Toktickit/pull/52) | lab3-staging | main | Approved with no changes requested, merged into main (release) |
+| [#54](https://github.com/ShitheadQuin/Toktickit/pull/54) | fix/server-typecheck | lab3-staging | Approved with no changes requested, merged into lab3-staging |
 
 ### Issue 32, [ShitheadQuin/Toktickit#33](https://github.com/ShitheadQuin/Toktickit/pull/33)
 
@@ -372,7 +433,7 @@ Zen Green classes, and no scope creep.
 I also traced his 2 server failures to an existing Lab 2 test-isolation problem:
 `my-tickets.api.test.ts` creates a temporary Requester that races with `requesters.api.test.ts`'s
 exact-count check when Vitest runs files in parallel. It wasn't caused by #35, so I left it out of
-this PR. Re-requested review; Chanat approved and merged PR #43 into `lab3-staging`.
+this PR. Posted the reply on the PR; Chanat approved and merged PR #43 into `lab3-staging`.
 
 ### Issue 36, [ShitheadQuin/Toktickit#44](https://github.com/ShitheadQuin/Toktickit/pull/44)
 
@@ -486,12 +547,50 @@ invalidation on password reset, all correct; approving."
 
 E2E, responsive and visual evidence: RESP-01, STYLE-01/02 and A11Y-01 as three new Playwright
 specs, the Lab 2 flake fixed ahead of the final run from `main`, the §12 visual checklist
-completed, and the two UI defects the visual pass turned up. Four commits, the UI fix (`0be4165`),
-RESP-01 and its non-destructive admin fixture (`732d363`), STYLE and A11Y (`cd75c03`), docs
-(`4e38a4c`).
+completed, and the two UI defects the visual pass turned up. Six commits: the Lab 2 flake fix and
+fixture teardown (`e029a77`), the first RESP-01 captures (`5f350b5`), the UI fix (`0be4165`),
+RESP-01 recaptured with a non-destructive admin fixture (`732d363`), STYLE and A11Y (`cd75c03`),
+and docs (`4e38a4c`).
 
 **Chanat's review (approved, no changes requested):** "Verified both UI fixes (status-column width,
 email word-break) and the teardown/test additions are sound and honestly documented, approving."
 
 **My response:** None needed. Chanat merged PR #50 into `lab3-staging` at 2026-09-16 14:20:59 UTC
 (merge commit `9bd1a5b`).
+
+### Issue 41, [ShitheadQuin/Toktickit#51](https://github.com/ShitheadQuin/Toktickit/pull/51)
+
+The two submission documents, this `reviewer.md` and `ai-use.md`, promoted from the working drafts
+kept in `.agents/` during the sprint. One commit (`4ea0379`).
+
+**Chanat's review (approved, no changes requested):** "Spot-checked reviewer.md's claims against
+the real GitHub data (my own review threads and the Chanat-888/TokTickIT PRs) and they hold up
+accurately — approving."
+
+**My response:** None needed. Chanat merged PR #51 into `lab3-staging` at 2026-09-16 15:56:52 UTC.
+This section and the two below were added after that merge, so the file also records the reviews
+of the last two PRs.
+
+### Issue 53, [ShitheadQuin/Toktickit#54](https://github.com/ShitheadQuin/Toktickit/pull/54)
+
+The server typecheck. `tsconfig.json` set `"module": "nodenext"` while `package.json` set
+`"type": "commonjs"`, so `npx tsc --noEmit` reported 320 errors and hid real ones. Changing the
+module setting to `"preserve"` left 9 genuine type errors, all fixed, including the broken `User`
+import in `src/middleware.ts` that meant `req.user` was never actually typechecked. One commit
+(`f04229c`).
+
+**Chanat's review (approved, no changes requested):** "Ran tsc myself on both branches and
+confirmed 320→0, and the two real fixes (UserModel import, sequence-read guard) are correct, not
+just noise suppression — approving."
+
+**My response:** None needed. Chanat merged PR #54 into `lab3-staging` at 2026-09-16 16:15:21 UTC
+(merge commit `caa87fe`).
+
+### Issue 41 release, [ShitheadQuin/Toktickit#52](https://github.com/ShitheadQuin/Toktickit/pull/52)
+
+The Lab 3 release from `lab3-staging` into `main`, carrying every Sprint 3 Issue merged above.
+
+**Chanat's review (approved, no changes requested):** Approved without a written comment.
+
+**My response:** None needed. Chanat merged PR #52 into `main` at 2026-09-16 16:20:28 UTC (merge
+commit `8c880e5`), so the release was not self-merged.
