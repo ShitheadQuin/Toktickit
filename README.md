@@ -4,7 +4,9 @@ IT service desk vertical slice: React (Vite + Bootstrap) → Express REST API (T
 
 Lab 1 proved the stack works end-to-end with a Check System page (still available at `/diagnostics`).
 
-Lab 2 builds the real IT service desk: a Development Requester selector standing in for login, Create Ticket, My Tickets (search/filter/sort/pagination), a read-only Ticket Detail screen, and the attachment lifecycle (upload, download, soft removal) — all scoped so a Requester can only ever see their own Tickets.
+Lab 2 built the real IT service desk: Create Ticket, My Tickets (search/filter/sort/pagination), a read-only Ticket Detail screen, and the attachment lifecycle (upload, download, soft removal) — all scoped so a Requester can only ever see their own Tickets. A Development Requester selector stood in for login.
+
+Lab 3 replaces that selector with real authentication and role-based authorization for three roles: Requester, IT Staff and Administrator. Users sign in with email and password and must change an initial password at first login. IT Staff get a Ticket Queue and a Ticket Detail screen for claiming and reassigning Tickets, setting IT Priority, moving status through the permitted workflow, and posting Public Comments and Internal Notes. Administrators get a User Management screen. Every rule is enforced by the backend, not only by hiding controls.
 
 ## Prerequisites
 
@@ -19,11 +21,16 @@ toktickit/
 ├── client/          React + TypeScript + Vite + Bootstrap frontend
 ├── server/          Node.js + Express + TypeScript backend, Prisma ORM
 │   └── uploads/     Attachment files, server-generated filenames (gitignored)
-├── e2e/             Playwright end-to-end, UI style and responsive suite (Lab 2)
+├── e2e/             Playwright end-to-end, UI style, accessibility and responsive suites
+│   ├── lab-02/
+│   └── lab-03/
 ├── docs/lab-01/     Lab 1 submission evidence
 ├── docs/lab-02/     Lab 2 engineering contract and submission evidence
+├── docs/lab-03/     Lab 3 engineering contract and submission evidence
 │   (specification.md, api-spec.md, ui-spec.md, tests.md, reviewer.md, ai-use.md)
-├── artifacts/       Responsive screenshots written by e2e/lab-02/responsive.spec.ts
+├── artifacts/
+│   ├── lab-02/screenshots/   Captures Lab 2 was submitted with
+│   └── lab-03/screenshots/   Responsive captures written by e2e/lab-03/responsive.spec.ts
 └── .gitignore
 ```
 
@@ -105,7 +112,7 @@ so open the app at `http://localhost:5173`, not the API port directly.
 
 ```bash
 cd client && npm test
-cd server && npm test
+cd ../server && npx tsc --noEmit && npm test
 ```
 
 Frontend tests run with Vitest; backend tests run with Vitest + Supertest (Supertest imports the
@@ -121,7 +128,8 @@ npm test
 
 Starts both dev servers automatically (`webServer` in `playwright.config.ts`) if they aren't
 already running, then runs every spec under `e2e/lab-02/` (requester-ticket-flow, UI-style,
-responsive) and `e2e/lab-03/` (authentication) against the real app and real Postgres — no mocked
+responsive) and `e2e/lab-03/` (authentication, staff Ticket flow, user administration, UI style,
+accessibility, responsive) against the real app and real Postgres — no mocked
 fetches, unlike the Vitest UI suites above. Requires PostgreSQL running with the seed applied; the
 specs create their own fixture accounts.
 
