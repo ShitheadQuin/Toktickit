@@ -67,7 +67,11 @@ async function insertLab3Rows(db: Client) {
   );
   await db.query(`INSERT INTO "PublicComment" ("ticketId", "authorId", body) VALUES ($1, 1, 'Still broken')`, [second.id]);
   await db.query(`INSERT INTO "InternalNote" ("ticketId", "authorId", body) VALUES ($1, 2, 'Check the adapter')`, [second.id]);
-  await db.query(`SELECT setval(pg_get_serial_sequence('"User"', 'id'), (SELECT max(id) FROM "User"))`);
+  // Explicit ids above don't advance the SERIAL sequences; move them on so the seed in MIG-02
+  // doesn't collide with the fixture rows.
+  for (const table of ['Category', 'RelatedSystem', 'User']) {
+    await db.query(`SELECT setval(pg_get_serial_sequence('"${table}"', 'id'), (SELECT max(id) FROM "${table}"))`);
+  }
 }
 
 // Everything Lab 1 to 3 stored, as plain rows, so before and after can be compared exactly.

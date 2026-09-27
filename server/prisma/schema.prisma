@@ -50,11 +50,14 @@ model User {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  tickets        Ticket[]        @relation("TicketRequester")
-  ownedTickets   Ticket[]        @relation("TicketOwner")
-  sessions       Session[]
-  publicComments PublicComment[]
-  internalNotes  InternalNote[]
+  tickets          Ticket[]              @relation("TicketRequester")
+  ownedTickets     Ticket[]              @relation("TicketOwner")
+  sessions         Session[]
+  publicComments   PublicComment[]
+  internalNotes    InternalNote[]
+  actionsPerformed ActionTaken[]         @relation("ActionPerformer")
+  actionsAssigned  ActionTaken[]         @relation("ActionAssignee")
+  statusChanges    TicketStatusHistory[]
 }
 
 model Session {
@@ -99,16 +102,20 @@ model Ticket {
   ticketOwnerId        Int?
   itPriority           RequestedPriority
   requesterConfirmedAt DateTime?
+  // Lab 4 (specification.md BR-19): raised by every workflow write, sent back as expectedVersion.
+  version              Int               @default(0)
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
 
-  requester      User            @relation("TicketRequester", fields: [requesterId], references: [id])
-  ticketOwner    User?           @relation("TicketOwner", fields: [ticketOwnerId], references: [id])
-  category       Category        @relation(fields: [categoryId], references: [id])
-  relatedSystem  RelatedSystem   @relation(fields: [relatedSystemId], references: [id])
+  requester      User                  @relation("TicketRequester", fields: [requesterId], references: [id])
+  ticketOwner    User?                 @relation("TicketOwner", fields: [ticketOwnerId], references: [id])
+  category       Category              @relation(fields: [categoryId], references: [id])
+  relatedSystem  RelatedSystem         @relation(fields: [relatedSystemId], references: [id])
   attachments    Attachment[]
   publicComments PublicComment[]
   internalNotes  InternalNote[]
+  actions        ActionTaken[]
+  statusHistory  TicketStatusHistory[]
 
   @@index([requesterId, ticketDate])
   @@index([categoryId])
@@ -160,4 +167,57 @@ model InternalNote {
   author User   @relation(fields: [authorId], references: [id])
 
   @@index([ticketId, createdAt])
+}
+
+// Lab 4: the work recorded under a Ticket (specification.md 7, BR-01 to BR-12).
+enum ActionStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model ActionTaken {
+  id               Int          @id @default(autoincrement())
+  ticketId         Int
+  actionAt         DateTime
+  description      String       @db.VarChar(2000)
+  result           String?      @db.VarChar(2000)
+  status           ActionStatus @default(PLANNED)
+  performedById    Int
+  assigneeId       Int
+  followUpRequired Boolean      @default(false)
+  followUpNote     String?      @db.VarChar(2000)
+  attachmentNotes  String?      @db.VarChar(500)
+  clientRequestId  String?      @db.VarChar(64)
+  version          Int          @default(0)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Restrict: an Action is never deleted (BR-11), so neither is a Ticket that has one.
+  ticket      Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  performedBy User   @relation("ActionPerformer", fields: [performedById], references: [id])
+  assignee    User   @relation("ActionAssignee", fields: [assigneeId], references: [id])
+
+  @@unique([ticketId, clientRequestId])
+  @@index([ticketId, actionAt])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+// Lab 4: append-only record of every status change (BR-18). No route updates or deletes a row.
+model TicketStatusHistory {
+  id          Int           @id @default(autoincrement())
+  ticketId    Int
+  fromStatus  CurrentStatus
+  toStatus    CurrentStatus
+  changedById Int
+  changedAt   DateTime      @default(now())
+
+  // Cascade: history has no meaning without its Ticket. The app never deletes a Ticket; this only
+  // lets test fixtures clean up after themselves.
+  ticket    Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  changedBy User   @relation(fields: [changedById], references: [id])
+
+  @@index([ticketId, changedAt])
 }
