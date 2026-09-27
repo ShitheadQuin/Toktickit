@@ -26,3 +26,14 @@ export const USER_STATUS_BADGE_CLASS: Record<'ACTIVE' | 'INACTIVE', string> = {
   ACTIVE: 'tt-badge-user-active',
   INACTIVE: 'tt-badge-user-inactive',
 };
+
+// docs/lab-04/ui-spec.md 11: an Action Taken's status, and the follow up flag. STYLE-01 checks
+// each has a rule in theme.css.
+export const ACTION_STATUS_BADGE_CLASS: Record<string, string> = {
+  PLANNED: 'tt-badge-action-planned',
+  IN_PROGRESS: 'tt-badge-action-in-progress',
+  COMPLETED: 'tt-badge-action-completed',
+  CANCELLED: 'tt-badge-action-cancelled',
+};
+
+export const FOLLOW_UP_FLAG_CLASS = 'tt-flag-follow-up';

@@ -781,3 +781,135 @@ body {
     padding: 0.125rem 0;
   }
 }
+
+/* Actions Taken (docs/lab-04/ui-spec.md 7, 10, 11). Action status badges pair each word with an
+   icon where ui-spec 11 asks, and the follow up flag always carries its words. */
+.tt-badge-action-planned,
+.tt-badge-action-cancelled {
+  background: var(--tt-readonly-bg);
+  color: var(--tt-text);
+}
+
+.tt-badge-action-in-progress {
+  background: #FFF4DE;
+  color: #92600D;
+}
+
+.tt-badge-action-completed {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-badge-action-completed::before {
+  content: '✓ ';
+}
+
+.tt-badge-action-cancelled::before {
+  content: '⊘ ';
+}
+
+.tt-flag-follow-up {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #FFF4DE;
+  color: #92600D;
+}
+
+.tt-flag-follow-up::before {
+  content: '⚑ ';
+}
+
+.tt-actions-taken {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+/* Desktop table with fixed widths so the six columns can't push the page sideways; Description
+   is the one flexible column. */
+.tt-actions-table {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.9375rem;
+}
+
+.tt-actions-table thead th {
+  color: var(--tt-text);
+  border-bottom-color: var(--tt-surface-border);
+  vertical-align: bottom;
+}
+
+.tt-actions-table thead th.tt-actions-head-date { width: 9.5rem; }
+.tt-actions-table thead th.tt-actions-head-assignee { width: 9rem; }
+.tt-actions-table thead th.tt-actions-head-status { width: 8.5rem; }
+.tt-actions-table thead th.tt-actions-head-follow { width: 7.5rem; }
+.tt-actions-table thead th.tt-actions-head-performer { width: 9rem; }
+.tt-actions-table thead th.tt-actions-head-open { width: 5rem; }
+
+.tt-actions-table td {
+  overflow-wrap: break-word;
+}
+
+.tt-actions-table .tt-actions-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tt-actions-table tr.tt-actions-selected > td {
+  background: var(--tt-pale);
+}
+
+/* Below 992px each Action becomes a card, same approach as the Queue (ui-spec.md 7, 13). */
+@media (max-width: 991.98px) {
+  .tt-actions-table {
+    table-layout: auto;
+  }
+
+  .tt-actions-table thead {
+    display: none;
+  }
+
+  .tt-actions-table,
+  .tt-actions-table tbody,
+  .tt-actions-table tr,
+  .tt-actions-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .tt-actions-table tr {
+    border: 1px solid var(--tt-surface-border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tt-actions-table td {
+    border: 0;
+    padding: 0.125rem 0;
+  }
+
+  .tt-actions-table td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+  }
+}
+
+.tt-action-form {
+  border: 1px solid var(--tt-secondary);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #FFFFFF;
+}
+
+.tt-alert-warning {
+  color: #92600D;
+  background: #FFF4DE;
+  border-color: #92600D;
+}

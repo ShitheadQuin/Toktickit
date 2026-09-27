@@ -1,0 +1,19 @@
+Part 6 evidence, captured 2026-09-27T17:40:42.619Z by capture-part6.mjs
+Demo Ticket TKT-2026-700101 (id 2301)
+
+p6-01-list-several-staff.png: Staff Ticket Detail: Actions Taken list, two Actions by different IT Staff (Thanawat, Pimchanok) on a Ticket owned by Pimchanok
+p6-02-validation.png: Create mode validation: each message under its own field (description required, result required for Completed, follow up note required)
+p6-03-inactive-assignee-rejected.png: Wiriya was made inactive after the form opened; the server refuses the assignment (ASSIGNEE_INACTIVE), the message sits under Assignee, input kept
+p6-04-created-and-assigned.png: Create: new Action saved and assigned to Wiriya Charoen; Performed By is Pimchanok automatically; success message
+p6-05-edit-status-transition.png: Edit mode: description edited and status moving Planned to In Progress; only permitted next statuses offered
+p6-06-completed.png: Complete: the Action is Completed with its result and a follow up flag
+p6-07-completed-read-only.png: A Completed Action opens read-only: shaded fields, no Save button
+p6-08-cancel-confirm.png: Cancel asks for confirmation first
+p6-09-cancelled.png: Cancelled: the Action is kept in the list as Cancelled
+p6-10-stale-update.png: Conflict: the Action was changed in another tab first; the save is refused (409 STALE_UPDATE) with Reload, and the edits stay
+p6-11-safe-failure.png: Safe failure: the server could not be reached; a plain message, and every typed entry is kept
+p6-12-tablet.png: Tablet 768 px: each Action becomes a card, no horizontal scroll
+p6-13-mobile.png: Mobile 375 px: cards stack, no horizontal scroll
+p6-14-mobile-form.png: Mobile 375 px: the create form, one field per row
+p6-15-requester-read-only.png: Requester (Kritsada) on his own Ticket: every Action including Cancelled, no Add, Open or Save controls
+p6-16-direct-api-role-restriction.png: Direct API with the Requester's session: POST /api/staff/tickets/2301/actions -> 403; PATCH /api/staff/actions/211 -> 403; GET /api/tickets/5/actions -> 404
