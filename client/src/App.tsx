@@ -77,7 +77,7 @@ function App() {
           <Route
             path="/staff/queue"
             element={
-              <RequireRole roles={['IT_STAFF']}>
+              <RequireRole roles={['IT_STAFF', 'ADMINISTRATOR']}>
                 <AppShell>
                   <StaffTicketQueue />
                 </AppShell>
@@ -87,7 +87,7 @@ function App() {
           <Route
             path="/staff/tickets/:id"
             element={
-              <RequireRole roles={['IT_STAFF']}>
+              <RequireRole roles={['IT_STAFF', 'ADMINISTRATOR']}>
                 <AppShell>
                   <StaffTicketDetail />
                 </AppShell>

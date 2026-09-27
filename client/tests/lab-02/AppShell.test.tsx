@@ -33,25 +33,29 @@ describe('AppShell role-based navigation (UI-09)', () => {
 
     await waitFor(() => expect(screen.getByRole('link', { name: /my tickets/i })).toBeInTheDocument());
     expect(screen.getByRole('link', { name: /create ticket/i })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /my queue/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /ticket queue/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^users$/i })).not.toBeInTheDocument();
   });
 
-  it('shows only My Queue for IT Staff, and never renders Create Ticket', async () => {
+  // Lab 4 ui-spec.md 2: the link is now called "Ticket Queue" (it lists every Ticket).
+  it('shows only Ticket Queue for IT Staff, and never renders Create Ticket', async () => {
     renderShell(userFor('IT_STAFF'));
 
-    await waitFor(() => expect(screen.getByRole('link', { name: /my queue/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('link', { name: /ticket queue/i })).toBeInTheDocument());
     expect(screen.queryByRole('link', { name: /my tickets/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /create ticket/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^users$/i })).not.toBeInTheDocument();
   });
 
-  it('shows only Users for an Administrator', async () => {
+  // Lab 4 specification.md 11: an Administrator performs IT Staff behaviour, so gets the Ticket Queue
+  // as well as Users; still no Requester links.
+  it('shows Ticket Queue and Users for an Administrator, and no Requester links', async () => {
     renderShell(userFor('ADMINISTRATOR'));
 
     await waitFor(() => expect(screen.getByRole('link', { name: /^users$/i })).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /ticket queue/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /my tickets/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /my queue/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /create ticket/i })).not.toBeInTheDocument();
   });
 
   it('shows the current user’s name and role badge, replacing the Lab 2 Requester display', async () => {

@@ -441,6 +441,11 @@ export function ActionsTakenSection({ ticketId, editable, ticketClosed, assignee
                   {editing && !assignees.some((p) => p.id === editing.assignee.id) && (
                     <option value={editing.assignee.id}>{editing.assignee.name}</option>
                   )}
+                  {/* Create mode defaults to the signed-in user; keep them selectable even when the list
+                      does not include them, so the shown name always matches what is sent (PR #68 review). */}
+                  {!editing && currentUser && !assignees.some((p) => p.id === currentUser.id) && (
+                    <option value={currentUser.id}>{currentUser.name}</option>
+                  )}
                   {assignees.map((person) => (
                     <option key={person.id} value={person.id}>
                       {person.name}

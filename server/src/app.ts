@@ -505,7 +505,8 @@ app.delete('/api/attachments/:id', ...requireRequester, async (req, res) => {
 
 // api-spec.md 4/7: every /api/staff/tickets* endpoint is IT Staff only. Requester and
 // Administrator both get 403 - specification.md 11: Administrator performs no ticket operations.
-const requireItStaff = [requireAuth, requirePasswordChanged, requireRole('IT_STAFF')];
+// Lab 4 specification.md 11: Administrators perform IT Staff behaviour, so the Queue admits both.
+const requireItStaff = [requireAuth, requirePasswordChanged, requireRole('IT_STAFF', 'ADMINISTRATOR')];
 
 app.get('/api/staff/tickets', ...requireItStaff, async (req, res) => {
   try {

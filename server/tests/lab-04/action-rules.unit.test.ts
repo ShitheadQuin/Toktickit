@@ -55,6 +55,12 @@ describe('Action validator (UNIT-02, BR-06, BR-07, BR-08)', () => {
     expect(fieldsOf({ ...valid, actionAt: '2026-10-01T00:00:00Z' })).toEqual([]);
   });
 
+  it('accepts a time in the same minute the Ticket was created, since the form only sends whole minutes (found by the E2E run)', () => {
+    const createdMidMinute = { now, ticketCreatedAt: new Date('2026-10-01T00:00:37Z') };
+    expect(validateActionInput({ ...valid, actionAt: '2026-10-01T00:00:00Z' }, createdMidMinute).fields).toEqual([]);
+    expect(validateActionInput({ ...valid, actionAt: '2026-09-30T23:59:00Z' }, createdMidMinute).fields.map((f) => f.field)).toEqual(['actionAt']);
+  });
+
   it('allows up to 5 minutes in the future for clock drift, and no more', () => {
     expect(fieldsOf({ ...valid, actionAt: '2026-10-08T10:05:00Z' })).toEqual([]);
     expect(fieldsOf({ ...valid, actionAt: '2026-10-08T10:05:01Z' })).toEqual(['actionAt']);

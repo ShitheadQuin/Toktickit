@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ActionsTakenSection } from '../components/ActionsTaken';
+import { StatusHistory } from '../components/StatusHistory';
 import { AttachmentSection, type Attachment } from '../components/AttachmentSection';
 import { STATUS_BADGE_CLASS } from '../components/badge-classes';
 import { ConversationPanel, type ConversationEntry } from '../components/ConversationPanel';
@@ -316,6 +317,7 @@ export function RequesterTicketDetail() {
 
           {/* docs/lab-04/ui-spec.md 10: every Action on the Requester's own Ticket, read-only. */}
           <ActionsTakenSection ticketId={ticket.id} editable={false} ticketClosed assignees={[]} currentUser={null} />
+          <StatusHistory ticketId={ticket.id} refreshToken={0} />
 
           {/* ui-spec.md 14: the Attachment section sits behind its own heading and a visible
               divider (enforced inside AttachmentSection), so Ticket fields and attachment

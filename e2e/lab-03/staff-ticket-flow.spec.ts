@@ -64,6 +64,15 @@ test.describe('IT Staff ticket flow (E2E-02)', () => {
     await expect(note).toBeVisible();
     await expect(note.getByText('Internal — not visible to Requester')).toBeVisible();
 
+    // Lab 4 BR-16: Resolved now needs a Completed Action, so the work is recorded before resolving.
+    await page.getByRole('button', { name: 'Add Action' }).click();
+    const actionForm = page.getByRole('form', { name: 'Add Action' });
+    await actionForm.getByLabel('Action Description').fill('Replaced the duplex roller');
+    await actionForm.getByLabel('Status').selectOption('COMPLETED');
+    await actionForm.getByLabel('Result').fill('Duplex printing works again');
+    await actionForm.getByRole('button', { name: 'Save Action' }).click();
+    await expect(page.locator('.tt-badge-action-completed')).toBeVisible();
+
     // AC-13: the owner moves the Ticket through the permitted workflow.
     const steps: [string, string][] = [
       ['IN_PROGRESS', 'in-progress'],

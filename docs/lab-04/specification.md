@@ -106,8 +106,9 @@ built in Labs 1 to 3 has to keep working and look like one finished application.
 - BR-05: The Assignee must be an active IT Staff member or Administrator. It defaults to the
   creator. An inactive user is rejected with `400`, code `ASSIGNEE_INACTIVE`; a Requester or
   unknown user with `400`, code `ASSIGNEE_INVALID`.
-- BR-06: Action Date/Time is required. It may not be earlier than the Ticket's creation time, nor
-  more than 5 minutes after the server's current time (allowing for clock drift).
+- BR-06: Action Date/Time is required. It may not be earlier than the minute the Ticket was created
+  (the form's date and time field holds whole minutes), nor more than 5 minutes after the server's
+  current time (allowing for clock drift).
 - BR-07: Action Description is required, trimmed, 1 to 2,000 characters. Result is up to 2,000
   characters and **required when the status is Completed**. Attachment Notes is up to 500
   characters.

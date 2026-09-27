@@ -57,9 +57,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </NavLink>
               </>
             )}
-            {user.role === 'IT_STAFF' && (
+            {(user.role === 'IT_STAFF' || user.role === 'ADMINISTRATOR') && (
               <NavLink to="/staff/queue" className="tt-nav-link" onClick={() => setMenuOpen(false)}>
-                My Queue
+                Ticket Queue
               </NavLink>
             )}
             {user.role === 'ADMINISTRATOR' && (

@@ -66,7 +66,9 @@ export function validateActionInput(
   const actionAt = input.actionAt instanceof Date ? input.actionAt : new Date(typeof input.actionAt === 'string' ? input.actionAt : NaN);
   if (Number.isNaN(actionAt.getTime())) {
     fields.push({ field: 'actionAt', message: 'Action Date/Time must be a valid date and time.' });
-  } else if (actionAt < context.ticketCreatedAt) {
+  } else if (actionAt.getTime() < Math.floor(context.ticketCreatedAt.getTime() / 60_000) * 60_000) {
+    // The form's date/time field holds whole minutes, so the Ticket's creation time is compared at the
+    // same precision; otherwise an Action added in the Ticket's first minute would be refused.
     fields.push({ field: 'actionAt', message: 'Action Date/Time cannot be before the Ticket was created.' });
   } else if (actionAt.getTime() > context.now.getTime() + FUTURE_ALLOWANCE_MS) {
     fields.push({ field: 'actionAt', message: 'Action Date/Time cannot be in the future.' });

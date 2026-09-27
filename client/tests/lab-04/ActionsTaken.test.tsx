@@ -129,6 +129,24 @@ describe('ActionsTakenSection', () => {
       expect(sent).not.toHaveProperty('performedById');
     });
 
+    it('keeps the signed-in user selectable as assignee even when missing from the list (PR #68 review)', async () => {
+      const spy = mockApi({
+        'GET /api/tickets/42/actions': () => ok([]),
+        'POST /api/staff/tickets/42/actions': (body) => ok(action({ assignee: { id: 1, name: 'Duangjai Meesuk' }, description: String(body!.description) }), 201),
+      });
+      renderStaff({ currentUser: { id: 1, name: 'Duangjai Meesuk' } });
+      const form = await openAddForm();
+
+      const assignee = within(form).getByLabelText(/assignee/i) as HTMLSelectElement;
+      expect(assignee.value).toBe('1');
+      expect(assignee.selectedOptions[0]!.textContent).toBe('Duangjai Meesuk');
+
+      fireEvent.change(within(form).getByLabelText(/action description/i), { target: { value: 'Checked the projector' } });
+      fireEvent.click(within(form).getByRole('button', { name: /save action/i }));
+      await screen.findByRole('status');
+      expect(bodiesOf(spy, 'POST', '/api/staff/tickets/42/actions')[0].assigneeId).toBe(1);
+    });
+
     it('marks Result as required once Completed is chosen, and shows the Follow Up Note only when ticked', async () => {
       mockApi({ 'GET /api/tickets/42/actions': () => ok([]) });
       renderStaff();

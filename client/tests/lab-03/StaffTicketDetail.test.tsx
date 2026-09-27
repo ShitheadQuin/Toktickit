@@ -27,6 +27,9 @@ const ticket = (over: Record<string, unknown> = {}) => ({
   category: { id: 1, name: 'Hardware' },
   relatedSystem: { id: 2, name: 'Library printers' },
   attachments: [],
+  // Lab 4 (#62): every Staff Ticket Detail response carries the version to send back and the gate.
+  version: 0,
+  gate: { completed: 0, open: 0, met: false },
   ...over,
 });
 
@@ -64,6 +67,8 @@ function baseRoutes(detail: ReturnType<typeof ticket>, extra: Record<string, Han
     'GET /api/tickets/42/notes': () => ok([]),
     // Lab 4 #61: the page now also lists Actions Taken, covered by client/tests/lab-04/ActionsTaken.test.tsx.
     'GET /api/tickets/42/actions': () => ok([]),
+    // Lab 4 #62: the page also shows the status history, covered by client/tests/lab-04/TicketWorkflow.test.tsx.
+    'GET /api/tickets/42/history': () => ok([]),
     ...extra,
   };
 }
@@ -116,7 +121,7 @@ describe('StaffTicketDetail', () => {
       renderDetail();
 
       expect(await screen.findByText(/does not exist/i)).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /back to my queue/i })).toHaveAttribute('href', '/staff/queue');
+      expect(screen.getByRole('link', { name: /back to ticket queue/i })).toHaveAttribute('href', '/staff/queue');
     });
 
     it('shows a safe error with Try again when the request fails', async () => {
@@ -157,7 +162,7 @@ describe('StaffTicketDetail', () => {
 
       expect(await screen.findByRole('status')).toHaveTextContent(/reassigned/i);
       const [call] = callsTo(spy, 'POST', '/api/staff/tickets/42/reassign');
-      expect(JSON.parse(String((call[1] as RequestInit).body))).toEqual({ newOwnerId: 13 });
+      expect(JSON.parse(String((call[1] as RequestInit).body))).toEqual({ newOwnerId: 13, expectedVersion: 0 });
     });
 
     it('saves IT Priority when it changes', async () => {
@@ -170,7 +175,7 @@ describe('StaffTicketDetail', () => {
 
       expect(await screen.findByRole('status')).toHaveTextContent(/it priority updated/i);
       const [call] = callsTo(spy, 'PATCH', '/api/staff/tickets/42/priority');
-      expect(JSON.parse(String((call[1] as RequestInit).body))).toEqual({ itPriority: 'HIGH' });
+      expect(JSON.parse(String((call[1] as RequestInit).body))).toEqual({ itPriority: 'HIGH', expectedVersion: 0 });
     });
   });
 
@@ -212,7 +217,7 @@ describe('StaffTicketDetail', () => {
       expect(await screen.findByRole('status')).toHaveTextContent(/status updated/i);
       expect(container.querySelector('.tt-badge-status-in-progress')).not.toBeNull();
       const [call] = callsTo(spy, 'PATCH', '/api/staff/tickets/42/status');
-      expect(JSON.parse(String((call[1] as RequestInit).body))).toEqual({ status: 'IN_PROGRESS' });
+      expect(JSON.parse(String((call[1] as RequestInit).body))).toEqual({ status: 'IN_PROGRESS', expectedVersion: 0 });
     });
 
     it('asks for confirmation before Cancelling, and sends nothing if the user goes back (BR-18)', async () => {
