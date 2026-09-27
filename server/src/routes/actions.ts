@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { prisma } from '../prisma';
+import type { Prisma } from '../generated/prisma/client';
 import { requireAuth, requirePasswordChanged, requireRole } from '../middleware';
 import {
   canCreateWithStatus,
@@ -44,6 +45,21 @@ const ACTION_SELECT = {
 } as const;
 
 const errorCode = (error: unknown) => (error as { code?: string } | null)?.code;
+
+// BR-10 and BR-12, PR #67 review: the Ticket is re-checked inside the same transaction as the Action
+// write. The conditional update both moves Last Updated and locks the Ticket row, so a close landing
+// at the same moment either happens first (count 0, nothing written) or waits for this write to
+// finish. Returns null when the Ticket is Closed or Cancelled by then.
+export async function writeActionIfTicketOpen<T>(ticketId: number, write: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T | null> {
+  return prisma.$transaction(async (tx) => {
+    const open = await tx.ticket.updateMany({
+      where: { id: ticketId, currentStatus: { notIn: ['CLOSED', 'CANCELLED'] } },
+      data: { updatedAt: new Date() },
+    });
+    if (open.count === 0) return null;
+    return write(tx);
+  });
+}
 
 function parseId(raw: unknown): number | null {
   if (typeof raw !== 'string') return null;
@@ -149,9 +165,8 @@ router.post('/staff/tickets/:id/actions', ...staffOnly, async (req, res) => {
     if (CLOSED_STATUSES.includes(ticket.currentStatus)) return res.status(409).json(TICKET_CLOSED);
 
     try {
-      // BR-12: Actions are visible to the Requester, so recording one moves the Ticket's Last Updated.
-      const [action] = await prisma.$transaction([
-        prisma.actionTaken.create({
+      const action = await writeActionIfTicketOpen(ticket.id, (tx) =>
+        tx.actionTaken.create({
           data: {
             ...value,
             ticketId: ticket.id,
@@ -161,8 +176,8 @@ router.post('/staff/tickets/:id/actions', ...staffOnly, async (req, res) => {
           },
           select: ACTION_SELECT,
         }),
-        prisma.ticket.update({ where: { id: ticket.id }, data: { updatedAt: new Date() } }),
-      ]);
+      );
+      if (!action) return res.status(409).json(TICKET_CLOSED);
       return res.status(201).json(action);
     } catch (error) {
       // Two copies of the same request arrived together: the unique index let one through.
@@ -236,7 +251,7 @@ router.patch('/staff/actions/:id', ...staffOnly, async (req, res) => {
     if (CLOSED_STATUSES.includes(stored.ticket.currentStatus)) return res.status(409).json(TICKET_CLOSED);
 
     // The version check is part of the write, so two edits racing on one version give one success.
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await writeActionIfTicketOpen(stored.ticketId, async (tx) => {
       const written = await tx.actionTaken.updateMany({
         where: { id: stored.id, version: expectedVersion as number },
         data: {
@@ -245,11 +260,11 @@ router.patch('/staff/actions/:id', ...staffOnly, async (req, res) => {
           version: { increment: 1 },
         },
       });
-      if (written.count === 0) return null;
-      await tx.ticket.update({ where: { id: stored.ticketId }, data: { updatedAt: new Date() } });
+      if (written.count === 0) return 'stale' as const;
       return tx.actionTaken.findUniqueOrThrow({ where: { id: stored.id }, select: ACTION_SELECT });
     });
-    if (!updated) {
+    if (updated === null) return res.status(409).json(TICKET_CLOSED);
+    if (updated === 'stale') {
       return res.status(409).json({
         error: { code: 'STALE_UPDATE', message: 'This Action changed while you were editing it. Reload to see the latest version.' },
       });
@@ -258,6 +273,23 @@ router.patch('/staff/actions/:id', ...staffOnly, async (req, res) => {
   } catch (error) {
     console.error('PATCH /api/staff/actions/:id failed:', error);
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unable to save the Action' } });
+  }
+});
+
+// api-spec.md 3: the append-only status history (BR-18). Read only; no route updates or deletes a row.
+router.get('/tickets/:id/history', ...signedIn, requireRole('REQUESTER', 'IT_STAFF', 'ADMINISTRATOR'), async (req, res) => {
+  try {
+    const ticketId = await findReadableTicket(req, res);
+    if (ticketId === null) return;
+    const history = await prisma.ticketStatusHistory.findMany({
+      where: { ticketId },
+      orderBy: [{ changedAt: 'asc' }, { id: 'asc' }],
+      select: { id: true, fromStatus: true, toStatus: true, changedAt: true, changedBy: { select: { id: true, name: true } } },
+    });
+    res.status(200).json(history);
+  } catch (error) {
+    console.error('GET /api/tickets/:id/history failed:', error);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Unable to retrieve status history' } });
   }
 });
 

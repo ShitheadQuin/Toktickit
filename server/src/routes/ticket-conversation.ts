@@ -66,8 +66,8 @@ router.get('/:id/comments', ...signedIn, requireRole('REQUESTER', 'IT_STAFF', 'A
   }
 });
 
-// Administrator reads comments but never posts them (specification.md 11).
-router.post('/:id/comments', ...signedIn, requireRole('REQUESTER', 'IT_STAFF'), async (req, res) => {
+// Lab 4 specification.md 11: Administrators post comments as IT Staff do.
+router.post('/:id/comments', ...signedIn, requireRole('REQUESTER', 'IT_STAFF', 'ADMINISTRATOR'), async (req, res) => {
   try {
     const ticketId = await findTicketFor(req, res);
     if (ticketId === null) return;
@@ -104,7 +104,8 @@ router.get('/:id/notes', ...signedIn, requireRole('IT_STAFF', 'ADMINISTRATOR'), 
   }
 });
 
-router.post('/:id/notes', ...signedIn, requireRole('IT_STAFF'), async (req, res) => {
+// Lab 4 specification.md 11: Administrators post Internal Notes as IT Staff do.
+router.post('/:id/notes', ...signedIn, requireRole('IT_STAFF', 'ADMINISTRATOR'), async (req, res) => {
   try {
     const ticketId = await findTicketFor(req, res);
     if (ticketId === null) return;
