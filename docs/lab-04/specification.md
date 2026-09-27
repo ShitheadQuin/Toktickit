@@ -218,8 +218,13 @@ All changes are additive. No table, column or row from Labs 1 to 3 is removed or
   resolution gate applies only on their next move to Resolved, and Tickets already Resolved or
   Closed are untouched. The UI says "No status changes recorded since Lab 4" when history is empty.
   Dashboards count legacy Tickets exactly like new ones.
-- **Recovery:** a `pg_dump` taken before the migration, plus a documented down script that drops
-  the two tables, the enum and the column. MIG tests prove row counts are unchanged.
+- **Recovery:** a `pg_dump` taken before the migration, plus the down script
+  `server/prisma/rollback/lab4_actions_taken.down.sql`, which drops only the two tables, the enum and
+  the column. MIG-01 applies it to a copy of Lab 3 data, checks every earlier row is unchanged, and
+  migrates forward again.
+- **Delete behavior:** an Action's Ticket link is `RESTRICT` (Actions are never deleted, BR-11). A
+  history row's Ticket link is `CASCADE`: the app never deletes a Ticket, and this lets test
+  fixtures remove their own Tickets.
 - **Seed:** stays idempotent (Section 12).
 
 ## 8. API Contract

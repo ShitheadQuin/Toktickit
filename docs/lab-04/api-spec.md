@@ -43,8 +43,8 @@ Ticket the user has not seen.
   "description": "Replaced the laptop battery",
   "result": "Battery holds charge for 6 hours",
   "status": "COMPLETED",
-  "performedBy": { "id": 12, "name": "Kritsada Boonmee" },
-  "assignee": { "id": 12, "name": "Kritsada Boonmee" },
+  "performedBy": { "id": 12, "name": "Pimchanok Rattana" },
+  "assignee": { "id": 12, "name": "Pimchanok Rattana" },
   "followUpRequired": true,
   "followUpNote": "Check again next week",
   "attachmentNotes": "See photo battery-before.jpg in Attachments",
@@ -125,7 +125,7 @@ same moment cannot slip past the check.
 can explain a blocked Resolved without a second request.
 
 `GET /api/staff/assignable-users` now returns active IT Staff **and** Administrators, as
-`[{ "id": 12, "name": "Kritsada Boonmee", "role": "IT_STAFF" }]`, ordered by name. The same list
+`[{ "id": 12, "name": "Pimchanok Rattana", "role": "IT_STAFF" }]`, ordered by name. The same list
 feeds the Ticket Owner and the Action Assignee controls.
 
 `POST /api/tickets/:id/comments` and `POST /api/tickets/:id/notes` now admit Administrators
@@ -134,7 +134,7 @@ feeds the Ticket Owner and the Action Assignee controls.
 ### `GET /api/tickets/:id/history`
 Requester (own Ticket, else `404`), Staff (any Ticket). Response `200`:
 ```json
-[ { "id": 7, "fromStatus": "NEW", "toStatus": "OPEN", "changedBy": { "id": 12, "name": "Kritsada Boonmee" }, "changedAt": "2026-10-08T02:00:00Z" } ]
+[ { "id": 7, "fromStatus": "NEW", "toStatus": "OPEN", "changedBy": { "id": 12, "name": "Pimchanok Rattana" }, "changedAt": "2026-10-08T02:00:00Z" } ]
 ```
 Ordered by `changedAt`, then `id`, ascending. No write endpoint exists (BR-18).
 
