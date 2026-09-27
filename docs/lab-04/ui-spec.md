@@ -133,7 +133,7 @@ Save button. Changing Status to Cancelled asks for confirmation using the Lab 3 
 ## 9. Status History
 
 A compact list titled "Status History" on Staff and Requester Ticket Detail: "Open → In Progress,
-by Kritsada Boonmee, 8 Oct 2026 10:02". Oldest first. Empty: "No status changes recorded since
+by Pimchanok Rattana, 8 Oct 2026 10:02". Oldest first. Empty: "No status changes recorded since
 Lab 4." Read only, no controls.
 
 ## 10. Requester Ticket Detail additions

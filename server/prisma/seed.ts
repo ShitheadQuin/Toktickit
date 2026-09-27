@@ -62,6 +62,21 @@ type SeedTicket = {
   notes: SeedEntry[];
 };
 
+// Lab 4 (labsheet §5.3): Actions Taken per seed Ticket. hoursAfter places each Action after its
+// Ticket was created. Resolved and Closed Tickets carry only Completed or Cancelled Actions, so
+// seeded data obeys the resolution gate (BR-16). New and Cancelled Tickets have none.
+type ActionStatus = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+type SeedAction = {
+  performedBy: string;
+  assignee?: string;
+  hoursAfter: number;
+  description: string;
+  status: ActionStatus;
+  result?: string;
+  followUpNote?: string;
+  attachmentNotes?: string;
+};
+
 // Fixed numbers in a range the app's ticket_number_seq will not reach, so a re-run finds them.
 // States follow the specification.md §11 transition matrix: New and Cancelled-from-New Tickets
 // have no owner; every other status has one.
@@ -156,6 +171,80 @@ const tickets: SeedTicket[] = [
   },
 ];
 
+const DUANGJAI = 'duangjai.meesuk@toktickit.dev';
+
+const actions: Record<string, SeedAction[]> = {
+  'TKT-2026-800003': [
+    {
+      performedBy: PIMCHANOK, hoursAfter: 3, status: 'PLANNED',
+      description: 'Replace the paper sensor on the second-floor library printer with the spare from the IT store.',
+    },
+  ],
+  'TKT-2026-800004': [
+    {
+      performedBy: THANAWAT, hoursAfter: 2, status: 'COMPLETED',
+      description: 'Reproduced the upload timeout with a 60 MB test file on Chrome and Edge.',
+      result: 'Uploads over 50 MB fail at the LMS proxy; smaller files upload normally.',
+      attachmentNotes: 'Error screen saved as upload-timeout.png on the IT shared drive.',
+    },
+    {
+      performedBy: THANAWAT, assignee: WIRIYA, hoursAfter: 4, status: 'IN_PROGRESS',
+      description: 'Ask the LMS team to raise the proxy upload limit to 200 MB.',
+      followUpNote: 'LMS team replies within two working days; chase them if there is no answer.',
+    },
+    {
+      performedBy: WIRIYA, hoursAfter: 5, status: 'CANCELLED',
+      description: 'Try the chunked upload plugin as a workaround.',
+      result: 'Not supported by the installed LMS version, so the workaround was dropped.',
+    },
+  ],
+  'TKT-2026-800005': [
+    {
+      performedBy: WIRIYA, hoursAfter: 2, status: 'IN_PROGRESS',
+      description: 'Add the split-tunnel rule for the internal subnet to the VPN profile.',
+      attachmentNotes: 'Current VPN profile exported as vpn-profile.txt on the IT shared drive.',
+    },
+  ],
+  'TKT-2026-800006': [
+    {
+      performedBy: PIMCHANOK, hoursAfter: 1, status: 'COMPLETED',
+      description: 'Sent a new password reset link to the Requester\'s university email.',
+      result: 'New link sent; the old links were invalidated.',
+      followUpNote: 'Confirm with the Requester that the new link works before resolving.',
+    },
+  ],
+  'TKT-2026-800007': [
+    {
+      performedBy: THANAWAT, hoursAfter: 2, status: 'COMPLETED',
+      description: 'Checked the calendar sync settings for the Requester\'s mailbox.',
+      result: 'Meeting-link add-in was disabled for this mailbox.',
+    },
+    {
+      performedBy: THANAWAT, hoursAfter: 3, status: 'COMPLETED',
+      description: 'Re-enabled the meeting-link add-in and sent a test invitation.',
+      result: 'Test invitation arrived with the meeting link.',
+    },
+  ],
+  'TKT-2026-800008': [
+    {
+      performedBy: DUANGJAI, assignee: WIRIYA, hoursAfter: 4, status: 'COMPLETED',
+      description: 'Reset the printing quota for the new term in the print server.',
+      result: 'Balance now shows the full term allowance.',
+    },
+  ],
+  'TKT-2026-800009': [
+    {
+      performedBy: PIMCHANOK, hoursAfter: 2, status: 'COMPLETED',
+      description: 'Renewed the Wi-Fi certificate on wireless controller A.',
+      result: 'Warning gone for clients on controller A.',
+    },
+    {
+      performedBy: PIMCHANOK, hoursAfter: 26, status: 'PLANNED',
+      description: 'Renew the Wi-Fi certificate on wireless controller B.',
+    },
+  ],
+};
+
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
@@ -230,6 +319,26 @@ async function main() {
           authorId: lookup(userIds, n.author),
           body: n.body,
           createdAt: new Date(createdAt.getTime() + (i + 1) * HOUR + 30 * 60 * 1000),
+        })),
+      });
+    }
+
+    // Actions are never deleted (BR-11), so like comments they are added only to a Ticket with
+    // none yet. Uses the Ticket's own creation time, so a re-seed of an existing Ticket stays valid.
+    const seedActions = actions[t.ticketNumber] ?? [];
+    if (seedActions.length > 0 && (await prisma.actionTaken.count({ where: { ticketId: ticket.id } })) === 0) {
+      await prisma.actionTaken.createMany({
+        data: seedActions.map((a) => ({
+          ticketId: ticket.id,
+          actionAt: new Date(ticket.createdAt.getTime() + a.hoursAfter * HOUR),
+          description: a.description,
+          result: a.result ?? null,
+          status: a.status,
+          performedById: lookup(userIds, a.performedBy),
+          assigneeId: lookup(userIds, a.assignee ?? a.performedBy),
+          followUpRequired: a.followUpNote !== undefined,
+          followUpNote: a.followUpNote ?? null,
+          attachmentNotes: a.attachmentNotes ?? null,
         })),
       });
     }

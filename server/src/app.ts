@@ -12,6 +12,7 @@ import authRouter from './routes/auth';
 import staffTicketsRouter from './routes/staff-tickets';
 import ticketConversationRouter from './routes/ticket-conversation';
 import usersRouter from './routes/users';
+import actionsRouter from './routes/actions';
 
 const app = express();
 app.use(express.json());
@@ -20,6 +21,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/staff', staffTicketsRouter);
 app.use('/api/tickets', ticketConversationRouter);
 app.use('/api/users', usersRouter);
+app.use('/api', actionsRouter);
 
 // BR-15/BR-27: multer's own limit is a memory backstop only, set above the real 5 MB rule so an
 // oversized-and-wrong-type file still reaches the handler and gets the documented check order -
