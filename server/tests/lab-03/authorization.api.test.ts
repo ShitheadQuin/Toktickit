@@ -190,11 +190,12 @@ describe('Staff Queue role authorization (API-12)', () => {
     expect(response.body.data).toBeUndefined();
   });
 
-  it('GET /api/staff/tickets as an Administrator returns 403 FORBIDDEN (Administrator performs no ticket operations)', async () => {
+  // Lab 4 specification.md 11 supersedes Lab 3's "Administrator performs no Ticket operations":
+  // an Administrator now uses the Queue as IT Staff do.
+  it('GET /api/staff/tickets as an Administrator returns 200 (Lab 4: Administrator performs IT Staff behaviour)', async () => {
     const response = await request(app).get('/api/staff/tickets').set('Cookie', administratorCookie);
-    expect(response.status).toBe(403);
-    expect(response.body.error.code).toBe('FORBIDDEN');
-    expect(response.body.data).toBeUndefined();
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body.data)).toBe(true);
   });
 
   it('GET /api/staff/tickets as IT Staff returns 200', async () => {
@@ -261,20 +262,18 @@ describe('Internal Notes and Ticket actions role authorization (API-11, API-14)'
     expect(Array.isArray(response.body)).toBe(false);
   });
 
-  it('API-14: an Administrator gets 403 FORBIDDEN for claim, reassign, priority and status', async () => {
-    const calls = [
-      request(app).post(`/api/staff/tickets/${ownTicketId}/claim`),
-      request(app).post(`/api/staff/tickets/${ownTicketId}/reassign`).send({ newOwnerId: 1 }),
-      request(app).patch(`/api/staff/tickets/${ownTicketId}/priority`).send({ itPriority: 'HIGH' }),
-      request(app).patch(`/api/staff/tickets/${ownTicketId}/status`).send({ status: 'CANCELLED' }),
-    ];
-    for (const call of calls) {
-      const response = await call.set('Cookie', administratorCookie);
-      expect(response.status).toBe(403);
-      expect(response.body.error.code).toBe('FORBIDDEN');
-    }
+  // Lab 4 specification.md 11 supersedes this Lab 3 rule: an Administrator now performs IT Staff
+  // Ticket operations. The full set is covered by server/tests/lab-04/ticket-workflow.api.test.ts
+  // (API-15); here the Lab 3 case is flipped to show the role check no longer refuses them.
+  it('API-14 (Lab 4): an Administrator is no longer refused, and can claim an unassigned New Ticket', async () => {
+    const response = await request(app)
+      .post(`/api/staff/tickets/${ownTicketId}/claim`)
+      .set('Cookie', administratorCookie)
+      .send({ expectedVersion: 0 });
+    expect(response.status).toBe(200);
     const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ownTicketId } });
-    expect(ticket).toMatchObject({ ticketOwnerId: null, currentStatus: 'NEW', itPriority: 'LOW' });
+    expect(ticket).toMatchObject({ currentStatus: 'OPEN', itPriority: 'LOW' });
+    expect(ticket.ticketOwnerId).not.toBeNull();
   });
 });
 

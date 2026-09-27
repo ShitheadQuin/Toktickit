@@ -100,12 +100,13 @@ describe('Public Comments and Internal Notes API', () => {
       }
     });
 
-    it('another Requester gets 404 for both reading and posting, and an Administrator cannot post (403)', async () => {
+    // Lab 4 specification.md 11: an Administrator now posts comments as IT Staff do.
+    it('another Requester gets 404 for both reading and posting, and an Administrator can post (Lab 4)', async () => {
       const ticket = await makeTicket();
 
       expect((await as(cookies.otherRequester).get(`/api/tickets/${ticket.id}/comments`)).status).toBe(404);
       expect((await as(cookies.otherRequester).post(`/api/tickets/${ticket.id}/comments`, { body: 'Not mine' })).status).toBe(404);
-      expect((await as(cookies.admin).post(`/api/tickets/${ticket.id}/comments`, { body: 'Admin comment' })).status).toBe(403);
+      expect((await as(cookies.admin).post(`/api/tickets/${ticket.id}/comments`, { body: 'Admin comment' })).status).toBe(201);
     });
 
     it('returns 404 for a Ticket that does not exist', async () => {
@@ -130,11 +131,12 @@ describe('Public Comments and Internal Notes API', () => {
       // A Requester reading notes is API-11, in authorization.api.test.ts.
     });
 
-    it('a Requester and an Administrator cannot post a note (403)', async () => {
+    // Lab 4 specification.md 11: an Administrator now posts Internal Notes as IT Staff do; a Requester still cannot.
+    it('a Requester cannot post a note (403), and an Administrator can (Lab 4)', async () => {
       const ticket = await makeTicket();
 
       expect((await as(cookies.requester).post(`/api/tickets/${ticket.id}/notes`, { body: 'Let me in' })).status).toBe(403);
-      expect((await as(cookies.admin).post(`/api/tickets/${ticket.id}/notes`, { body: 'Admin note' })).status).toBe(403);
+      expect((await as(cookies.admin).post(`/api/tickets/${ticket.id}/notes`, { body: 'Admin note' })).status).toBe(201);
     });
   });
 
