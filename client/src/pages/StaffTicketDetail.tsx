@@ -472,11 +472,12 @@ function StaffControls({
   const canClaim = ticket.owner === null && ticket.currentStatus === 'NEW';
   const transitions = STATUS_TRANSITIONS[ticket.currentStatus] ?? [];
   // BR-16: why Resolved is not available yet, in the words ui-spec.md 8 gives.
+  // Open Actions are named first, since finishing them is the next step either way.
   const gateReason = ticket.gate.met
     ? null
-    : ticket.gate.completed === 0
-      ? 'Add and complete at least one Action first'
-      : `Complete or cancel the open Actions first (${ticket.gate.open} open)`;
+    : ticket.gate.open > 0
+      ? `Complete or cancel the open Actions first (${ticket.gate.open} open)`
+      : 'Add and complete at least one Action first';
   const offersResolved = transitions.some((t) => t.to === 'RESOLVED');
 
   return (

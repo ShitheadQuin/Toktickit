@@ -255,8 +255,7 @@ router.patch('/tickets/:id/status', ...staffOnly, async (req, res) => {
   } catch (error) {
     if (error instanceof GateNotMet) {
       const { completed, open } = error.counts;
-      const message =
-        completed === 0 ? 'Add and complete at least one Action before resolving.' : 'Complete or cancel the remaining Actions Taken before resolving.';
+      const message = open > 0 ? 'Complete or cancel the remaining Actions Taken before resolving.' : 'Add and complete at least one Action before resolving.';
       return res.status(409).json({ error: { code: 'RESOLUTION_GATE_NOT_MET', message, details: { completed, open } } });
     }
     if (error instanceof StaleUpdate || errorCode(error) === 'P2034') return res.status(409).json(STALE_UPDATE);
