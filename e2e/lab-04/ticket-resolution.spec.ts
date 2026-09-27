@@ -17,7 +17,7 @@ test.describe('Ticket resolution with the resolution gate (E2E-02)', () => {
   });
 
   test('refused while work is missing or open, resolved once it is complete, visible to the Requester', async ({ page }) => {
-    await signIn(page, STAFF_A.email, '/staff/queue');
+    await signIn(page, STAFF_A.email, '/dashboard');
     await page.goto(`/staff/tickets/${ticketId}`);
     const status = page.getByLabel('Change status');
     const resolvedOption = status.locator('option[value="RESOLVED"]');
@@ -55,7 +55,7 @@ test.describe('Ticket resolution with the resolution gate (E2E-02)', () => {
     await signOut(page);
 
     // The Requester sees the outcome, the work and the history.
-    await signIn(page, REQUESTER.email, '/my-tickets');
+    await signIn(page, REQUESTER.email, '/dashboard');
     await page.goto(`/tickets/${ticketId}`);
     await expect(page.locator('.tt-badge-status-resolved').first()).toBeVisible();
     await expect(page.locator('.tt-actions-table tbody tr')).toHaveCount(1);

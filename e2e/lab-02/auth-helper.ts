@@ -53,5 +53,7 @@ export async function loginAs(page: Page, email: string) {
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/^password$/i).fill(E2E_REQUESTER_PASSWORD);
   await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForURL('**/my-tickets');
+  // Lab 4: every role lands on the Dashboard first.
+  await page.waitForURL('**/dashboard');
+  await page.goto('/my-tickets');
 }

@@ -25,7 +25,9 @@ test.describe('IT Staff ticket flow (E2E-02)', () => {
     await page.getByLabel(/email/i).fill(E2E_STAFF_EMAIL);
     await page.getByLabel(/^password$/i).fill(E2E_STAFF_PASSWORD);
     await page.getByRole('button', { name: /sign in/i }).click();
-    await page.waitForURL('**/staff/queue');
+    // Lab 4: every role lands on the Dashboard first.
+    await page.waitForURL('**/dashboard');
+    await page.goto('/staff/queue');
 
     // Find the Ticket in the Queue and open it.
     await page.getByLabel('Search', { exact: true }).fill(E2E_FLOW_TICKET_NUMBER);

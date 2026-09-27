@@ -109,7 +109,9 @@ test.describe('A11Y-01 — Ticket Queue and Ticket Detail by keyboard only', () 
 
   test('Queue search, filters, sorting and pagination are all keyboard-reachable', async ({ page }) => {
     await signIn(page, E2E_STAFF_EMAIL, E2E_STAFF_PASSWORD);
-    await page.waitForURL('**/staff/queue');
+    // Lab 4: every role lands on the Dashboard first.
+    await page.waitForURL('**/dashboard');
+    await page.goto('/staff/queue');
     await page.locator('.tt-queue-table').waitFor();
     await page.locator('body').click();
 
@@ -130,7 +132,9 @@ test.describe('A11Y-01 — Ticket Queue and Ticket Detail by keyboard only', () 
 
   test('a Queue row can be opened with the keyboard, and Ticket Detail controls are reachable', async ({ page }) => {
     await signIn(page, E2E_STAFF_EMAIL, E2E_STAFF_PASSWORD);
-    await page.waitForURL('**/staff/queue');
+    // Lab 4: every role lands on the Dashboard first.
+    await page.waitForURL('**/dashboard');
+    await page.goto('/staff/queue');
     await page.getByLabel('Search', { exact: true }).fill(E2E_FLOW_TICKET_NUMBER);
     await page.getByRole('button', { name: 'Search', exact: true }).click();
     await expect(page.getByRole('link', { name: E2E_FLOW_TICKET_NUMBER })).toHaveCount(1);
@@ -175,7 +179,9 @@ test.describe('A11Y-01 — User Management by keyboard only', () => {
 
   test('the list, its controls and the create panel are keyboard-operable', async ({ page }) => {
     await signIn(page, E2E_VIEW_ADMIN_EMAIL, E2E_VIEW_ADMIN_PASSWORD);
-    await page.waitForURL('**/users');
+    // Lab 4: every role lands on the Dashboard first.
+    await page.waitForURL('**/dashboard');
+    await page.goto('/users');
     await page.locator('.tt-user-table').waitFor();
     await page.locator('body').click();
 
