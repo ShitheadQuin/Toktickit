@@ -63,11 +63,13 @@ describe('Staff dashboard (UI-02)', () => {
     renderDashboard();
 
     expect(await screen.findByRole('heading', { name: /welcome, pimchanok/i })).toBeInTheDocument();
+    // The heading shows while loading; wait for the figures themselves.
+    await screen.findByRole('link', { name: 'Unassigned: 2, view list' });
     expect(screen.getByRole('link', { name: 'Unassigned: 2, view list' })).toHaveAttribute('href', '/staff/queue?owner=unassigned&statusGroup=active');
     expect(screen.getByRole('link', { name: 'My Tickets: 4, view list' })).toHaveAttribute('href', '/staff/queue?owner=12&statusGroup=active');
     expect(screen.getByRole('link', { name: 'High IT Priority: 1, view list' })).toHaveAttribute('href', '/staff/queue?itPriority=HIGH&statusGroup=active');
     expect(screen.queryByRole('link', { name: /my open actions/i })).toBeNull();
-    expect(screen.getByText('My Open Actions')).toBeInTheDocument();
+    expect(screen.getByText('My Open Actions', { selector: '.tt-metric-label' })).toBeInTheDocument();
   });
 
   it('links every status and IT Priority row to the filtered queue, zeros included', async () => {

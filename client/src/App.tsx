@@ -7,6 +7,7 @@ import { RequesterTicketDetail } from './pages/RequesterTicketDetail';
 import { StaffTicketQueue } from './pages/StaffTicketQueue';
 import { StaffTicketDetail } from './pages/StaffTicketDetail';
 import { UserManagement } from './pages/UserManagement';
+import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
 import { ChangePassword } from './pages/ChangePassword';
 import { AppShell } from './components/AppShell';
@@ -26,14 +27,9 @@ function Home() {
   if (user.mustChangePassword) {
     return <Navigate to="/change-password" replace />;
   }
-  if (user.role === 'REQUESTER') {
-    // My Tickets is the Requester landing screen. Redirecting rather than rendering it here
-    // keeps one route per screen, so the shell's active-page indication has a path to match.
-    return <Navigate to="/my-tickets" replace />;
-  }
-
-  // Same one-route-per-screen reasoning for the other two roles' landing screens.
-  return <Navigate to={user.role === 'IT_STAFF' ? '/staff/queue' : '/users'} replace />;
+  // Lab 4 ui-spec.md 2: every role lands on its dashboard. Redirecting rather than rendering it here
+  // keeps one route per screen, so the shell's active-page indication has a path to match.
+  return <Navigate to="/dashboard" replace />;
 }
 
 function App() {
@@ -44,6 +40,16 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
+          <Route
+            path="/dashboard"
+            element={
+              <RequireRole roles={['REQUESTER', 'IT_STAFF', 'ADMINISTRATOR']}>
+                <AppShell>
+                  <Dashboard />
+                </AppShell>
+              </RequireRole>
+            }
+          />
           <Route
             path="/my-tickets"
             element={

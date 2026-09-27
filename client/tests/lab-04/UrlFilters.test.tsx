@@ -65,7 +65,7 @@ describe('Filters in the page address (UI-09)', () => {
     );
 
     await waitFor(() => expect(listCalls(spy, '/api/tickets').at(-1)?.searchParams.get('currentStatus')).toBe('RESOLVED'));
-    expect(screen.getByLabelText(/^status$/i)).toHaveValue('RESOLVED');
+    expect(screen.getByLabelText(/current status/i)).toHaveValue('RESOLVED');
   });
 
   it('opens the Ticket Queue with owner and statusGroup from the link, showing "Me" for the viewer\'s own id', async () => {

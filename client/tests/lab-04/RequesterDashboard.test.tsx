@@ -55,6 +55,8 @@ describe('Requester dashboard (UI-01)', () => {
     renderDashboard();
 
     expect(await screen.findByRole('heading', { name: /welcome, anong/i })).toBeInTheDocument();
+    // The heading shows while loading; wait for the figures themselves.
+    await screen.findByRole('link', { name: 'My Open Tickets: 3, view list' });
     const cards = [
       ['My Open Tickets: 3, view list', '/my-tickets?statusGroup=active'],
       ['Waiting for Me: 1, view list', '/my-tickets?currentStatus=WAITING_FOR_REQUESTER'],
@@ -100,7 +102,7 @@ describe('Requester dashboard (UI-01)', () => {
     });
     renderDashboard();
 
-    expect(screen.getByText(/loading the dashboard/i)).toBeInTheDocument();
+    expect(await screen.findByText(/loading the dashboard/i)).toBeInTheDocument();
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/the dashboard could not be loaded/i);
     fireEvent.click(within(alert).getByRole('button', { name: /retry/i }));
