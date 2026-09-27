@@ -5,10 +5,12 @@ import { STATUS_BADGE_CLASS } from '../components/badge-classes';
 import { CONFIRM_BEFORE, STATUS_TRANSITIONS } from '../components/status-transitions';
 import { ConversationPanel, type ConversationEntry } from '../components/ConversationPanel';
 import { ActionsTakenSection } from '../components/ActionsTaken';
+import { StatusHistory } from '../components/StatusHistory';
 
 interface Person {
   id: number;
   name: string;
+  role?: string;
 }
 
 interface StaffAttachment {
@@ -35,11 +37,16 @@ interface StaffTicket {
   category: Person | null;
   relatedSystem: Person | null;
   attachments: StaffAttachment[];
+  // Lab 4: the version every write sends back (BR-19) and the resolution gate (BR-16).
+  version: number;
+  gate: { completed: number; open: number; met: boolean };
 }
 
 type LoadStatus = 'loading' | 'success' | 'not-found' | 'error';
 type Tab = 'comments' | 'notes' | 'attachments';
-type Feedback = { tone: 'success' | 'error'; message: string } | null;
+// 'warning' is a refusal the user can recover from by reloading: a stale update or the gate.
+type Feedback = { tone: 'success' | 'error' | 'warning'; message: string; offerReload?: boolean } | null;
+const RELOADABLE = ['STALE_UPDATE', 'RESOLUTION_GATE_NOT_MET'];
 
 // ui-spec.md 9: every badge shows its word, never color alone.
 const PRIORITY_LABEL: Record<string, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' };
@@ -101,6 +108,7 @@ export function StaffTicketDetail() {
   const [newOwnerId, setNewOwnerId] = useState('');
   const [nextStatus, setNextStatus] = useState('');
   const [confirming, setConfirming] = useState(false);
+  const [historyToken, setHistoryToken] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -154,10 +162,26 @@ export function StaffTicketDetail() {
     };
   }, [id, user, loadStatus]);
 
-  // Every action returns the updated Ticket, so the screen re-renders from the response. On a
-  // refusal the Ticket is left as it was and the server's own message is shown (409 conflict,
-  // 403 not owner, 400 validation) - never a generic failure for an anticipated state.
+  // Re-reads the Ticket without the full-page loading state, after Reload or an Action change (the
+  // gate depends on the Actions). The history reloads with it.
+  const refreshTicket = async () => {
+    try {
+      const response = await fetch(`/api/staff/tickets/${id}`, { credentials: 'include' });
+      const body = response.ok ? ((await response.json().catch(() => null)) as StaffTicket | null) : null;
+      if (body) {
+        setTicket(body);
+        setHistoryToken((token) => token + 1);
+      }
+    } catch {
+      // The Ticket on screen stays as it was; the next action reports any failure.
+    }
+  };
+
+  // Every action returns the updated Ticket, so the screen re-renders from the response. Each one
+  // sends the version it was based on (BR-19). On a refusal the Ticket is left as it was and the
+  // server's own message is shown; a stale update or the gate also offers Reload (ui-spec.md 8).
   const act = async (path: string, method: 'POST' | 'PATCH', body: object | undefined, successMessage: string) => {
+    if (!ticket) return false;
     setBusy(true);
     setFeedback(null);
     try {
@@ -165,14 +189,21 @@ export function StaffTicketDetail() {
         method,
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: body ? JSON.stringify(body) : undefined,
+        body: JSON.stringify({ ...(body ?? {}), expectedVersion: ticket.version }),
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload) {
-        setFeedback({ tone: 'error', message: payload?.error?.message ?? 'Unable to save this change right now.' });
+        const code = payload?.error?.code as string | undefined;
+        const reloadable = Boolean(code && RELOADABLE.includes(code));
+        setFeedback({
+          tone: reloadable ? 'warning' : 'error',
+          message: payload?.error?.message ?? 'Unable to save this change right now.',
+          offerReload: reloadable,
+        });
         return false;
       }
       setTicket(payload as StaffTicket);
+      setHistoryToken((token) => token + 1);
       setFeedback({ tone: 'success', message: successMessage });
       return true;
     } catch {
@@ -210,7 +241,7 @@ export function StaffTicketDetail() {
         <div className="alert tt-alert-error" role="alert">
           <p className="mb-2">This Ticket does not exist.</p>
           <Link to="/staff/queue" className="btn btn-tt-secondary">
-            Back to My Queue
+            Back to Ticket Queue
           </Link>
         </div>
       )}
@@ -306,6 +337,10 @@ export function StaffTicketDetail() {
             }}
             onPriorityChange={(itPriority) => void act('priority', 'PATCH', { itPriority }, 'IT Priority updated.')}
             onUpdateStatus={requestStatusChange}
+            onReload={() => {
+              setFeedback(null);
+              void refreshTicket();
+            }}
           />
 
           {/* docs/lab-04/ui-spec.md 7: the work record, between the controls and the conversation tabs. */}
@@ -316,8 +351,12 @@ export function StaffTicketDetail() {
               ticketClosed={ticket.currentStatus === 'CLOSED' || ticket.currentStatus === 'CANCELLED'}
               assignees={staff}
               currentUser={{ id: user.id, name: user.name }}
+              onChanged={() => void refreshTicket()}
             />
           </div>
+
+          {/* docs/lab-04/ui-spec.md 9: read-only, oldest first. */}
+          <StatusHistory ticketId={ticket.id} refreshToken={historyToken} />
 
           <div className="tt-tabs mt-4" role="tablist" aria-label="Ticket conversation and files">
             {TABS.map(({ key, label }) => (
@@ -360,7 +399,7 @@ export function StaffTicketDetail() {
 
           <div className="mt-4">
             <Link to="/staff/queue" className="btn btn-tt-secondary">
-              Back to My Queue
+              Back to Ticket Queue
             </Link>
           </div>
 
@@ -408,6 +447,7 @@ interface StaffControlsProps {
   onReassign: () => void;
   onPriorityChange: (value: string) => void;
   onUpdateStatus: () => void;
+  onReload: () => void;
 }
 
 // The only editable part of the screen (ui-spec.md 7): owner, IT Priority and status.
@@ -425,20 +465,33 @@ function StaffControls({
   onReassign,
   onPriorityChange,
   onUpdateStatus,
+  onReload,
 }: StaffControlsProps) {
   const isOwner = ticket.owner?.id === userId;
   // Claim only applies to an unassigned New Ticket; any other unassigned Ticket is assigned below.
   const canClaim = ticket.owner === null && ticket.currentStatus === 'NEW';
   const transitions = STATUS_TRANSITIONS[ticket.currentStatus] ?? [];
+  // BR-16: why Resolved is not available yet, in the words ui-spec.md 8 gives.
+  const gateReason = ticket.gate.met
+    ? null
+    : ticket.gate.completed === 0
+      ? 'Add and complete at least one Action first'
+      : `Complete or cancel the open Actions first (${ticket.gate.open} open)`;
+  const offersResolved = transitions.some((t) => t.to === 'RESOLVED');
 
   return (
     <section className="tt-staff-controls" aria-label="Ticket actions">
       {feedback && (
         <div
-          className={`alert ${feedback.tone === 'success' ? 'tt-alert-success' : 'tt-alert-error'} mb-3`}
+          className={`alert ${feedback.tone === 'success' ? 'tt-alert-success' : feedback.tone === 'warning' ? 'tt-alert-warning' : 'tt-alert-error'} mb-3 d-flex flex-wrap align-items-center gap-2`}
           role={feedback.tone === 'success' ? 'status' : 'alert'}
         >
-          {feedback.message}
+          <span>{feedback.message}</span>
+          {feedback.offerReload && (
+            <button type="button" className="btn btn-tt-secondary btn-sm" onClick={onReload}>
+              Reload
+            </button>
+          )}
         </div>
       )}
 
@@ -465,7 +518,7 @@ function StaffControls({
               onChange={(event) => onNewOwnerChange(event.target.value)}
               disabled={busy}
             >
-              <option value="">Choose IT Staff</option>
+              <option value="">Choose a staff member</option>
               {staff
                 .filter((person) => person.id !== ticket.owner?.id)
                 .map((person) => (
@@ -526,13 +579,15 @@ function StaffControls({
                   {/* ui-spec.md 7: an owner-required move is disabled with a tooltip, not hidden, so
                       the control still shows the workflow to someone who can't take that step. */}
                   {transitions.map((transition) => {
-                    const blocked = transition.requiresOwnership && !isOwner;
+                    const notOwner = transition.requiresOwnership && !isOwner;
+                    const gated = transition.to === 'RESOLVED' && Boolean(gateReason);
+                    const blocked = notOwner || gated;
                     return (
                       <option
                         key={transition.to}
                         value={transition.to}
                         disabled={blocked}
-                        title={blocked ? 'Claim this ticket first' : undefined}
+                        title={notOwner ? 'Claim this ticket first' : gated ? (gateReason ?? undefined) : undefined}
                         className={blocked ? 'tt-disabled-not-owner' : undefined}
                       >
                         {STATUS_LABEL[transition.to] ?? transition.to}
@@ -544,6 +599,8 @@ function StaffControls({
                   Update status
                 </button>
               </div>
+              {/* A disabled option's tooltip is easy to miss, so the gate reason is also written out. */}
+              {offersResolved && gateReason && <p className="tt-conversation-meta mt-1 mb-0">Resolved is not available yet: {gateReason}.</p>}
             </>
           )}
         </div>
