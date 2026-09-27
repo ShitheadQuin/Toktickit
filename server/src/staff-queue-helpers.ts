@@ -4,9 +4,11 @@
 import {
   CURRENT_STATUSES,
   REQUESTED_PRIORITIES,
+  conflictsWithStatusGroup,
   enumFilter,
   firstValue,
   parsePositiveInt,
+  statusGroupFilter,
   type CurrentStatusValue,
   type Filter,
   type RequestedPriorityValue,
@@ -24,6 +26,7 @@ export interface StaffQueueQuery {
   status?: CurrentStatusValue | undefined;
   itPriority?: RequestedPriorityValue | undefined;
   owner?: number | 'unassigned' | undefined;
+  statusGroup?: 'active' | undefined;
   sort: StaffQueueSort;
   order: TicketListOrder;
   page: number;
@@ -59,16 +62,18 @@ export function parseStaffQueueQuery(raw: Record<string, unknown>): StaffQueueQu
   const status = enumFilter(raw.status, CURRENT_STATUSES);
   const itPriority = enumFilter(raw.itPriority, REQUESTED_PRIORITIES);
   const owner = ownerFilter(raw.owner);
+  const statusGroup = statusGroupFilter(raw.statusGroup);
 
   return {
     search: searchValue ? searchValue : undefined,
     status: status.value,
     itPriority: itPriority.value,
     owner: owner.value,
+    statusGroup,
     sort,
     order,
     page,
     pageSize: STAFF_QUEUE_PAGE_SIZE,
-    matchesNothing: status.invalid || itPriority.invalid || owner.invalid,
+    matchesNothing: status.invalid || itPriority.invalid || owner.invalid || conflictsWithStatusGroup(status.value, statusGroup),
   };
 }
