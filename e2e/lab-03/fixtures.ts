@@ -58,6 +58,8 @@ export const E2E_FLOW_TICKET_NUMBER = 'TKT-2099-940001';
 
 async function removeStaffFlowRows(client: Client) {
   const flowTicket = `(SELECT id FROM "Ticket" WHERE "ticketNumber" = $1)`;
+  // Lab 4: Actions block a Ticket delete (RESTRICT), so they go first; status history cascades.
+  await client.query(`DELETE FROM "ActionTaken" WHERE "ticketId" IN ${flowTicket}`, [E2E_FLOW_TICKET_NUMBER]);
   await client.query(`DELETE FROM "InternalNote" WHERE "ticketId" IN ${flowTicket}`, [E2E_FLOW_TICKET_NUMBER]);
   await client.query(`DELETE FROM "PublicComment" WHERE "ticketId" IN ${flowTicket}`, [E2E_FLOW_TICKET_NUMBER]);
   await client.query(`DELETE FROM "Ticket" WHERE "ticketNumber" = $1`, [E2E_FLOW_TICKET_NUMBER]);
@@ -80,8 +82,8 @@ export async function setUpStaffFlowFixtures() {
     const relatedSystem = await client.query(`SELECT id FROM "RelatedSystem" WHERE "isActive" ORDER BY id LIMIT 1`);
     await client.query(
       `INSERT INTO "Ticket" ("ticketNumber", "requesterId", "categoryId", "relatedSystemId", summary, description,
-         "requestedPriority", "itPriority", "currentStatus", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, 'LOW', 'LOW', 'NEW', now())`,
+         "requestedPriority", "itPriority", "currentStatus", "ticketDate", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, 'LOW', 'LOW', 'NEW', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC')`,
       [
         E2E_FLOW_TICKET_NUMBER,
         requester.rows[0].id,

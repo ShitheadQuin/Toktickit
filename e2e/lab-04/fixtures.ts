@@ -47,11 +47,12 @@ export async function setUpActionsFixtures(): Promise<number> {
 
     const category = await client.query(`SELECT id FROM "Category" WHERE "isActive" ORDER BY id LIMIT 1`);
     const relatedSystem = await client.query(`SELECT id FROM "RelatedSystem" WHERE "isActive" ORDER BY id LIMIT 1`);
-    // Created a day ago, so an Action dated "now" is after the Ticket (BR-06).
+    // Created a day ago, so an Action dated "now" is after the Ticket (BR-06). The dev database's session
+    // time zone is Asia/Bangkok while Prisma reads these columns as UTC, so the time is written in UTC.
     const ticket = await client.query(
       `INSERT INTO "Ticket" ("ticketNumber", "ticketDate", "createdAt", "requesterId", "categoryId", "relatedSystemId",
          summary, description, "requestedPriority", "itPriority", "currentStatus", "ticketOwnerId", "updatedAt")
-       VALUES ($1, now() - interval '1 day', now() - interval '1 day', $2, $3, $4, $5, $6, 'MEDIUM', 'HIGH', 'IN_PROGRESS', $7, now())
+       VALUES ($1, (now() AT TIME ZONE 'UTC') - interval '1 day', (now() AT TIME ZONE 'UTC') - interval '1 day', $2, $3, $4, $5, $6, 'MEDIUM', 'HIGH', 'IN_PROGRESS', $7, now() AT TIME ZONE 'UTC')
        RETURNING id`,
       [TICKET_NUMBER, requester.rows[0].id, category.rows[0].id, relatedSystem.rows[0].id, TICKET_SUMMARY,
         'The laptop shows 0% and does not charge with the supplied adapter.', a.rows[0].id],
