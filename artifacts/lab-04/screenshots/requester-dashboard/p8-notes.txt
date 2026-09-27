@@ -1,0 +1,5 @@
+Part 8 (dashboard half) evidence, captured 2026-09-27T19:27:03.561Z by capture-part5-8.mjs
+
+p8-01-requester-dashboard.png: Requester (Kritsada) lands on his dashboard: My Open Tickets, Waiting for Me (marked "Needs your reply"), Resolved and Closed, My Recent Tickets, Recently Resolved and Quick Actions.
+p8-02-drill-down-waiting-for-me.png: Following Waiting for Me opens My Tickets filtered to Waiting for Requester, listing the Ticket that needs his reply.
+p8-03-ownership-protection.png: Ownership protection: the dashboard counts only his Tickets (matches the database), a requesterId parameter is ignored, the Staff dashboard is refused (403), and another Requester's Ticket is not found (404).
