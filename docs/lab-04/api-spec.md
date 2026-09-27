@@ -24,10 +24,15 @@ The check is part of the write itself (`UPDATE ... WHERE id = ? AND version = ?`
 racing on the same version give one success and one `409`.
 
 **Order of checks** for every Ticket or Action write: `401` session, `403` role, `404` record,
-`400` validation, `409 STALE_UPDATE`, then the business rule codes (`INVALID_TRANSITION`,
-`NOT_TICKET_OWNER` as `403`, `RESOLUTION_GATE_NOT_MET`, `ACTION_LOCKED`, `TICKET_CLOSED`). A stale
-request is refused before any rule is evaluated, because the rule would be judged against a
-Ticket the user has not seen.
+`400` validation, `403 NOT_TICKET_OWNER` (status changes that need the owner), `409 STALE_UPDATE`,
+then the other business rule codes (`INVALID_TRANSITION`, `RESOLUTION_GATE_NOT_MET`,
+`ACTION_LOCKED`, `TICKET_CLOSED`). A stale request is refused before those rules are evaluated,
+because they would be judged against a Ticket the user has not seen. Ownership comes first so a
+non-owner is never told that a Ticket they could not change has changed (PR #66 review).
+
+Claim keeps its own codes after the version check: `ALREADY_ASSIGNED` for a Ticket that already
+has an owner, `INVALID_TRANSITION` for one that is no longer New. Of two claims sent at once with
+the same version, the loser gets `409 STALE_UPDATE`.
 
 **Staff roles.** In this document "Staff" means `IT_STAFF` or `ADMINISTRATOR`. Every route under
 `/api/staff` admits both (supersedes Lab 3 §4's IT Staff only rule).

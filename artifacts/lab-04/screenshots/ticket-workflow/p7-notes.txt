@@ -1,0 +1,10 @@
+Part 7 evidence, captured 2026-09-27T18:33:26.047Z by capture-part7.mjs
+Demo Ticket TKT-2026-700102 (id 2869)
+
+p7-01-permitted-transitions-gate-blocked.png: Owner on an In Progress Ticket with one Planned Action: the status control lists only the permitted moves (Waiting for Requester, Resolved); Resolved is disabled and the reason is written under it. The select is shown expanded for the shot.
+p7-02-permitted-transitions-gate-met.png: The Action is Completed, so Resolved is now offered; the other options are still only the permitted moves from In Progress. The select is shown expanded for the shot.
+p7-03-stale-update-refused.png: Another tab raised IT Priority first; this tab's change is refused (409 STALE_UPDATE) with a Reload button, and nothing is overwritten.
+p7-04-resolved-history-in-order.png: Resolved. Status History lists every change oldest first, with who made it and when: New → Open (claim), Open → In Progress, In Progress → Resolved.
+p7-05-administrator-not-owner.png: Administrator (Duangjai), not the owner: the navigation now includes Ticket Queue as well as Users; Closed needs the owner so it is disabled ("Claim this ticket first"), while Reopened, which any staff member may do, is offered. The select is shown expanded for the shot.
+p7-06-requester-read-only.png: Requester (Kritsada) on his own Ticket: the Resolved status, the Actions and the Status History are visible read-only; there is no status control.
+p7-07-direct-api-workflow-rules.png: Direct API: PATCH /api/staff/tickets/2869/status -> 409; PATCH /api/staff/tickets/2869/status -> 409; PATCH /api/staff/tickets/2869/status -> 409; PATCH /api/tickets/2869/history/76 -> 404; DELETE /api/tickets/2869/history/76 -> 404; PATCH /api/staff/tickets/2869/status -> 403; GET /api/tickets/5/history -> 404
