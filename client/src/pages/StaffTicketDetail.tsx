@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { STATUS_BADGE_CLASS } from '../components/badge-classes';
 import { CONFIRM_BEFORE, STATUS_TRANSITIONS } from '../components/status-transitions';
 import { ConversationPanel, type ConversationEntry } from '../components/ConversationPanel';
+import { ActionsTakenSection } from '../components/ActionsTaken';
 
 interface Person {
   id: number;
@@ -306,6 +307,17 @@ export function StaffTicketDetail() {
             onPriorityChange={(itPriority) => void act('priority', 'PATCH', { itPriority }, 'IT Priority updated.')}
             onUpdateStatus={requestStatusChange}
           />
+
+          {/* docs/lab-04/ui-spec.md 7: the work record, between the controls and the conversation tabs. */}
+          <div className="mt-4">
+            <ActionsTakenSection
+              ticketId={ticket.id}
+              editable
+              ticketClosed={ticket.currentStatus === 'CLOSED' || ticket.currentStatus === 'CANCELLED'}
+              assignees={staff}
+              currentUser={{ id: user.id, name: user.name }}
+            />
+          </div>
 
           <div className="tt-tabs mt-4" role="tablist" aria-label="Ticket conversation and files">
             {TABS.map(({ key, label }) => (

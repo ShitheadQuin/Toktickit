@@ -62,6 +62,8 @@ function baseRoutes(detail: ReturnType<typeof ticket>, extra: Record<string, Han
     'GET /api/staff/assignable-users': () => ok([{ id: 12, name: 'Jane Lee' }, { id: 13, name: 'Wiriya Charoen' }]),
     'GET /api/tickets/42/comments': () => ok([]),
     'GET /api/tickets/42/notes': () => ok([]),
+    // Lab 4 #61: the page now also lists Actions Taken, covered by client/tests/lab-04/ActionsTaken.test.tsx.
+    'GET /api/tickets/42/actions': () => ok([]),
     ...extra,
   };
 }
