@@ -134,6 +134,17 @@ is kept once, in `ui-spec.md` §15, where each line names what verified it.
 Every row starts **Planned**. A row becomes **Pass** when its test exists and passes on its feature
 branch, and is checked again on `main` before submission.
 
+**Final run on `main`**, 28 Sep 2026, at `faf3c89` (the merge of release PR #73), every suite, no
+test skipped or retried:
+
+| Suite | Command | Result |
+|---|---|---|
+| Server: unit, API, authorization, workflow, migration, performance smoke (Labs 1 to 4) | `cd server && npx tsc --noEmit && npm test` | 30 files, 297 passed; type check clean |
+| Client: UI and UI style (Labs 1 to 4) | `cd client && npx tsc -b && npm test` | 20 files, 147 passed; type check clean |
+| Playwright: E2E, UI style, responsive, accessibility, hardening (Labs 2 to 4) | `cd e2e && npm test` | 65 passed |
+
+Every row in §2 is **Pass**.
+
 ## 7. Known Limitations
 
 - The resolution gate and stale update checks rely on PostgreSQL transactions on the one local

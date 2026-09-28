@@ -24,8 +24,10 @@ Pull Requests Chanat authored and I reviewed, targeting his `lab4-staging`:
 | [#71](https://github.com/Chanat-888/TokTickIT/pull/71) | feature/lab4-actions-ui | Requested changes (2 points), fixed in `7d072ec`, approved, merged |
 | [#72](https://github.com/Chanat-888/TokTickIT/pull/72) | feature/lab4-dashboards | Requested changes (2 points), fixed in `c00ba24`, approved with 1 non-blocking note, merged |
 | [#73](https://github.com/Chanat-888/TokTickIT/pull/73) | feature/lab4-hardening | Approved with 1 non-blocking note, merged |
-| [#74](https://github.com/Chanat-888/TokTickIT/pull/74) | feature/lab4-reviewer | Approved with 1 non-blocking note, then follow-up comments asking for the Lab 3 two-section layout and the #74 and #75 entries; fixed in `1803fdb`, `d983118`, `8dd6d74` and `d19c639`, approved again |
+| [#74](https://github.com/Chanat-888/TokTickIT/pull/74) | feature/lab4-reviewer | Approved with 1 non-blocking note, then follow-up comments asking for the Lab 3 two-section layout and the #74 and #75 entries; fixed in `1803fdb`, `d983118`, `8dd6d74` and `d19c639`, approved again, merged |
 | [#75](https://github.com/Chanat-888/TokTickIT/pull/75) | feature/lab4-ai-use | Requested changes (3 points), fixed in `77907f2`, approved, merged |
+| [#76](https://github.com/Chanat-888/TokTickIT/pull/76) | feature/lab4-screenshots | Approved with 1 non-blocking note, merged |
+| [#77](https://github.com/Chanat-888/TokTickIT/pull/77) | lab4-staging → main (release) | Requested changes (2 points), fixed in `e445b9c`, approved, merged |
 
 Chanat's repository numbers its own business rules, sections and tests. Every reference below is
 to **his** `specification.md` / `api-spec.md` / `ui-spec.md` / `tests.md`, not to this repository's.
@@ -169,7 +171,7 @@ merged as `e8d27c2`) and #74 itself. I will approve again once they are in.
 
 **My approval:** Both entries match the PR history, and the file now has both sections, like Lab 3.
 Non-blocking note: the #74 entry names `docs/lab-03/ai-use.md` as the layout, where it means
-`docs/lab-03/reviewer.md`. Approved.
+`docs/lab-03/reviewer.md`. Approved, and merged on 28 Sep 2026 (merge commit `f82351b`).
 
 ### AI use, [Chanat-888/TokTickIT#75](https://github.com/Chanat-888/TokTickIT/pull/75)
 
@@ -191,6 +193,32 @@ the coding agent (tests first, the defects it caught, and the process correction
 **My approval:** All three addressed in `77907f2`. Approved, and merged on 28 Sep 2026 (merge commit
 `e8d27c2`).
 
+### Screenshots on a fresh seed, [Chanat-888/TokTickIT#76](https://github.com/Chanat-888/TokTickIT/pull/76)
+
+Closes the non-blocking note from my #73 approval: the dashboard screenshots had shown Tickets
+created by E2E runs.
+
+**My approval:** Checked the new dashboard screenshots. Only seed data remains, and the counts match
+the seed (By Status totals 30, Unassigned 22, Accounts 4/3/1). Non-blocking note: his
+`reviewer.md` would need a #76 entry before the release PR. Approved, and merged on 28 Sep 2026
+(merge commit `2cff205`).
+
+### Release, [Chanat-888/TokTickIT#77](https://github.com/Chanat-888/TokTickIT/pull/77)
+
+**My comments (requested changes):**
+1. `reviewer.md`: the #74 row and section still said "awaiting re-review", but #74 was merged
+   (`f82351b`). Asked for both to say approved and merged.
+2. `reviewer.md`: #76 was merged but had no row and no section, although my approval on it asked
+   for one.
+
+**Chanat's response:** Fixed both in `e445b9c`: the #74 row and closing line now say approved and
+merged, and #76 has a row and a full section with my approval note.
+
+**My approval:** Both fixed. The PR was exactly `lab4-staging`, `main` had no extra commits, and it
+merged cleanly. Asked him, after the merge, to record the final test run from `main` in his
+`tests.md` §6 and to add #77 to his `reviewer.md`. Approved, and merged on 28 Sep 2026 (merge
+commit `edffce4`).
+
 ## Reviews my partner gave on my PRs
 
 Pull Requests I authored, reviewed by Chanat, targeting my `lab4-staging`:
@@ -203,6 +231,8 @@ Pull Requests I authored, reviewed by Chanat, targeting my `lab4-staging`:
 | [#69](https://github.com/ShitheadQuin/Toktickit/pull/69) | #62 Ticket workflow | Approved with no new findings, merged |
 | [#70](https://github.com/ShitheadQuin/Toktickit/pull/70) | #63 Role dashboards | Approved with no findings, merged |
 | [#71](https://github.com/ShitheadQuin/Toktickit/pull/71) | #64 Final hardening and regression | Approved with no findings, merged |
+| [#72](https://github.com/ShitheadQuin/Toktickit/pull/72) | #65 `reviewer.md` and `ai-use.md` | Approved with no findings, merged |
+| [#73](https://github.com/ShitheadQuin/Toktickit/pull/73) | #65 Release, `lab4-staging` → `main` | Approved with no findings, merged |
 
 ### Issue 59, [ShitheadQuin/Toktickit#66](https://github.com/ShitheadQuin/Toktickit/pull/66)
 
@@ -305,3 +335,26 @@ show. The not-found page and the focused read only style were correctly scoped. 
 "Problem Appears Resolved" confirmation also uses `ConfirmDialog`, and UI-11 covers all three.
 
 **Merged:** 28 Sep 2026, 18:42:56 (+07), merge commit `3567a0e`.
+
+### Issue 65, [ShitheadQuin/Toktickit#72](https://github.com/ShitheadQuin/Toktickit/pull/72)
+
+**Chanat's review (approved):** A docs-only PR, reviewed by checking its claims against GitHub rather
+than the prose: all six merge commits and merge times for #66 to #71, his own findings as summarised
+under "Reviews my partner gave on my PRs", the #74 history including `d19c639` and both of my
+approvals on it, the three #75 points and their fix in `77907f2`, and the fix commits `54897de` and
+`4879995`. Nothing contradicted the record.
+
+**My response:** Thanked him on the PR for checking every hash and time against GitHub.
+
+**Merged:** 28 Sep 2026, 21:20:52 (+07), merge commit `8d56f36`.
+
+### Issue 65 release, [ShitheadQuin/Toktickit#73](https://github.com/ShitheadQuin/Toktickit/pull/73)
+
+**Chanat's review (approved):** Checked the release structurally: the seven merge commits in its
+history match the seven feature PRs he approved (#66 to #72), in the order the description lists,
+with no other commits, and the test totals match what #71 reported.
+
+**My response:** Thanked him on the PR, and ran every suite on `main` after the merge (server 297,
+client 147, E2E 65, all passing), recorded in `tests.md` §6.
+
+**Merged:** 28 Sep 2026, 23:17:55 (+07), merge commit `faf3c89`.
