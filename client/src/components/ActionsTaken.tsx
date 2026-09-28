@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ACTION_STATUS_BADGE_CLASS, FOLLOW_UP_FLAG_CLASS } from './badge-classes';
+import { ConfirmDialog } from './ConfirmDialog';
 
 // docs/lab-04/ui-spec.md 7 and 10: the Actions Taken section. Staff get the list plus a create
 // mode and a view/edit mode; a Requester gets the same list read-only. The server decides every
@@ -161,10 +162,19 @@ export function ActionsTakenSection({ ticketId, editable, ticketClosed, assignee
     };
   }, [ticketId, reloadToken]);
 
-  // ui-spec.md 13: focus moves into the panel when it opens.
+  // ui-spec.md 13: focus moves into the panel when it opens, and back to Add Action when it closes.
+  // Add Action is only rendered while the panel is closed, so the return waits for this effect,
+  // after the render that brings the button back, rather than a timer that can run before it.
+  const returnFocus = useRef(false);
   useEffect(() => {
     if (mode) firstField.current?.focus();
   }, [mode]);
+  useEffect(() => {
+    if (!mode && returnFocus.current && addButton.current) {
+      returnFocus.current = false;
+      addButton.current.focus();
+    }
+  });
 
   const canWrite = editable && !ticketClosed;
   const editing = mode?.kind === 'edit' ? mode.action : null;
@@ -190,8 +200,8 @@ export function ActionsTakenSection({ ticketId, editable, ticketClosed, assignee
   const closeForm = () => {
     setMode(null);
     setConfirmingCancel(false);
-    // ui-spec.md 13: focus returns to where the user started.
-    setTimeout(() => addButton.current?.focus(), 0);
+    // ui-spec.md 13: focus returns to where the user started (see the effect above).
+    returnFocus.current = true;
   };
 
   const reload = () => {
@@ -596,29 +606,16 @@ export function ActionsTakenSection({ ticketId, editable, ticketClosed, assignee
       )}
 
       {confirmingCancel && (
-        <div className="tt-confirm-backdrop">
-          <div className="tt-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="action-cancel-title">
-            <h2 id="action-cancel-title" className="h5 mb-2">
-              Cancel this Action?
-            </h2>
-            <p className="mb-3">The Action is kept in the list as Cancelled and can no longer be changed.</p>
-            <div className="d-flex justify-content-end gap-2">
-              <button type="button" className="btn btn-tt-tertiary" onClick={() => setConfirmingCancel(false)}>
-                Go back
-              </button>
-              <button
-                type="button"
-                className="btn btn-tt-destructive"
-                onClick={() => {
-                  setConfirmingCancel(false);
-                  void save();
-                }}
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="Cancel this Action?"
+          body="The Action is kept in the list as Cancelled and can no longer be changed."
+          confirmLabel="Confirm"
+          onConfirm={() => {
+            setConfirmingCancel(false);
+            void save();
+          }}
+          onCancel={() => setConfirmingCancel(false)}
+        />
       )}
     </section>
   );

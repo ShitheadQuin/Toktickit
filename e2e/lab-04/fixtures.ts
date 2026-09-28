@@ -72,6 +72,31 @@ export async function tearDownActionsFixtures() {
   }
 }
 
+/** Adds one Action to the fixture Ticket, performed by and assigned to Staff A, an hour ago (UTC, as above). */
+export async function addFixtureAction(ticketId: number, description: string, status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED') {
+  const client = await connect();
+  try {
+    const staff = await client.query(`SELECT id FROM "User" WHERE email = $1`, [STAFF_A.email]);
+    await client.query(
+      `INSERT INTO "ActionTaken" ("ticketId", "actionAt", description, result, status, "performedById", "assigneeId", "updatedAt")
+       VALUES ($1, (now() AT TIME ZONE 'UTC') - interval '1 hour', $2, $3, $4, $5, $5, now() AT TIME ZONE 'UTC')`,
+      [ticketId, description, status === 'COMPLETED' ? 'Done and checked with the Requester.' : null, status, staff.rows[0].id],
+    );
+  } finally {
+    await client.end();
+  }
+}
+
+/** Replaces the fixture Ticket's summary, for layout checks that need a long one. */
+export async function setTicketSummary(summary: string) {
+  const client = await connect();
+  try {
+    await client.query(`UPDATE "Ticket" SET summary = $2 WHERE "ticketNumber" = $1`, [TICKET_NUMBER, summary]);
+  } finally {
+    await client.end();
+  }
+}
+
 /** Deactivates (or reactivates) a fixture user directly, to produce the inactive-assignee case. */
 export async function setActive(email: string, isActive: boolean) {
   const client = await connect();

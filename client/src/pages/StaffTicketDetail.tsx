@@ -6,6 +6,7 @@ import { CONFIRM_BEFORE, STATUS_TRANSITIONS } from '../components/status-transit
 import { ConversationPanel, type ConversationEntry } from '../components/ConversationPanel';
 import { ActionsTakenSection } from '../components/ActionsTaken';
 import { StatusHistory } from '../components/StatusHistory';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 interface Person {
   id: number;
@@ -312,7 +313,7 @@ export function StaffTicketDetail() {
             <label htmlFor="staff-summary" className="form-label">
               Summary
             </label>
-            <input id="staff-summary" type="text" className="form-control tt-field-readonly" value={ticket.summary} readOnly />
+            <textarea id="staff-summary" className="form-control tt-field-readonly tt-summary-readonly" value={ticket.summary} rows={1} readOnly />
           </div>
           <div className="mb-4">
             <label htmlFor="staff-description" className="form-label">
@@ -404,28 +405,15 @@ export function StaffTicketDetail() {
           </div>
 
           {confirming && (
-            <div className="tt-confirm-backdrop">
-              <div className="tt-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="staff-confirm-title">
-                <h2 id="staff-confirm-title" className="h5 mb-3">
-                  {CONFIRM_BEFORE[nextStatus]}
-                </h2>
-                <div className="d-flex justify-content-end gap-2">
-                  <button type="button" className="btn btn-tt-tertiary" onClick={() => setConfirming(false)}>
-                    Go back
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-tt-destructive"
-                    onClick={() => {
-                      setConfirming(false);
-                      void applyStatus();
-                    }}
-                  >
-                    Confirm
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ConfirmDialog
+              title={CONFIRM_BEFORE[nextStatus]}
+              confirmLabel="Confirm"
+              onConfirm={() => {
+                setConfirming(false);
+                void applyStatus();
+              }}
+              onCancel={() => setConfirming(false)}
+            />
           )}
         </>
       )}
@@ -511,10 +499,10 @@ function StaffControls({
           <label htmlFor="staff-assign-to" className="form-label">
             Assign to
           </label>
-          <div className="d-flex gap-2">
+          <div className="d-flex flex-wrap gap-2">
             <select
               id="staff-assign-to"
-              className="form-select tt-field"
+              className="form-select tt-field tt-assign-select"
               value={newOwnerId}
               onChange={(event) => onNewOwnerChange(event.target.value)}
               disabled={busy}

@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
 import {
   E2E_AUTH_EMAIL,
@@ -17,9 +16,8 @@ import {
 } from './fixtures';
 
 // RESP-01 (AC-24, Issue #40): every Lab 3 screen at desktop, tablet and mobile, checked for
-// horizontal overflow and captured into artifacts/lab-03/screenshots/ - the four folders labsheet
-// §12 names. e2e/lab-02/responsive.spec.ts stopped writing its own captures in #36 so that Lab 2's
-// submitted evidence stays as it was; this spec takes over the job for Lab 3's screens.
+// horizontal overflow. Until Lab 4 #64 it also captured into artifacts/lab-03/screenshots/, the
+// four folders labsheet §12 names; those files are now Lab 3's submitted record (see capture()).
 //
 // deviceScaleFactor 2 renders at twice the resolution without changing the layout, which is what
 // makes the PNGs readable at §14's "without extreme zoom" while still laying out as the declared
@@ -35,20 +33,18 @@ const VIEWPORTS = {
   mobile: { width: 375, height: 812 },
 } as const;
 
-const SHOTS = path.join(__dirname, '..', '..', 'artifacts', 'lab-03', 'screenshots');
-
 async function assertNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1); // sub-pixel rounding tolerance only
 }
 
-// Captures the screen and asserts the one part of ui-spec.md §12's checklist a script can judge
-// reliably. Playwright creates the folder, so the four §12 directories appear on first run.
-async function capture(page: Page, group: string, name: string) {
+// Asserts the one part of ui-spec.md §12's checklist a script can judge reliably.
+// Lab 4 #64: no longer writes screenshots, the same change #36 made to the Lab 2 spec.
+// artifacts/lab-03/screenshots/ holds the captures Lab 3 was submitted with, and re-running this
+// spec against the Lab 4 app overwrote them on every E2E run. Group and name stay as labels.
+async function capture(page: Page, _group: string, _name: string) {
   await page.waitForLoadState('networkidle');
   await assertNoHorizontalOverflow(page);
-  await page.mouse.move(0, 0);
-  await page.screenshot({ path: path.join(SHOTS, group, `${name}.png`), fullPage: true });
 }
 
 async function signIn(page: Page, email: string, password: string) {

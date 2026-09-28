@@ -1,0 +1,14 @@
+Part 9 evidence, captured 2026-09-28T11:24:45.297Z by capture-part8-9.mjs
+
+p9-01-staff-dashboard-desktop.png: Staff Dashboard at 1280 px (desktop).
+p9-02-staff-ticket-detail-actions-desktop.png: Staff Ticket Detail with Actions Taken (TKT-2026-700101, four Actions) at 1280 px: the Actions table, status control and Status History.
+p9-03-requester-dashboard-desktop.png: Requester Dashboard at 1280 px (desktop).
+p9-04-requester-ticket-detail-desktop.png: Requester Ticket Detail (TKT-2026-700102, Resolved) at 1280 px: read only Actions Taken and Status History.
+p9-05-staff-dashboard-tablet.png: Staff Dashboard at 768 px (tablet).
+p9-06-staff-ticket-detail-actions-tablet.png: Staff Ticket Detail with Actions Taken (TKT-2026-700101, four Actions) at 768 px: each Action as a stacked card, status control and Status History.
+p9-07-requester-dashboard-tablet.png: Requester Dashboard at 768 px (tablet).
+p9-08-requester-ticket-detail-tablet.png: Requester Ticket Detail (TKT-2026-700102, Resolved) at 768 px: read only Actions Taken and Status History.
+p9-09-staff-dashboard-mobile.png: Staff Dashboard at 375 px (mobile).
+p9-10-staff-ticket-detail-actions-mobile.png: Staff Ticket Detail with Actions Taken (TKT-2026-700101, four Actions) at 375 px: each Action as a stacked card, status control and Status History.
+p9-11-requester-dashboard-mobile.png: Requester Dashboard at 375 px (mobile).
+p9-12-requester-ticket-detail-mobile.png: Requester Ticket Detail (TKT-2026-700102, Resolved) at 375 px: read only Actions Taken and Status History.

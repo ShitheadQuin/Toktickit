@@ -84,7 +84,10 @@ body {
   color: var(--tt-error-text);
 }
 
-.tt-field-readonly {
+.tt-field-readonly,
+.tt-field-readonly:focus {
+  /* Lab 4 #64: Bootstrap's .form-control:focus paints any focused field white, which made a read
+     only field look editable exactly when the user landed on it. */
   background: var(--tt-readonly-bg);
   color: var(--tt-text);
 }
@@ -1098,4 +1101,19 @@ a.tt-metric-card:focus-visible {
   .tt-metric-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Lab 4 #64, labsheet 7 "avoid clipped content": the Assign to select keeps room for its longest
+   text, and the Reassign button wraps below it when the column is narrower than both. */
+.tt-assign-select {
+  flex: 1 1 14rem;
+  min-width: 14rem;
+}
+
+/* Lab 4 #64: the read only Summary is a textarea sized to its text, so a long summary wraps
+   instead of being cut off at the edge of a one line box on mobile. */
+.tt-summary-readonly {
+  field-sizing: content;
+  min-height: 0;
+  resize: none;
 }
