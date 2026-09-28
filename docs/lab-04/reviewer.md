@@ -24,7 +24,7 @@ Pull Requests Chanat authored and I reviewed, targeting his `lab4-staging`:
 | [#71](https://github.com/Chanat-888/TokTickIT/pull/71) | feature/lab4-actions-ui | Requested changes (2 points), fixed in `7d072ec`, approved, merged |
 | [#72](https://github.com/Chanat-888/TokTickIT/pull/72) | feature/lab4-dashboards | Requested changes (2 points), fixed in `c00ba24`, approved with 1 non-blocking note, merged |
 | [#73](https://github.com/Chanat-888/TokTickIT/pull/73) | feature/lab4-hardening | Approved with 1 non-blocking note, merged |
-| [#74](https://github.com/Chanat-888/TokTickIT/pull/74) | feature/lab4-reviewer | Approved with 1 non-blocking note, then a follow-up comment asking for the Lab 3 two-section layout; only the smallest point fixed in `1803fdb` so far, open |
+| [#74](https://github.com/Chanat-888/TokTickIT/pull/74) | feature/lab4-reviewer | Approved with 1 non-blocking note, then a follow-up comment asking for the Lab 3 two-section layout; two of three points fixed in `1803fdb`, `d983118` and `8dd6d74`, open |
 | [#75](https://github.com/Chanat-888/TokTickIT/pull/75) | feature/lab4-ai-use | Requested changes (3 points), fixed in `77907f2`, approved, merged |
 
 Chanat's repository numbers its own business rules, sections and tests. Every reference below is
@@ -156,9 +156,10 @@ on mine (ShitheadQuin/Toktickit #66 to #69), unlike his Lab 3 `reviewer.md`, whi
 sections. Asked him to follow the Lab 3 layout, add the #74 and #75 entries once settled, and noted
 that the "Reviewer decision:" line was missing from #68 to #71, not only #71.
 
-**Chanat's response:** Added the missing "Reviewer decision:" line to the #71 section in `1803fdb`.
-The partner-review section, the #74 and #75 entries, and the decision lines for #68 to #70 are
-still open on the PR.
+**Chanat's response:** Added the missing "Reviewer decision:" line to the #71 section in `1803fdb`,
+then, after we also talked it through outside GitHub, added the "Reviews I gave on my partner's PRs"
+section covering ShitheadQuin/Toktickit #66 to #71 in `d983118` and the decision lines for #68 to
+#70 in `8dd6d74`. The #74 and #75 entries are still to come.
 
 ### AI use, [Chanat-888/TokTickIT#75](https://github.com/Chanat-888/TokTickIT/pull/75)
 
