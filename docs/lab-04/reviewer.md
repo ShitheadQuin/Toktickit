@@ -159,7 +159,11 @@ that the "Reviewer decision:" line was missing from #68 to #71, not only #71.
 **Chanat's response:** Added the missing "Reviewer decision:" line to the #71 section in `1803fdb`,
 then, after we also talked it through outside GitHub, added the "Reviews I gave on my partner's PRs"
 section covering ShitheadQuin/Toktickit #66 to #71 in `d983118` and the decision lines for #68 to
-#70 in `8dd6d74`. The #74 and #75 entries are still to come.
+#70 in `8dd6d74`.
+
+**My second follow-up comment:** Confirmed both fixes and listed the two entries still missing
+under his "Reviews my partner gave on my PRs": #75 (three points, fixed in `77907f2`, approved and
+merged as `e8d27c2`) and #74 itself. I will approve again once they are in.
 
 ### AI use, [Chanat-888/TokTickIT#75](https://github.com/Chanat-888/TokTickIT/pull/75)
 
