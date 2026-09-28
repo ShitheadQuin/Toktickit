@@ -6,6 +6,7 @@ import { CONFIRM_BEFORE, STATUS_TRANSITIONS } from '../components/status-transit
 import { ConversationPanel, type ConversationEntry } from '../components/ConversationPanel';
 import { ActionsTakenSection } from '../components/ActionsTaken';
 import { StatusHistory } from '../components/StatusHistory';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 interface Person {
   id: number;
@@ -404,28 +405,15 @@ export function StaffTicketDetail() {
           </div>
 
           {confirming && (
-            <div className="tt-confirm-backdrop">
-              <div className="tt-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="staff-confirm-title">
-                <h2 id="staff-confirm-title" className="h5 mb-3">
-                  {CONFIRM_BEFORE[nextStatus]}
-                </h2>
-                <div className="d-flex justify-content-end gap-2">
-                  <button type="button" className="btn btn-tt-tertiary" onClick={() => setConfirming(false)}>
-                    Go back
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-tt-destructive"
-                    onClick={() => {
-                      setConfirming(false);
-                      void applyStatus();
-                    }}
-                  >
-                    Confirm
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ConfirmDialog
+              title={CONFIRM_BEFORE[nextStatus]}
+              confirmLabel="Confirm"
+              onConfirm={() => {
+                setConfirming(false);
+                void applyStatus();
+              }}
+              onCancel={() => setConfirming(false)}
+            />
           )}
         </>
       )}

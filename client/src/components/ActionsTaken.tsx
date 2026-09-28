@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ACTION_STATUS_BADGE_CLASS, FOLLOW_UP_FLAG_CLASS } from './badge-classes';
+import { ConfirmDialog } from './ConfirmDialog';
 
 // docs/lab-04/ui-spec.md 7 and 10: the Actions Taken section. Staff get the list plus a create
 // mode and a view/edit mode; a Requester gets the same list read-only. The server decides every
@@ -596,29 +597,16 @@ export function ActionsTakenSection({ ticketId, editable, ticketClosed, assignee
       )}
 
       {confirmingCancel && (
-        <div className="tt-confirm-backdrop">
-          <div className="tt-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="action-cancel-title">
-            <h2 id="action-cancel-title" className="h5 mb-2">
-              Cancel this Action?
-            </h2>
-            <p className="mb-3">The Action is kept in the list as Cancelled and can no longer be changed.</p>
-            <div className="d-flex justify-content-end gap-2">
-              <button type="button" className="btn btn-tt-tertiary" onClick={() => setConfirmingCancel(false)}>
-                Go back
-              </button>
-              <button
-                type="button"
-                className="btn btn-tt-destructive"
-                onClick={() => {
-                  setConfirmingCancel(false);
-                  void save();
-                }}
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="Cancel this Action?"
+          body="The Action is kept in the list as Cancelled and can no longer be changed."
+          confirmLabel="Confirm"
+          onConfirm={() => {
+            setConfirmingCancel(false);
+            void save();
+          }}
+          onCancel={() => setConfirmingCancel(false)}
+        />
       )}
     </section>
   );

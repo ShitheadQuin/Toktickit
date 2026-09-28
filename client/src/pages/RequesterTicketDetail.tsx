@@ -6,6 +6,7 @@ import { StatusHistory } from '../components/StatusHistory';
 import { AttachmentSection, type Attachment } from '../components/AttachmentSection';
 import { STATUS_BADGE_CLASS } from '../components/badge-classes';
 import { ConversationPanel, type ConversationEntry } from '../components/ConversationPanel';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 interface ReferenceItem {
   id: number;
@@ -362,22 +363,14 @@ export function RequesterTicketDetail() {
           </div>
 
           {confirmingSignal && (
-            <div className="tt-confirm-backdrop">
-              <div className="tt-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="signal-confirm-title">
-                <h2 id="signal-confirm-title" className="h5 mb-2">
-                  Let IT Staff know this looks fixed?
-                </h2>
-                <p className="mb-3">This doesn't close the Ticket. IT Staff still confirm it is resolved.</p>
-                <div className="d-flex justify-content-end gap-2">
-                  <button type="button" className="btn btn-tt-tertiary" onClick={() => setConfirmingSignal(false)}>
-                    Go back
-                  </button>
-                  <button type="button" className="btn btn-tt-primary" onClick={() => void sendResolutionSignal()}>
-                    Yes, let them know
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ConfirmDialog
+              title="Let IT Staff know this looks fixed?"
+              body="This doesn't close the Ticket. IT Staff still confirm it is resolved."
+              confirmLabel="Yes, let them know"
+              confirmClass="btn-tt-primary"
+              onConfirm={() => void sendResolutionSignal()}
+              onCancel={() => setConfirmingSignal(false)}
+            />
           )}
         </>
       )}
