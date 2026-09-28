@@ -87,6 +87,16 @@ export async function addFixtureAction(ticketId: number, description: string, st
   }
 }
 
+/** Replaces the fixture Ticket's summary, for layout checks that need a long one. */
+export async function setTicketSummary(summary: string) {
+  const client = await connect();
+  try {
+    await client.query(`UPDATE "Ticket" SET summary = $2 WHERE "ticketNumber" = $1`, [TICKET_NUMBER, summary]);
+  } finally {
+    await client.end();
+  }
+}
+
 /** Deactivates (or reactivates) a fixture user directly, to produce the inactive-assignee case. */
 export async function setActive(email: string, isActive: boolean) {
   const client = await connect();

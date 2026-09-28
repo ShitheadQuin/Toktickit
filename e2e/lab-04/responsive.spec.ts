@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { REQUESTER, STAFF_A, addFixtureAction, setUpActionsFixtures, signIn, tearDownActionsFixtures } from './fixtures';
+import { REQUESTER, STAFF_A, addFixtureAction, setTicketSummary, setUpActionsFixtures, signIn, tearDownActionsFixtures } from './fixtures';
 
 // RESP-01 (AC-27), ui-spec.md 13: both dashboards, Staff Ticket Detail with Actions Taken (list and
 // form) and Requester Ticket Detail at desktop, tablet and mobile. No horizontal page scroll, metric
@@ -20,6 +20,26 @@ async function assertNoHorizontalOverflow(page: Page) {
   expect(overflow).toBeLessThanOrEqual(1); // sub-pixel rounding only
 }
 
+// Labsheet 7, "avoid clipped content": a single line field or a select whose text is wider than the
+// box cuts the words off. Each one's text is measured in its own font against its inner width.
+async function clippedFields(page: Page) {
+  return page.locator('main input[type=text], main select').evaluateAll((fields) =>
+    fields.flatMap((field) => {
+      const el = field as HTMLInputElement | HTMLSelectElement;
+      if (!el.offsetParent) return [];
+      const text = el instanceof HTMLSelectElement ? (el.selectedOptions[0]?.text ?? '') : el.value;
+      const style = getComputedStyle(el);
+      const context = document.createElement('canvas').getContext('2d')!;
+      context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      const room = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      return context.measureText(text).width > room + 1 ? [`#${el.id || el.name}: "${text}"`] : [];
+    }),
+  );
+}
+
+// A long summary (the limit is 120 characters) so the read only Summary is a real test.
+const LONG_SUMMARY = 'E2E-01 laptop will not charge with the supplied adapter or the spare one from the library desk';
+
 // Cards sharing the first card's top edge are on its row.
 async function cardsInFirstRow(page: Page) {
   const tops = await page.locator('.tt-metric-grid > *').evaluateAll((cards) => cards.map((c) => Math.round(c.getBoundingClientRect().top)));
@@ -33,6 +53,7 @@ test.describe('Lab 4 screens at three widths (RESP-01)', () => {
     ticketId = await setUpActionsFixtures();
     await addFixtureAction(ticketId, 'Checked the adapter with a meter', 'COMPLETED');
     await addFixtureAction(ticketId, 'Order a replacement adapter', 'PLANNED');
+    await setTicketSummary(LONG_SUMMARY);
   });
 
   test.afterAll(async () => {
@@ -54,6 +75,7 @@ test.describe('Lab 4 screens at three widths (RESP-01)', () => {
         await assertNoHorizontalOverflow(page);
         // Table from 992 px, stacked cards (no column headings) below it.
         await expect(page.locator('.tt-actions-table thead')).toBeVisible({ visible: name === 'desktop' });
+        expect(await clippedFields(page)).toEqual([]);
 
         await page.getByRole('button', { name: 'Add Action' }).click();
         await page.getByRole('form', { name: 'Add Action' }).waitFor();
@@ -69,6 +91,7 @@ test.describe('Lab 4 screens at three widths (RESP-01)', () => {
         await page.goto(`/tickets/${ticketId}`);
         await page.locator('.tt-actions-table tbody tr').first().waitFor();
         await assertNoHorizontalOverflow(page);
+        expect(await clippedFields(page)).toEqual([]);
       });
     });
   }
