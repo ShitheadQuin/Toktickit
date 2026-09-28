@@ -84,7 +84,10 @@ body {
   color: var(--tt-error-text);
 }
 
-.tt-field-readonly {
+.tt-field-readonly,
+.tt-field-readonly:focus {
+  /* Lab 4 #64: Bootstrap's .form-control:focus paints any focused field white, which made a read
+     only field look editable exactly when the user landed on it. */
   background: var(--tt-readonly-bg);
   color: var(--tt-text);
 }
@@ -780,4 +783,337 @@ body {
     border: 0;
     padding: 0.125rem 0;
   }
+}
+
+/* Actions Taken (docs/lab-04/ui-spec.md 7, 10, 11). Action status badges pair each word with an
+   icon where ui-spec 11 asks, and the follow up flag always carries its words. */
+.tt-badge-action-planned,
+.tt-badge-action-cancelled {
+  background: var(--tt-readonly-bg);
+  color: var(--tt-text);
+}
+
+.tt-badge-action-in-progress {
+  background: #FFF4DE;
+  color: #92600D;
+}
+
+.tt-badge-action-completed {
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+}
+
+.tt-badge-action-completed::before {
+  content: '✓ ';
+}
+
+.tt-badge-action-cancelled::before {
+  content: '⊘ ';
+}
+
+.tt-flag-follow-up {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #FFF4DE;
+  color: #92600D;
+}
+
+.tt-flag-follow-up::before {
+  content: '⚑ ';
+}
+
+.tt-actions-taken {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+/* Desktop table with fixed widths so the six columns can't push the page sideways; Description
+   is the one flexible column. */
+.tt-actions-table {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.9375rem;
+}
+
+.tt-actions-table thead th {
+  color: var(--tt-text);
+  border-bottom-color: var(--tt-surface-border);
+  vertical-align: bottom;
+}
+
+.tt-actions-table thead th.tt-actions-head-date { width: 9.5rem; }
+.tt-actions-table thead th.tt-actions-head-assignee { width: 9rem; }
+.tt-actions-table thead th.tt-actions-head-status { width: 8.5rem; }
+.tt-actions-table thead th.tt-actions-head-follow { width: 7.5rem; }
+.tt-actions-table thead th.tt-actions-head-performer { width: 9rem; }
+.tt-actions-table thead th.tt-actions-head-open { width: 5rem; }
+
+.tt-actions-table td {
+  overflow-wrap: break-word;
+}
+
+.tt-actions-table .tt-actions-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tt-actions-table tr.tt-actions-selected > td {
+  background: var(--tt-pale);
+}
+
+/* Below 992px each Action becomes a card, same approach as the Queue (ui-spec.md 7, 13). */
+@media (max-width: 991.98px) {
+  .tt-actions-table {
+    table-layout: auto;
+  }
+
+  .tt-actions-table thead {
+    display: none;
+  }
+
+  .tt-actions-table,
+  .tt-actions-table tbody,
+  .tt-actions-table tr,
+  .tt-actions-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .tt-actions-table tr {
+    border: 1px solid var(--tt-surface-border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tt-actions-table td {
+    border: 0;
+    padding: 0.125rem 0;
+  }
+
+  .tt-actions-table td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+  }
+}
+
+.tt-action-form {
+  border: 1px solid var(--tt-secondary);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #FFFFFF;
+}
+
+.tt-alert-warning {
+  color: #92600D;
+  background: #FFF4DE;
+  border-color: #92600D;
+}
+
+/* Lab 4 ui-spec.md 6: a filter with no control of its own (statusGroup) shows as a removable chip. */
+.tt-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.4rem 0.2rem 0.75rem;
+  border: 1px solid var(--tt-secondary);
+  border-radius: 999px;
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.tt-filter-chip-remove {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+}
+
+.tt-filter-chip-remove:focus-visible {
+  outline: 2px solid var(--tt-secondary);
+  outline-offset: 1px;
+}
+
+/* Dashboards (docs/lab-04/ui-spec.md 3 to 5, 13). Concise cards over the Lab 2 surface tokens; four
+   per row on desktop, two on tablet, one on mobile, never scrolling sideways. */
+.tt-metric-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.tt-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: var(--tt-text);
+  text-decoration: none;
+  min-width: 0;
+}
+
+a.tt-metric-card:hover {
+  border-color: var(--tt-secondary);
+  background: var(--tt-pale);
+}
+
+a.tt-metric-card:focus-visible {
+  outline: 3px solid var(--tt-secondary);
+  outline-offset: 2px;
+}
+
+.tt-metric-card-attention {
+  border-color: #92600D;
+  border-left-width: 4px;
+}
+
+.tt-metric-label {
+  font-weight: 600;
+}
+
+.tt-metric-count {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tt-metric-attention {
+  color: #92600D;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.tt-metric-view {
+  color: var(--tt-secondary);
+  font-size: 0.875rem;
+  text-decoration: underline;
+}
+
+.tt-dashboard-columns {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+}
+
+.tt-dashboard-main,
+.tt-dashboard-side {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.tt-dashboard-panel {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  min-width: 0;
+}
+
+.tt-dashboard-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--tt-surface-border);
+}
+
+.tt-dashboard-list li:last-child {
+  border-bottom: 0;
+}
+
+.tt-dashboard-list-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+
+.tt-dashboard-summary {
+  overflow-wrap: anywhere;
+}
+
+.tt-dashboard-list-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tt-breakdown-list li a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  color: var(--tt-text);
+  text-decoration: none;
+}
+
+.tt-breakdown-list li a:hover .tt-breakdown-count {
+  text-decoration: underline;
+}
+
+.tt-breakdown-count {
+  font-weight: 700;
+}
+
+.tt-user-counts {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 1rem;
+}
+
+.tt-user-counts dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+@media (max-width: 991.98px) {
+  .tt-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-dashboard-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .tt-metric-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Lab 4 #64, labsheet 7 "avoid clipped content": the Assign to select keeps room for its longest
+   text, and the Reassign button wraps below it when the column is narrower than both. */
+.tt-assign-select {
+  flex: 1 1 14rem;
+  min-width: 14rem;
+}
+
+/* Lab 4 #64: the read only Summary is a textarea sized to its text, so a long summary wraps
+   instead of being cut off at the edge of a one line box on mobile. */
+.tt-summary-readonly {
+  field-sizing: content;
+  min-height: 0;
+  resize: none;
 }

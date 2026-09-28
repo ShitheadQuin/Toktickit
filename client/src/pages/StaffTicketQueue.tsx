@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { STATUS_BADGE_CLASS } from '../components/badge-classes';
 
@@ -74,9 +74,26 @@ export function StaffTicketQueue() {
 
   // The text in the box, and the term actually applied. Kept apart so typing doesn't fire a
   // request per keystroke; submitting the form promotes one to the other.
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  // Lab 4 ui-spec.md 6: the filters live in the page address too, so a dashboard card's link opens
+  // exactly the list it counted. The API's owner id becomes the "Me" choice for the viewer's own id.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') ?? '');
+  const [search, setSearch] = useState(() => searchParams.get('search') ?? '');
+  // The owner id from the link is kept until the signed-in user is known, then becomes "Me" if it is
+  // theirs. Until then no list is requested, so the first request already carries the owner.
+  const linkedOwner = useRef(searchParams.get('owner'));
+  const [filters, setFilters] = useState(() => ({
+    status: searchParams.get('status') ?? '',
+    itPriority: searchParams.get('itPriority') ?? '',
+    assigned: linkedOwner.current === 'unassigned' ? 'unassigned' : '',
+  }));
+  const [ownerResolved, setOwnerResolved] = useState(() => !linkedOwner.current || linkedOwner.current === 'unassigned');
+  useEffect(() => {
+    if (!user || ownerResolved) return;
+    if (linkedOwner.current === String(user.id)) setFilters((current) => ({ ...current, assigned: 'me' }));
+    setOwnerResolved(true);
+  }, [user, ownerResolved]);
+  const [statusGroup, setStatusGroup] = useState(() => (searchParams.get('statusGroup') === 'active' ? 'active' : ''));
   const [sort, setSort] = useState('createdAt');
   const [order, setOrder] = useState('asc');
   const [page, setPage] = useState(1);
@@ -90,7 +107,7 @@ export function StaffTicketQueue() {
   const requestSeq = useRef(0);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !ownerResolved) return;
 
     const seq = ++requestSeq.current;
     setLoading(true);
@@ -102,6 +119,7 @@ export function StaffTicketQueue() {
     if (filters.itPriority) params.set('itPriority', filters.itPriority);
     if (filters.assigned === 'me') params.set('owner', String(user.id));
     if (filters.assigned === 'unassigned') params.set('owner', 'unassigned');
+    if (statusGroup) params.set('statusGroup', statusGroup);
 
     fetch(`/api/staff/tickets?${params.toString()}`, { credentials: 'include' })
       .then(async (response) => {
@@ -124,9 +142,22 @@ export function StaffTicketQueue() {
         setResult(null);
         setLoading(false);
       });
-  }, [user, search, filters, sort, order, page, retryToken]);
+  }, [user, ownerResolved, search, filters, statusGroup, sort, order, page, retryToken]);
 
-  const hasActiveQuery = search !== '' || Object.values(filters).some((value) => value !== '');
+  // Keeps the address in step with the applied filters, replacing the entry so Back is not flooded.
+  useEffect(() => {
+    if (!user || !ownerResolved) return;
+    const next = new URLSearchParams();
+    if (search) next.set('search', search);
+    if (filters.status) next.set('status', filters.status);
+    if (filters.itPriority) next.set('itPriority', filters.itPriority);
+    if (filters.assigned === 'me') next.set('owner', String(user.id));
+    if (filters.assigned === 'unassigned') next.set('owner', 'unassigned');
+    if (statusGroup) next.set('statusGroup', statusGroup);
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
+  }, [user, ownerResolved, search, filters, statusGroup, searchParams, setSearchParams]);
+
+  const hasActiveQuery = search !== '' || statusGroup !== '' || Object.values(filters).some((value) => value !== '');
 
   // Every change to what is searched, filtered or sorted resets the page in the same handler, so
   // it sends one request already on page 1 - not one with the old page and a second after.
@@ -147,6 +178,7 @@ export function StaffTicketQueue() {
     setSearchInput('');
     setSearch('');
     setFilters(EMPTY_FILTERS);
+    setStatusGroup('');
   };
 
   const totalPages = result?.totalPages ?? 0;
@@ -157,7 +189,21 @@ export function StaffTicketQueue() {
 
   return (
     <section className="tt-staff-queue">
-      <h1 className="h4 mb-3">My Queue</h1>
+      <h1 className="h4 mb-3">Ticket Queue</h1>
+      {/* ui-spec.md 6: statusGroup has no control of its own, so it shows as a removable chip. */}
+      {statusGroup === 'active' && (
+        <div className="mb-3">
+          <span className="tt-filter-chip">
+            Active statuses
+            <button type="button" className="tt-filter-chip-remove" aria-label="Remove filter: Active statuses" onClick={() => {
+                setPage(1);
+                setStatusGroup('');
+              }}>
+              ×
+            </button>
+          </span>
+        </div>
+      )}
 
       {error && (
         <div className="alert tt-alert-error" role="alert">

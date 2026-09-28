@@ -12,6 +12,9 @@ import authRouter from './routes/auth';
 import staffTicketsRouter from './routes/staff-tickets';
 import ticketConversationRouter from './routes/ticket-conversation';
 import usersRouter from './routes/users';
+import dashboardRouter from './routes/dashboard';
+import { ACTIVE_STATUSES } from './dashboard-queries';
+import actionsRouter from './routes/actions';
 
 const app = express();
 app.use(express.json());
@@ -20,6 +23,8 @@ app.use('/api/auth', authRouter);
 app.use('/api/staff', staffTicketsRouter);
 app.use('/api/tickets', ticketConversationRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/dashboard', dashboardRouter);
+app.use('/api', actionsRouter);
 
 // BR-15/BR-27: multer's own limit is a memory backstop only, set above the real 5 MB rule so an
 // oversized-and-wrong-type file still reaches the handler and gets the documented check order -
@@ -169,7 +174,11 @@ app.get('/api/tickets', ...requireRequester, async (req, res) => {
       requesterId,
       ...(query.categoryId !== undefined ? { categoryId: query.categoryId } : {}),
       ...(query.relatedSystemId !== undefined ? { relatedSystemId: query.relatedSystemId } : {}),
-      ...(query.currentStatus !== undefined ? { currentStatus: query.currentStatus } : {}),
+      ...(query.currentStatus !== undefined
+        ? { currentStatus: query.currentStatus }
+        : query.statusGroup === 'active'
+          ? { currentStatus: { in: ACTIVE_STATUSES } }
+          : {}),
       ...(query.requestedPriority !== undefined
         ? { requestedPriority: query.requestedPriority }
         : {}),
@@ -503,7 +512,8 @@ app.delete('/api/attachments/:id', ...requireRequester, async (req, res) => {
 
 // api-spec.md 4/7: every /api/staff/tickets* endpoint is IT Staff only. Requester and
 // Administrator both get 403 - specification.md 11: Administrator performs no ticket operations.
-const requireItStaff = [requireAuth, requirePasswordChanged, requireRole('IT_STAFF')];
+// Lab 4 specification.md 11: Administrators perform IT Staff behaviour, so the Queue admits both.
+const requireItStaff = [requireAuth, requirePasswordChanged, requireRole('IT_STAFF', 'ADMINISTRATOR')];
 
 app.get('/api/staff/tickets', ...requireItStaff, async (req, res) => {
   try {
@@ -518,7 +528,11 @@ app.get('/api/staff/tickets', ...requireItStaff, async (req, res) => {
     const contains = (text: string) => ({ contains: text, mode: 'insensitive' as const });
 
     const where = {
-      ...(query.status !== undefined ? { currentStatus: query.status } : {}),
+      ...(query.status !== undefined
+        ? { currentStatus: query.status }
+        : query.statusGroup === 'active'
+          ? { currentStatus: { in: ACTIVE_STATUSES } }
+          : {}),
       ...(query.itPriority !== undefined ? { itPriority: query.itPriority } : {}),
       ...(query.owner === 'unassigned'
         ? { ticketOwnerId: null }

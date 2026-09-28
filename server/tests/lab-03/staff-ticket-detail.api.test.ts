@@ -52,6 +52,10 @@ describe('Staff Ticket Detail API', () => {
 
   const reload = (id: number) => prisma.ticket.findUniqueOrThrow({ where: { id } });
 
+  // Lab 4 BR-19: every Ticket write names the version it was based on. Each Ticket here is created
+  // fresh by its own test and written once, so that version is always 0.
+  const V0 = { expectedVersion: 0 };
+
   beforeAll(async () => {
     const passwordHash = await hashPassword('FixturePass1');
     const make = (key: string, name: string, role: Role, isActive = true) =>
@@ -128,7 +132,7 @@ describe('Staff Ticket Detail API', () => {
     it('API-19: claiming an unassigned New Ticket makes the caller the owner and opens it', async () => {
       const ticket = await makeTicket();
 
-      const response = await as(cookies.owner).post(`/api/staff/tickets/${ticket.id}/claim`);
+      const response = await as(cookies.owner).post(`/api/staff/tickets/${ticket.id}/claim`, V0);
 
       expect(response.status).toBe(200);
       expect(await reload(ticket.id)).toMatchObject({ ticketOwnerId: ids.owner, currentStatus: 'OPEN' });
@@ -137,7 +141,7 @@ describe('Staff Ticket Detail API', () => {
     it('API-20: claiming an already-assigned Ticket is 409 ALREADY_ASSIGNED and changes nothing', async () => {
       const ticket = await makeTicket({ ownerId: ids.owner });
 
-      const response = await as(cookies.other).post(`/api/staff/tickets/${ticket.id}/claim`);
+      const response = await as(cookies.other).post(`/api/staff/tickets/${ticket.id}/claim`, V0);
 
       expect(response.status).toBe(409);
       expect(response.body.error.code).toBe('ALREADY_ASSIGNED');
@@ -147,7 +151,7 @@ describe('Staff Ticket Detail API', () => {
     it('claiming an unassigned Ticket that is no longer New is 409 INVALID_TRANSITION', async () => {
       const ticket = await makeTicket({ status: 'REOPENED' });
 
-      const response = await as(cookies.owner).post(`/api/staff/tickets/${ticket.id}/claim`);
+      const response = await as(cookies.owner).post(`/api/staff/tickets/${ticket.id}/claim`, V0);
 
       expect(response.status).toBe(409);
       expect(response.body.error.code).toBe('INVALID_TRANSITION');
@@ -157,13 +161,15 @@ describe('Staff Ticket Detail API', () => {
       const ticket = await makeTicket();
 
       const [first, second] = await Promise.all([
-        as(cookies.owner).post(`/api/staff/tickets/${ticket.id}/claim`),
-        as(cookies.other).post(`/api/staff/tickets/${ticket.id}/claim`),
+        as(cookies.owner).post(`/api/staff/tickets/${ticket.id}/claim`, V0),
+        as(cookies.other).post(`/api/staff/tickets/${ticket.id}/claim`, V0),
       ]);
 
       expect([first.status, second.status].sort()).toEqual([200, 409]);
       const loser = first.status === 409 ? first : second;
-      expect(loser.body.error.code).toBe('ALREADY_ASSIGNED');
+      // Lab 4 BR-19: both claims name version 0, so the loser is refused by the version check
+      // (STALE_UPDATE) before the ownership rule is looked at. Still exactly one owner.
+      expect(loser.body.error.code).toBe('STALE_UPDATE');
       const winnerId = first.status === 200 ? ids.owner : ids.other;
       expect((await reload(ticket.id)).ticketOwnerId).toBe(winnerId);
     });
@@ -177,7 +183,7 @@ describe('Staff Ticket Detail API', () => {
     it('API-21: reassigns to another active IT Staff member without changing status', async () => {
       const ticket = await makeTicket({ status: 'IN_PROGRESS', ownerId: ids.owner });
 
-      const response = await as(cookies.owner).post(`/api/staff/tickets/${ticket.id}/reassign`, { newOwnerId: ids.other });
+      const response = await as(cookies.owner).post(`/api/staff/tickets/${ticket.id}/reassign`, { newOwnerId: ids.other, ...V0 });
 
       expect(response.status).toBe(200);
       expect(await reload(ticket.id)).toMatchObject({ ticketOwnerId: ids.other, currentStatus: 'IN_PROGRESS' });
@@ -186,19 +192,22 @@ describe('Staff Ticket Detail API', () => {
     it('can assign an unassigned Ticket at any status, including to the caller', async () => {
       const ticket = await makeTicket({ status: 'REOPENED' });
 
-      const response = await as(cookies.owner).post(`/api/staff/tickets/${ticket.id}/reassign`, { newOwnerId: ids.owner });
+      const response = await as(cookies.owner).post(`/api/staff/tickets/${ticket.id}/reassign`, { newOwnerId: ids.owner, ...V0 });
 
       expect(response.status).toBe(200);
       expect(await reload(ticket.id)).toMatchObject({ ticketOwnerId: ids.owner, currentStatus: 'REOPENED' });
     });
 
-    it('rejects an inactive IT Staff member, a non-IT-Staff user, or a missing id with 400', async () => {
+    // Lab 4 BR-13: an Administrator is now a valid owner (ticket-workflow.api.test.ts API-15), so it
+    // left this list; the version is sent so each 400 is for the owner, not a missing expectedVersion.
+    it('rejects an inactive IT Staff member, a Requester, or a missing id with 400', async () => {
       const ticket = await makeTicket({ ownerId: ids.owner });
 
-      for (const body of [{ newOwnerId: ids.inactive }, { newOwnerId: ids.requester }, { newOwnerId: ids.admin }, {}, { newOwnerId: 'abc' }]) {
+      for (const body of [{ newOwnerId: ids.inactive, ...V0 }, { newOwnerId: ids.requester, ...V0 }, { ...V0 }, { newOwnerId: 'abc', ...V0 }]) {
         const response = await as(cookies.owner).post(`/api/staff/tickets/${ticket.id}/reassign`, body);
         expect(response.status, JSON.stringify(body)).toBe(400);
         expect(response.body.error.code).toBe('VALIDATION_ERROR');
+        expect(response.body.error.fields[0].field).toBe('newOwnerId');
       }
       expect((await reload(ticket.id)).ticketOwnerId).toBe(ids.owner);
     });
@@ -208,7 +217,7 @@ describe('Staff Ticket Detail API', () => {
     it('API-25: an IT Staff member who does not own the Ticket can set IT Priority; Requested Priority stays', async () => {
       const ticket = await makeTicket({ status: 'OPEN', ownerId: ids.owner });
 
-      const response = await as(cookies.other).patch(`/api/staff/tickets/${ticket.id}/priority`, { itPriority: 'HIGH' });
+      const response = await as(cookies.other).patch(`/api/staff/tickets/${ticket.id}/priority`, { itPriority: 'HIGH', ...V0 });
 
       expect(response.status).toBe(200);
       expect(await reload(ticket.id)).toMatchObject({ itPriority: 'HIGH', requestedPriority: 'MEDIUM' });
@@ -217,7 +226,7 @@ describe('Staff Ticket Detail API', () => {
     it('rejects a value that is not LOW, MEDIUM or HIGH with 400', async () => {
       const ticket = await makeTicket();
 
-      const response = await as(cookies.owner).patch(`/api/staff/tickets/${ticket.id}/priority`, { itPriority: 'URGENT' });
+      const response = await as(cookies.owner).patch(`/api/staff/tickets/${ticket.id}/priority`, { itPriority: 'URGENT', ...V0 });
 
       expect(response.status).toBe(400);
       expect(response.body.error.code).toBe('VALIDATION_ERROR');
@@ -226,7 +235,7 @@ describe('Staff Ticket Detail API', () => {
 
   describe('PATCH /api/staff/tickets/:id/status (API-22, API-23, API-24)', () => {
     const setStatus = (cookie: string, id: number, status: string) =>
-      as(cookie).patch(`/api/staff/tickets/${id}/status`, { status });
+      as(cookie).patch(`/api/staff/tickets/${id}/status`, { status, ...V0 });
 
     it('API-23: the owner can make a permitted transition', async () => {
       const ticket = await makeTicket({ status: 'OPEN', ownerId: ids.owner });
@@ -290,23 +299,25 @@ describe('Staff Ticket Detail API', () => {
   });
 
   describe('GET /api/staff/assignable-users (API-39)', () => {
-    it('lists active IT Staff only, as id and name, and excludes inactive staff and other roles', async () => {
+    // Lab 4 BR-13: Administrators can own Tickets and be assigned Actions, so they are listed too,
+    // with their role; inactive staff and Requesters are still excluded.
+    it('lists active IT Staff and Administrators as id, name and role, and excludes inactive staff and Requesters', async () => {
       const response = await as(cookies.owner).get('/api/staff/assignable-users');
 
       expect(response.status).toBe(200);
       const listedIds = response.body.map((user: { id: number }) => user.id);
-      expect(listedIds).toEqual(expect.arrayContaining([ids.owner, ids.other]));
-      for (const excluded of [ids.inactive, ids.requester, ids.admin]) {
+      expect(listedIds).toEqual(expect.arrayContaining([ids.owner, ids.other, ids.admin]));
+      for (const excluded of [ids.inactive, ids.requester]) {
         expect(listedIds).not.toContain(excluded);
       }
       for (const user of response.body) {
-        expect(Object.keys(user).sort()).toEqual(['id', 'name']);
+        expect(Object.keys(user).sort()).toEqual(['id', 'name', 'role']);
       }
     });
 
-    it('is 403 for a Requester and for an Administrator', async () => {
+    it('is 403 for a Requester, and open to an Administrator (Lab 4 BR-13)', async () => {
       expect((await as(cookies.requester).get('/api/staff/assignable-users')).status).toBe(403);
-      expect((await as(cookies.admin).get('/api/staff/assignable-users')).status).toBe(403);
+      expect((await as(cookies.admin).get('/api/staff/assignable-users')).status).toBe(200);
     });
   });
 

@@ -33,7 +33,9 @@ function mockApi(routes: Record<string, Handler>) {
     withAuthMe(MOCK_REQUESTER, async (input, init) => {
       const url = new URL(String(input), 'http://localhost');
       const method = (init?.method ?? 'GET').toUpperCase();
-      const handler = routes[`${method} ${url.pathname}`];
+      // Lab 4 #61: the page now also lists Actions Taken. These tests don't cover it (that is
+      // client/tests/lab-04/ActionsTaken.test.tsx), so it answers with none unless a test says otherwise.
+      const handler = routes[`${method} ${url.pathname}`] ?? (`${method} ${url.pathname}` === 'GET /api/tickets/42/actions' ? () => ok([]) : undefined);
       if (!handler) throw new Error(`Unexpected fetch: ${method} ${url.pathname}`);
       return handler(init?.body ? JSON.parse(String(init.body)) : undefined);
     }),

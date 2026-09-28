@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
 import {
   E2E_AUTH_EMAIL,
@@ -17,9 +16,8 @@ import {
 } from './fixtures';
 
 // RESP-01 (AC-24, Issue #40): every Lab 3 screen at desktop, tablet and mobile, checked for
-// horizontal overflow and captured into artifacts/lab-03/screenshots/ - the four folders labsheet
-// §12 names. e2e/lab-02/responsive.spec.ts stopped writing its own captures in #36 so that Lab 2's
-// submitted evidence stays as it was; this spec takes over the job for Lab 3's screens.
+// horizontal overflow. Until Lab 4 #64 it also captured into artifacts/lab-03/screenshots/, the
+// four folders labsheet §12 names; those files are now Lab 3's submitted record (see capture()).
 //
 // deviceScaleFactor 2 renders at twice the resolution without changing the layout, which is what
 // makes the PNGs readable at §14's "without extreme zoom" while still laying out as the declared
@@ -35,20 +33,18 @@ const VIEWPORTS = {
   mobile: { width: 375, height: 812 },
 } as const;
 
-const SHOTS = path.join(__dirname, '..', '..', 'artifacts', 'lab-03', 'screenshots');
-
 async function assertNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1); // sub-pixel rounding tolerance only
 }
 
-// Captures the screen and asserts the one part of ui-spec.md §12's checklist a script can judge
-// reliably. Playwright creates the folder, so the four §12 directories appear on first run.
-async function capture(page: Page, group: string, name: string) {
+// Asserts the one part of ui-spec.md §12's checklist a script can judge reliably.
+// Lab 4 #64: no longer writes screenshots, the same change #36 made to the Lab 2 spec.
+// artifacts/lab-03/screenshots/ holds the captures Lab 3 was submitted with, and re-running this
+// spec against the Lab 4 app overwrote them on every E2E run. Group and name stay as labels.
+async function capture(page: Page, _group: string, _name: string) {
   await page.waitForLoadState('networkidle');
   await assertNoHorizontalOverflow(page);
-  await page.mouse.move(0, 0);
-  await page.screenshot({ path: path.join(SHOTS, group, `${name}.png`), fullPage: true });
 }
 
 async function signIn(page: Page, email: string, password: string) {
@@ -86,7 +82,9 @@ test.describe('RESP-01 — authentication, Queue and Ticket Detail', () => {
 
       test(`Staff Ticket Queue at ${viewportName}`, async ({ page }) => {
         await signIn(page, E2E_STAFF_EMAIL, E2E_STAFF_PASSWORD);
-        await page.waitForURL('**/staff/queue');
+        // Lab 4: every role lands on the Dashboard first.
+        await page.waitForURL('**/dashboard');
+        await page.goto('/staff/queue');
         // ui-spec.md §6: the 7-column table becomes stacked cards below 992px rather than a
         // horizontally scrolling table, so this shot is the evidence for both layouts.
         await capture(page, 'staff-queue', viewportName);
@@ -94,7 +92,9 @@ test.describe('RESP-01 — authentication, Queue and Ticket Detail', () => {
 
       test(`Staff Ticket Detail at ${viewportName}`, async ({ page }) => {
         await signIn(page, E2E_STAFF_EMAIL, E2E_STAFF_PASSWORD);
-        await page.waitForURL('**/staff/queue');
+        // Lab 4: every role lands on the Dashboard first.
+        await page.waitForURL('**/dashboard');
+        await page.goto('/staff/queue');
 
         await page.getByLabel('Search', { exact: true }).fill(E2E_FLOW_TICKET_NUMBER);
         await page.getByRole('button', { name: 'Search', exact: true }).click();
@@ -128,7 +128,9 @@ test.describe('RESP-01 — User Management', () => {
 
       test(`User Management at ${viewportName}`, async ({ page }) => {
         await signIn(page, E2E_VIEW_ADMIN_EMAIL, E2E_VIEW_ADMIN_PASSWORD);
-        await page.waitForURL('**/users');
+        // Lab 4: every role lands on the Dashboard first.
+        await page.waitForURL('**/dashboard');
+        await page.goto('/users');
         await page.locator('.tt-user-table').waitFor();
         await capture(page, 'user-management', viewportName);
 

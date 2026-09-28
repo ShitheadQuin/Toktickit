@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { STATUS_BADGE_CLASS } from '../components/badge-classes';
 
@@ -91,9 +91,18 @@ export function MyTickets() {
 
   // The text in the box, and the term actually applied. Kept apart so typing does not fire a
   // request per keystroke; the form submit promotes one to the other.
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  // Lab 4 ui-spec.md 6: the filters live in the page address too, so a dashboard card's link, the
+  // Back button and a copied link all open the same list. Read once on arrival, written on change.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') ?? '');
+  const [search, setSearch] = useState(() => searchParams.get('search') ?? '');
+  const [filters, setFilters] = useState(() => ({
+    category: searchParams.get('category') ?? '',
+    relatedSystem: searchParams.get('relatedSystem') ?? '',
+    currentStatus: searchParams.get('currentStatus') ?? '',
+    requestedPriority: searchParams.get('requestedPriority') ?? '',
+  }));
+  const [statusGroup, setStatusGroup] = useState(() => (searchParams.get('statusGroup') === 'active' ? 'active' : ''));
   const [sort, setSort] = useState('ticketDate');
   const [order, setOrder] = useState('desc');
   const [page, setPage] = useState(1);
@@ -144,6 +153,7 @@ export function MyTickets() {
     if (filters.relatedSystem) params.set('relatedSystem', filters.relatedSystem);
     if (filters.currentStatus) params.set('currentStatus', filters.currentStatus);
     if (filters.requestedPriority) params.set('requestedPriority', filters.requestedPriority);
+    if (statusGroup) params.set('statusGroup', statusGroup);
 
     // api-spec.md 1: identity comes from the sid session cookie, sent automatically; the
     // backend - not this component - decides what belongs to the caller (BR-08).
@@ -168,10 +178,19 @@ export function MyTickets() {
         setResult(null);
         setLoading(false);
       });
-  }, [user, search, filters, sort, order, page, retryToken]);
+  }, [user, search, filters, statusGroup, sort, order, page, retryToken]);
+
+  // Keeps the address in step with the applied filters, replacing the entry so Back is not flooded.
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (search) next.set('search', search);
+    for (const [key, value] of Object.entries(filters)) if (value) next.set(key, value);
+    if (statusGroup) next.set('statusGroup', statusGroup);
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
+  }, [search, filters, statusGroup, searchParams, setSearchParams]);
 
   const hasActiveQuery =
-    search !== '' || Object.values(filters).some((value) => value !== '');
+    search !== '' || statusGroup !== '' || Object.values(filters).some((value) => value !== '');
 
   // Any change to what is being searched, filtered or sorted returns to page 1. Without this,
   // narrowing the results while on page 3 lands on an empty page 3 - which looks exactly like
@@ -194,6 +213,7 @@ export function MyTickets() {
     setSearchInput('');
     setSearch('');
     setFilters(EMPTY_FILTERS);
+    setStatusGroup('');
   };
 
   const totalPages = result?.totalPages ?? 0;
@@ -207,6 +227,20 @@ export function MyTickets() {
   return (
     <section className="tt-my-tickets">
       <h1 className="h4 mb-3">My Tickets</h1>
+      {/* ui-spec.md 6: statusGroup has no control of its own, so it shows as a removable chip. */}
+      {statusGroup === 'active' && (
+        <div className="mb-3">
+          <span className="tt-filter-chip">
+            Active statuses
+            <button type="button" className="tt-filter-chip-remove" aria-label="Remove filter: Active statuses" onClick={() => {
+                setPage(1);
+                setStatusGroup('');
+              }}>
+              ×
+            </button>
+          </span>
+        </div>
+      )}
 
       {error && (
         <div className="alert tt-alert-error" role="alert">

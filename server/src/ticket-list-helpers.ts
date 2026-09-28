@@ -1,3 +1,5 @@
+import { ACTIVE_STATUSES } from './dashboard-queries';
+
 // Pure helpers for the My Tickets list query (api-spec.md 4).
 // Kept out of the route handler so UNIT-04 can test them with no request, clock or database -
 // the lesson recorded from Issue #13, where inline handler logic could not be unit tested at all.
@@ -39,6 +41,17 @@ export const CURRENT_STATUSES: CurrentStatusValue[] = [
 ];
 export const REQUESTED_PRIORITIES: RequestedPriorityValue[] = ['LOW', 'MEDIUM', 'HIGH'];
 
+// Lab 4 api-spec.md 4: statusGroup=active narrows a list to the active statuses (BR-21), so a
+// dashboard card and the list its link opens count the same Tickets. Any other value is ignored.
+export function statusGroupFilter(raw: unknown): 'active' | undefined {
+  return firstValue(raw)?.trim() === 'active' ? 'active' : undefined;
+}
+
+// With a specific status as well, both must hold: an active status passes, any other matches nothing.
+export function conflictsWithStatusGroup(status: CurrentStatusValue | undefined, group: 'active' | undefined): boolean {
+  return group === 'active' && status !== undefined && !ACTIVE_STATUSES.includes(status);
+}
+
 export const TICKET_LIST_DEFAULTS = {
   sort: 'ticketDate' as TicketListSort,
   order: 'desc' as TicketListOrder,
@@ -52,6 +65,7 @@ export interface TicketListQuery {
   relatedSystemId?: number | undefined;
   currentStatus?: CurrentStatusValue | undefined;
   requestedPriority?: RequestedPriorityValue | undefined;
+  statusGroup?: 'active' | undefined;
   sort: TicketListSort;
   order: TicketListOrder;
   page: number;
@@ -124,6 +138,7 @@ export function parseTicketListQuery(raw: Record<string, unknown>): TicketListQu
   const relatedSystem = idFilter(raw.relatedSystem);
   const currentStatus = enumFilter(raw.currentStatus, CURRENT_STATUSES);
   const requestedPriority = enumFilter(raw.requestedPriority, REQUESTED_PRIORITIES);
+  const statusGroup = statusGroupFilter(raw.statusGroup);
 
   return {
     search,
@@ -131,11 +146,16 @@ export function parseTicketListQuery(raw: Record<string, unknown>): TicketListQu
     relatedSystemId: relatedSystem.value,
     currentStatus: currentStatus.value,
     requestedPriority: requestedPriority.value,
+    statusGroup,
     sort,
     order,
     page,
     pageSize,
     matchesNothing:
-      category.invalid || relatedSystem.invalid || currentStatus.invalid || requestedPriority.invalid,
+      category.invalid ||
+      relatedSystem.invalid ||
+      currentStatus.invalid ||
+      requestedPriority.invalid ||
+      conflictsWithStatusGroup(currentStatus.value, statusGroup),
   };
 }

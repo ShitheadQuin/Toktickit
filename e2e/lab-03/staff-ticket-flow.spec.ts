@@ -25,7 +25,9 @@ test.describe('IT Staff ticket flow (E2E-02)', () => {
     await page.getByLabel(/email/i).fill(E2E_STAFF_EMAIL);
     await page.getByLabel(/^password$/i).fill(E2E_STAFF_PASSWORD);
     await page.getByRole('button', { name: /sign in/i }).click();
-    await page.waitForURL('**/staff/queue');
+    // Lab 4: every role lands on the Dashboard first.
+    await page.waitForURL('**/dashboard');
+    await page.goto('/staff/queue');
 
     // Find the Ticket in the Queue and open it.
     await page.getByLabel('Search', { exact: true }).fill(E2E_FLOW_TICKET_NUMBER);
@@ -63,6 +65,15 @@ test.describe('IT Staff ticket flow (E2E-02)', () => {
     const note = page.locator('.tt-note-internal', { hasText: noteText });
     await expect(note).toBeVisible();
     await expect(note.getByText('Internal — not visible to Requester')).toBeVisible();
+
+    // Lab 4 BR-16: Resolved now needs a Completed Action, so the work is recorded before resolving.
+    await page.getByRole('button', { name: 'Add Action' }).click();
+    const actionForm = page.getByRole('form', { name: 'Add Action' });
+    await actionForm.getByLabel('Action Description').fill('Replaced the duplex roller');
+    await actionForm.getByLabel('Status').selectOption('COMPLETED');
+    await actionForm.getByLabel('Result').fill('Duplex printing works again');
+    await actionForm.getByRole('button', { name: 'Save Action' }).click();
+    await expect(page.locator('.tt-badge-action-completed')).toBeVisible();
 
     // AC-13: the owner moves the Ticket through the permitted workflow.
     const steps: [string, string][] = [
