@@ -8,6 +8,7 @@ import { StaffTicketQueue } from './pages/StaffTicketQueue';
 import { StaffTicketDetail } from './pages/StaffTicketDetail';
 import { UserManagement } from './pages/UserManagement';
 import { Dashboard } from './pages/Dashboard';
+import { NotFound } from './pages/NotFound';
 import { Login } from './pages/Login';
 import { ChangePassword } from './pages/ChangePassword';
 import { AppShell } from './components/AppShell';
@@ -111,6 +112,16 @@ function App() {
             }
           />
           <Route path="/diagnostics" element={<DiagnosticsPage />} />
+          <Route
+            path="*"
+            element={
+              <RequireRole roles={['REQUESTER', 'IT_STAFF', 'ADMINISTRATOR']}>
+                <AppShell>
+                  <NotFound />
+                </AppShell>
+              </RequireRole>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

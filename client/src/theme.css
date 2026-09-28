@@ -84,7 +84,10 @@ body {
   color: var(--tt-error-text);
 }
 
-.tt-field-readonly {
+.tt-field-readonly,
+.tt-field-readonly:focus {
+  /* Lab 4 #64: Bootstrap's .form-control:focus paints any focused field white, which made a read
+     only field look editable exactly when the user landed on it. */
   background: var(--tt-readonly-bg);
   color: var(--tt-text);
 }

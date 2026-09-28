@@ -162,10 +162,19 @@ export function ActionsTakenSection({ ticketId, editable, ticketClosed, assignee
     };
   }, [ticketId, reloadToken]);
 
-  // ui-spec.md 13: focus moves into the panel when it opens.
+  // ui-spec.md 13: focus moves into the panel when it opens, and back to Add Action when it closes.
+  // Add Action is only rendered while the panel is closed, so the return waits for this effect,
+  // after the render that brings the button back, rather than a timer that can run before it.
+  const returnFocus = useRef(false);
   useEffect(() => {
     if (mode) firstField.current?.focus();
   }, [mode]);
+  useEffect(() => {
+    if (!mode && returnFocus.current && addButton.current) {
+      returnFocus.current = false;
+      addButton.current.focus();
+    }
+  });
 
   const canWrite = editable && !ticketClosed;
   const editing = mode?.kind === 'edit' ? mode.action : null;
@@ -191,8 +200,8 @@ export function ActionsTakenSection({ ticketId, editable, ticketClosed, assignee
   const closeForm = () => {
     setMode(null);
     setConfirmingCancel(false);
-    // ui-spec.md 13: focus returns to where the user started.
-    setTimeout(() => addButton.current?.focus(), 0);
+    // ui-spec.md 13: focus returns to where the user started (see the effect above).
+    returnFocus.current = true;
   };
 
   const reload = () => {
