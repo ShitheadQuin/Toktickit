@@ -1,0 +1,10 @@
+Part 8 (regression half) evidence, captured 2026-09-28T11:24:45.296Z by capture-part8-9.mjs
+
+p8-04-authentication-login.png: Authentication: the Lab 3 Sign In screen, unchanged; every role now lands on its Dashboard after signing in (p8-01, p5-01).
+p8-05-my-tickets.png: My Tickets (Kritsada): the Lab 2 list with search, filters, sorting and pagination, still showing only his own Tickets.
+p8-06-requester-ticket-detail.png: Requester Ticket Detail (TKT-2026-700001, Waiting for Requester): the Lab 2 fields, his Attachments and the Public Comments thread, with the Lab 4 Actions Taken and Status History sections added.
+p8-07-attachments.png: Attachments on Staff Ticket Detail (TKT-2026-700001): the Requester's current file with name, size and Download, and the removed one kept in the record with its reason.
+p8-08-public-comments.png: Public Comments on Staff Ticket Detail (TKT-2026-700001): the shared thread with the Requester, and the comment box.
+p8-09-it-staff-queue.png: IT Staff functions (Pimchanok): the Ticket Queue with search, status, IT Priority and assignment filters, sorting and pagination; claim, reassign, IT Priority and status are on Staff Ticket Detail (p8-08, p7-01).
+p8-10-internal-notes.png: Internal Notes on Staff Ticket Detail (TKT-2026-700001): staff-only notes, marked private and never shown to the Requester (compare p8-06).
+p8-11-user-management.png: Administrator user management (Duangjai): the Lab 3 Users screen with search, role filter, Add user and activate or deactivate.
