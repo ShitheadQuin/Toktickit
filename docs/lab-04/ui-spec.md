@@ -181,22 +181,41 @@ focus and closes with Escape. Counts, statuses and flags always carry words, nev
   from nowhere in it.
 - Every submit button disables while pending; every form keeps its input after a recoverable error.
 - No console errors or warnings on any screen during the E2E run.
+- An address that matches no screen shows "Page not found" inside the shell with a Back to Dashboard
+  link, in the same alert style as "This Ticket does not exist.", instead of a blank page.
+- No single line field or select cuts its text off: the read only Summary on both Ticket Detail
+  screens wraps, and the Assign to select keeps room for its text, with Reassign moving below it
+  when the column is narrower.
 
 ## 15. Visual inspection checklist
 
-Completed in Issue #64. Each line will name what verified it.
+Completed in Issue #64. Each line names what verified it.
 
-- [ ] Dashboards: cards, lists and breakdowns consistent with Zen Green, no clipping at 3 widths
-- [ ] Actions Taken: table and card forms, create and edit modes, read only look for locked Actions
-- [ ] Editable versus read only fields consistent with Lab 2 tokens on every Lab 4 screen
-- [ ] Validation messages placed under their fields, never overlapping
-- [ ] Keyboard focus visible and in a logical order on dashboards and the Action panel
-- [ ] No horizontal overflow on any Lab 4 screen at 1280, 768, 375 px
-- [ ] Every status, action status and flag badge pairs colour with text or icon
-- [ ] No leftover placeholder, duplicate or obsolete control from Labs 1 to 3
+- [x] Dashboards: cards, lists and breakdowns consistent with Zen Green, no clipping at 3 widths.
+  STYLE-02 and RESP-01; by eye on p9-01, 03, 05, 07, 09, 11.
+- [x] Actions Taken: table and card forms, create and edit modes, read only look for locked Actions.
+  RESP-01 (table from 992 px, cards below), STYLE-02 (locked Action read only); by eye on p9-02,
+  06, 10 and p6-04, p6-07, p6-14.
+- [x] Editable versus read only fields consistent with Lab 2 tokens on every Lab 4 screen. STYLE-02
+  checks `--tt-readonly-bg` on every field of a locked Action, focused as well; #64 fixed a focused
+  read only field turning white (Bootstrap's focus rule).
+- [x] Validation messages placed under their fields, never overlapping. UI-03; by eye on p6-02.
+- [x] Keyboard focus visible and in a logical order on dashboards and the Action panel. A11Y-01 and
+  UI-11; #64 fixed focus not returning to Add Action after a save, and made every confirm dialog
+  keep focus inside and close with Escape.
+- [x] No horizontal overflow on any Lab 4 screen at 1280, 768, 375 px. RESP-01, and the capture
+  script refuses to save a shot with overflow (p9-01 to p9-12); #64 fixed two clipped fields
+  (Assign to, read only Summary).
+- [x] Every status, action status and flag badge pairs colour with text or icon. STYLE-01, STYLE-02;
+  by eye on p9-02 (✓ Completed, ⊘ Cancelled, ⚑ Follow up) and p9-03 ("Needs your reply").
+- [x] No leftover placeholder, duplicate or obsolete control from Labs 1 to 3. HARD-01 sweeps every
+  screen of every role for placeholder text, dead links and console problems; #64 added the
+  missing not-found page.
 
 ## 16. Screenshot paths
 
 `artifacts/lab-04/screenshots/staff-dashboard/`, `requester-dashboard/`, `actions-taken/`
-(labsheet §12), captured by Playwright at 1280, 768 and 375 px with `deviceScaleFactor: 2`.
-Only the shots the labsheet asks for are taken.
+(labsheet §12), plus `ticket-workflow/` (Part 7), `regression/` (Part 8's regression evidence)
+and `responsive/` (Part 9: every major Lab 4 screen at 1280, 768 and 375 px). Captured by
+Playwright from the seeded data with `deviceScaleFactor: 2`. Only the shots the labsheet asks for
+are taken.

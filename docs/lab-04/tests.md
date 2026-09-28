@@ -50,8 +50,8 @@ Lab 4, like the requirement ids.
 | PERF-01 | Performance smoke | AC-32 | Both dashboard endpoints on seeded data, timed | Each responds within 1 second | `server/tests/lab-04/dashboard-perf.smoke.test.ts` | Pass |
 | MIG-01 | Migration | AC-25 | Row counts and sample rows of Users, Tickets, Attachments, comments, notes before and after the Lab 4 migration | Identical; every Ticket version 0, no Actions, no history; the documented rollback removes only the Lab 4 tables and column, and the migration re-applies | `server/tests/lab-04/migration.regression.test.ts` | Pass |
 | MIG-02 | Migration | AC-26 | Run the seed twice | Identical counts; Tickets with 0, 1 and several Actions; every Action status present; seeded Resolved Tickets meet the gate | `server/tests/lab-04/migration.regression.test.ts` | Pass |
-| REG-01 | Regression | AC-29 | Every Lab 1, 2 and 3 server and client test | All pass, apart from REG-02. The two Lab 3 Ticket Detail suites' mocked servers also answer the new Actions endpoint with an empty list (#61), since both pages now show Actions Taken; no Lab 3 assertion changed | `server/tests/lab-0{1,2,3}/`, `client/tests/lab-0{1,2,3}/` | Planned |
-| REG-02 | Regression | AC-29, Section 11 | Lab 2 and 3 tests whose contract Lab 4 changes on purpose (#62): Administrator access (Lab 3 API-12, API-14, comment and note posting, assignable users, the Administrator navigation), `expectedVersion` on every Ticket write (Lab 3 staff detail API and UI suites, including API-43 whose losing claim is now `STALE_UPDATE`), the "Ticket Queue" link name, Lab 3 E2E-02 recording a Completed Action before resolving, and (#63) every Lab 2 and 3 E2E sign-in waiting for the new Dashboard landing page before opening the screen it tests | Updated on purpose, each change commented in the test and explained in the #62 PR; all pass | `server/tests/lab-03/authorization.api.test.ts`, `comments-notes.api.test.ts`, `staff-ticket-detail.api.test.ts`, `client/tests/lab-02/AppShell.test.tsx`, `client/tests/lab-03/StaffTicketDetail.test.tsx`, `e2e/lab-02/auth-helper.ts`, `e2e/lab-03/*.spec.ts` | Pass |
+| REG-01 | Regression | AC-29 | Every Lab 1, 2 and 3 server and client test | All pass, apart from REG-02. The two Lab 3 Ticket Detail suites' mocked servers also answer the new Actions endpoint with an empty list (#61), since both pages now show Actions Taken; no Lab 3 assertion changed | `server/tests/lab-0{1,2,3}/`, `client/tests/lab-0{1,2,3}/` | Pass |
+| REG-02 | Regression | AC-29, Section 11 | Lab 2 and 3 tests whose contract Lab 4 changes on purpose (#62): Administrator access (Lab 3 API-12, API-14, comment and note posting, assignable users, the Administrator navigation), `expectedVersion` on every Ticket write (Lab 3 staff detail API and UI suites, including API-43 whose losing claim is now `STALE_UPDATE`), the "Ticket Queue" link name, Lab 3 E2E-02 recording a Completed Action before resolving, (#63) every Lab 2 and 3 E2E sign-in waiting for the new Dashboard landing page before opening the screen it tests, and (#64) the Lab 3 responsive spec keeping its overflow checks but no longer writing screenshots, so a test run cannot overwrite Lab 3's submitted captures (the same change #36 made to Lab 2's) | Updated on purpose, each change commented in the test and explained in the #62 PR; all pass | `server/tests/lab-03/authorization.api.test.ts`, `comments-notes.api.test.ts`, `staff-ticket-detail.api.test.ts`, `client/tests/lab-02/AppShell.test.tsx`, `client/tests/lab-03/StaffTicketDetail.test.tsx`, `e2e/lab-02/auth-helper.ts`, `e2e/lab-03/*.spec.ts` | Pass |
 | UI-01 | UI | AC-02, AC-23 | RequesterDashboard: cards with links, recent lists, empty text, loading, safe failure with Retry | Matches `ui-spec.md` §3 and §4 | `client/tests/lab-04/RequesterDashboard.test.tsx` | Pass |
 | UI-02 | UI | AC-21, AC-22 | StaffDashboard: cards, By Status and By IT Priority links, My Open Actions, User Accounts only for Administrator, loading, failure | Matches `ui-spec.md` §3 and §5 | `client/tests/lab-04/StaffDashboard.test.tsx` | Pass |
 | UI-03 | UI | AC-07, AC-30 | Action form: messages under each field; server failure keeps typed input | Matches `ui-spec.md` §7 feedback table | `client/tests/lab-04/ActionsTaken.test.tsx` | Pass |
@@ -62,18 +62,20 @@ Lab 4, like the requirement ids.
 | UI-08 | UI | AC-13, AC-14 | Status change answered with `RESOLUTION_GATE_NOT_MET`, then `STALE_UPDATE` | Banner with Reload; displayed status unchanged | `client/tests/lab-04/TicketWorkflow.test.tsx` | Pass |
 | UI-09 | UI | AC-24 | My Tickets and Ticket Queue opened with filters in the URL, then a control changed | Filters applied from the URL, "Active statuses" chip shown, URL updated | `client/tests/lab-04/UrlFilters.test.tsx` | Pass |
 | UI-10 | UI | AC-05 | Requester Ticket Detail with Actions and history | Read only list including Cancelled Actions, no form or buttons | `client/tests/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-11 | Accessibility | AC-28 | Every confirm dialog (Cancel Action, Cancel or Reopen Ticket, Problem Appears Resolved) opened, then Tab, Shift+Tab and Escape | Focus starts on Go back and stays inside; Escape closes without confirming and returns focus to what opened it | `client/tests/lab-04/ConfirmDialog.test.tsx` | Pass |
 | STYLE-01 | UI Style | `ui-spec.md` §11 | Action status badge and follow up flag class map, and `theme.css` read as text | Every value maps to its class and every class has a CSS rule | `client/tests/lab-04/action-badge-classes.test.ts` | Pass |
-| STYLE-02 | UI Style | `ui-spec.md` §3, §7 | Rendered dashboard cards and Actions table: label, number, accessible link name, badge classes, read only styling of locked Actions | Classes and computed styles match the spec | `e2e/lab-04/ui-style.spec.ts` | Planned |
-| RESP-01 | Responsive | AC-27 | Both dashboards and Actions Taken (list and form) at 1280, 768, 375 px, saved to `artifacts/lab-04/screenshots/` | No horizontal scroll, clipping or overlap | `e2e/lab-04/responsive.spec.ts` | Planned |
-| A11Y-01 | Accessibility | AC-28 | Keyboard only: dashboard cards and links, Action panel open, fill, save, close, status control | Every control reachable and operable, focus visible and returned to Add Action | `e2e/lab-04/accessibility.spec.ts` | Planned |
+| STYLE-02 | UI Style | `ui-spec.md` §3, §7 | Rendered dashboard cards and Actions table: label, number, accessible link name, badge classes, read only styling of locked Actions, focused as well as not | Classes and computed styles match the spec | `e2e/lab-04/ui-style.spec.ts` | Pass |
+| RESP-01 | Responsive | AC-27 | Both dashboards, Staff Ticket Detail with Actions Taken (list and form) and Requester Ticket Detail at 1280, 768, 375 px, with a long Summary | No horizontal scroll; metric cards 4, 2 and 1 per row; Actions as cards below 992 px; no single line field or select clips its text. The graded captures of the same screens come from seeded data (`artifacts/lab-04/screenshots/responsive/`) | `e2e/lab-04/responsive.spec.ts` | Pass |
+| A11Y-01 | Accessibility | AC-28 | Keyboard only: dashboard cards and links, Action panel open, fill, save, close, status control, Cancel Action confirm dialog | Every control reachable and operable, focus visible and returned to Add Action; the dialog keeps Tab inside and closes with Escape | `e2e/lab-04/accessibility.spec.ts` | Pass |
 | E2E-01 | E2E | AC-01, AC-06, AC-09 | Staff A adds an Action assigned to Staff B, is refused an inactive assignee, Staff B adds another, completes one, cancels one | Several Actions on one Ticket with the right people and statuses | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
 | E2E-02 | E2E | AC-03 | Owner tries to resolve with an open Action, completes it, resolves; Requester then views the Ticket | Refused with the reason, then Resolved; Requester sees Resolved, the Actions and the history | `e2e/lab-04/ticket-resolution.spec.ts` | Pass |
 | E2E-03 | E2E | AC-02, AC-21, AC-24 | Requester and IT Staff sign in, land on their dashboards, follow a card | Figures shown; list opens filtered with a total equal to the card | `e2e/lab-04/dashboards.spec.ts` | Pass |
-| E2E-04 | Regression | AC-29 | Every Lab 2 and Lab 3 Playwright spec | All pass | `e2e/lab-02/`, `e2e/lab-03/` | Planned |
+| E2E-04 | Regression | AC-29 | Every Lab 2 and Lab 3 Playwright spec | All pass | `e2e/lab-02/`, `e2e/lab-03/` | Pass |
+| HARD-01 | Regression | AC-29 | Every screen each role can reach, then one of every in-app link on them, and an unknown address | No console error or warning, no link that leads nowhere, no placeholder text; an unknown address shows "Page not found" with a way back | `e2e/lab-04/hardening.spec.ts` | Pass |
 
 Files beyond the labsheet's §12 minimum (`action-rules`, `resolution-gate`, `dashboard-queries`,
-`dashboard-perf`, `migration.regression`, `UrlFilters`, `action-badge-classes`, `ui-style`,
-`responsive`, `accessibility`) exist because the rules they test are labsheet requirements that
+`dashboard-perf`, `migration.regression`, `UrlFilters`, `action-badge-classes`, `ConfirmDialog`,
+`ui-style`, `responsive`, `accessibility`, `hardening`) exist because the rules they test are labsheet requirements that
 need a home; §12 calls its list a minimum.
 
 ## 3. Acceptance Criterion Traceability
@@ -107,8 +109,8 @@ need a home; §12 calls its list a minimum.
 | AC-25 | MIG-01 |
 | AC-26 | MIG-02 |
 | AC-27 | RESP-01 |
-| AC-28 | A11Y-01 |
-| AC-29 | REG-01, REG-02, E2E-04 |
+| AC-28 | A11Y-01, UI-11 |
+| AC-29 | REG-01, REG-02, E2E-04, HARD-01 |
 | AC-30 | UI-03 |
 | AC-31 | UI-04 |
 | AC-32 | PERF-01 |
@@ -117,8 +119,8 @@ Every AC in `specification.md` §9 maps to at least one test.
 
 ## 4. Responsive and Visual Checklist
 
-Run by RESP-01 and STYLE-01/02, then by eye once every Lab 4 screen exists. The checklist is kept
-once, in `ui-spec.md` §15.
+Run by RESP-01 and STYLE-01/02, then by eye on the Part 8 and Part 9 captures (#64). The checklist
+is kept once, in `ui-spec.md` §15, where each line names what verified it.
 
 ## 5. Test Commands
 
