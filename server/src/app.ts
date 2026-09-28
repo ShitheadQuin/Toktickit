@@ -12,6 +12,8 @@ import authRouter from './routes/auth';
 import staffTicketsRouter from './routes/staff-tickets';
 import ticketConversationRouter from './routes/ticket-conversation';
 import usersRouter from './routes/users';
+import dashboardRouter from './routes/dashboard';
+import { ACTIVE_STATUSES } from './dashboard-queries';
 import actionsRouter from './routes/actions';
 
 const app = express();
@@ -21,6 +23,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/staff', staffTicketsRouter);
 app.use('/api/tickets', ticketConversationRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/dashboard', dashboardRouter);
 app.use('/api', actionsRouter);
 
 // BR-15/BR-27: multer's own limit is a memory backstop only, set above the real 5 MB rule so an
@@ -171,7 +174,11 @@ app.get('/api/tickets', ...requireRequester, async (req, res) => {
       requesterId,
       ...(query.categoryId !== undefined ? { categoryId: query.categoryId } : {}),
       ...(query.relatedSystemId !== undefined ? { relatedSystemId: query.relatedSystemId } : {}),
-      ...(query.currentStatus !== undefined ? { currentStatus: query.currentStatus } : {}),
+      ...(query.currentStatus !== undefined
+        ? { currentStatus: query.currentStatus }
+        : query.statusGroup === 'active'
+          ? { currentStatus: { in: ACTIVE_STATUSES } }
+          : {}),
       ...(query.requestedPriority !== undefined
         ? { requestedPriority: query.requestedPriority }
         : {}),
@@ -521,7 +528,11 @@ app.get('/api/staff/tickets', ...requireItStaff, async (req, res) => {
     const contains = (text: string) => ({ contains: text, mode: 'insensitive' as const });
 
     const where = {
-      ...(query.status !== undefined ? { currentStatus: query.status } : {}),
+      ...(query.status !== undefined
+        ? { currentStatus: query.status }
+        : query.statusGroup === 'active'
+          ? { currentStatus: { in: ACTIVE_STATUSES } }
+          : {}),
       ...(query.itPriority !== undefined ? { itPriority: query.itPriority } : {}),
       ...(query.owner === 'unassigned'
         ? { ticketOwnerId: null }

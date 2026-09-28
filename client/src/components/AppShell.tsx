@@ -47,6 +47,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             array, so the markup itself never contains a link the current role can't reach. */}
         {user && (
           <nav id="app-shell-nav" className={navClasses} aria-label="Main">
+            {/* Lab 4 ui-spec.md 2: the dashboard is every role's starting point. */}
+            <NavLink to="/dashboard" className="tt-nav-link" onClick={() => setMenuOpen(false)}>
+              Dashboard
+            </NavLink>
             {user.role === 'REQUESTER' && (
               <>
                 <NavLink to="/my-tickets" className="tt-nav-link" onClick={() => setMenuOpen(false)}>

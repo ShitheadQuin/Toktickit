@@ -86,7 +86,9 @@ test.describe('RESP-01 — authentication, Queue and Ticket Detail', () => {
 
       test(`Staff Ticket Queue at ${viewportName}`, async ({ page }) => {
         await signIn(page, E2E_STAFF_EMAIL, E2E_STAFF_PASSWORD);
-        await page.waitForURL('**/staff/queue');
+        // Lab 4: every role lands on the Dashboard first.
+        await page.waitForURL('**/dashboard');
+        await page.goto('/staff/queue');
         // ui-spec.md §6: the 7-column table becomes stacked cards below 992px rather than a
         // horizontally scrolling table, so this shot is the evidence for both layouts.
         await capture(page, 'staff-queue', viewportName);
@@ -94,7 +96,9 @@ test.describe('RESP-01 — authentication, Queue and Ticket Detail', () => {
 
       test(`Staff Ticket Detail at ${viewportName}`, async ({ page }) => {
         await signIn(page, E2E_STAFF_EMAIL, E2E_STAFF_PASSWORD);
-        await page.waitForURL('**/staff/queue');
+        // Lab 4: every role lands on the Dashboard first.
+        await page.waitForURL('**/dashboard');
+        await page.goto('/staff/queue');
 
         await page.getByLabel('Search', { exact: true }).fill(E2E_FLOW_TICKET_NUMBER);
         await page.getByRole('button', { name: 'Search', exact: true }).click();
@@ -128,7 +132,9 @@ test.describe('RESP-01 — User Management', () => {
 
       test(`User Management at ${viewportName}`, async ({ page }) => {
         await signIn(page, E2E_VIEW_ADMIN_EMAIL, E2E_VIEW_ADMIN_PASSWORD);
-        await page.waitForURL('**/users');
+        // Lab 4: every role lands on the Dashboard first.
+        await page.waitForURL('**/dashboard');
+        await page.goto('/users');
         await page.locator('.tt-user-table').waitFor();
         await capture(page, 'user-management', viewportName);
 

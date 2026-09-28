@@ -50,7 +50,9 @@ test.describe('STYLE-01 — badge markup on the Lab 3 screens', () => {
 
   test('Ticket Queue draws status and IT Priority badges from the shared map', async ({ page }) => {
     await signIn(page, E2E_STAFF_EMAIL, E2E_STAFF_PASSWORD);
-    await page.waitForURL('**/staff/queue');
+    // Lab 4: every role lands on the Dashboard first.
+    await page.waitForURL('**/dashboard');
+    await page.goto('/staff/queue');
     await page.locator('.tt-queue-table').waitFor();
 
     await expectBadgesCarryText(page, '.tt-queue-status .tt-badge');
@@ -65,7 +67,9 @@ test.describe('STYLE-01 — badge markup on the Lab 3 screens', () => {
 
   test('Staff Ticket Detail draws status and priority badges', async ({ page }) => {
     await signIn(page, E2E_STAFF_EMAIL, E2E_STAFF_PASSWORD);
-    await page.waitForURL('**/staff/queue');
+    // Lab 4: every role lands on the Dashboard first.
+    await page.waitForURL('**/dashboard');
+    await page.goto('/staff/queue');
     await page.getByLabel('Search', { exact: true }).fill(E2E_FLOW_TICKET_NUMBER);
     await page.getByRole('button', { name: 'Search', exact: true }).click();
     await expect(page.getByRole('link', { name: E2E_FLOW_TICKET_NUMBER })).toHaveCount(1);
@@ -77,7 +81,9 @@ test.describe('STYLE-01 — badge markup on the Lab 3 screens', () => {
 
   test('the app shell draws the signed-in user’s role badge', async ({ page }) => {
     await signIn(page, E2E_STAFF_EMAIL, E2E_STAFF_PASSWORD);
-    await page.waitForURL('**/staff/queue');
+    // Lab 4: every role lands on the Dashboard first.
+    await page.waitForURL('**/dashboard');
+    await page.goto('/staff/queue');
     await expectBadgesCarryText(page, '.tt-badge[class*="tt-badge-role-"]');
   });
 });
@@ -93,7 +99,9 @@ test.describe('STYLE-01 — User Management badges', () => {
 
   test('every user row carries a role badge and an Active/Inactive badge', async ({ page }) => {
     await signIn(page, E2E_VIEW_ADMIN_EMAIL, E2E_VIEW_ADMIN_PASSWORD);
-    await page.waitForURL('**/users');
+    // Lab 4: every role lands on the Dashboard first.
+    await page.waitForURL('**/dashboard');
+    await page.goto('/users');
     await page.locator('.tt-user-table').waitFor();
 
     const rows = await page.locator('.tt-user-table tbody tr').count();
@@ -115,7 +123,9 @@ test.describe('STYLE-02 — Public Comments and Internal Notes are visually dist
 
   test('a Comment and a Note use different classes and different backgrounds', async ({ page }) => {
     await signIn(page, E2E_STAFF_EMAIL, E2E_STAFF_PASSWORD);
-    await page.waitForURL('**/staff/queue');
+    // Lab 4: every role lands on the Dashboard first.
+    await page.waitForURL('**/dashboard');
+    await page.goto('/staff/queue');
     await page.getByLabel('Search', { exact: true }).fill(E2E_FLOW_TICKET_NUMBER);
     await page.getByRole('button', { name: 'Search', exact: true }).click();
     await expect(page.getByRole('link', { name: E2E_FLOW_TICKET_NUMBER })).toHaveCount(1);

@@ -35,7 +35,9 @@ test.describe('Administrator user administration (E2E-03)', () => {
 
   test('create, forced first change, edit, and both blocked changes', async ({ page, browser }) => {
     await signIn(page, E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD);
-    await page.waitForURL('**/users');
+    // Lab 4: every role lands on the Dashboard first.
+    await page.waitForURL('**/dashboard');
+    await page.goto('/users');
 
     // AC-19: create an IT Staff user; the one-time password is shown once.
     await page.getByRole('button', { name: 'Add user' }).click();
@@ -65,7 +67,8 @@ test.describe('Administrator user administration (E2E-03)', () => {
     await newUser.getByLabel(/^new password$/i).fill('CreatedStaff2026');
     await newUser.getByLabel(/confirm new password/i).fill('CreatedStaff2026');
     await newUser.getByRole('button', { name: /continue/i }).click();
-    await newUser.waitForURL('**/staff/queue');
+    // Lab 4: a new IT Staff member lands on the Dashboard after the forced password change.
+    await newUser.waitForURL('**/dashboard');
     await newUserContext.close();
 
     // Edit another user's basic information.

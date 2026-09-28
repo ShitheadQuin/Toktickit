@@ -913,3 +913,189 @@ body {
   background: #FFF4DE;
   border-color: #92600D;
 }
+
+/* Lab 4 ui-spec.md 6: a filter with no control of its own (statusGroup) shows as a removable chip. */
+.tt-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.4rem 0.2rem 0.75rem;
+  border: 1px solid var(--tt-secondary);
+  border-radius: 999px;
+  background: var(--tt-pale);
+  color: var(--tt-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.tt-filter-chip-remove {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+}
+
+.tt-filter-chip-remove:focus-visible {
+  outline: 2px solid var(--tt-secondary);
+  outline-offset: 1px;
+}
+
+/* Dashboards (docs/lab-04/ui-spec.md 3 to 5, 13). Concise cards over the Lab 2 surface tokens; four
+   per row on desktop, two on tablet, one on mobile, never scrolling sideways. */
+.tt-metric-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.tt-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: var(--tt-text);
+  text-decoration: none;
+  min-width: 0;
+}
+
+a.tt-metric-card:hover {
+  border-color: var(--tt-secondary);
+  background: var(--tt-pale);
+}
+
+a.tt-metric-card:focus-visible {
+  outline: 3px solid var(--tt-secondary);
+  outline-offset: 2px;
+}
+
+.tt-metric-card-attention {
+  border-color: #92600D;
+  border-left-width: 4px;
+}
+
+.tt-metric-label {
+  font-weight: 600;
+}
+
+.tt-metric-count {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tt-metric-attention {
+  color: #92600D;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.tt-metric-view {
+  color: var(--tt-secondary);
+  font-size: 0.875rem;
+  text-decoration: underline;
+}
+
+.tt-dashboard-columns {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+}
+
+.tt-dashboard-main,
+.tt-dashboard-side {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.tt-dashboard-panel {
+  background: #FFFFFF;
+  border: 1px solid var(--tt-surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  min-width: 0;
+}
+
+.tt-dashboard-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--tt-surface-border);
+}
+
+.tt-dashboard-list li:last-child {
+  border-bottom: 0;
+}
+
+.tt-dashboard-list-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+
+.tt-dashboard-summary {
+  overflow-wrap: anywhere;
+}
+
+.tt-dashboard-list-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tt-breakdown-list li a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  color: var(--tt-text);
+  text-decoration: none;
+}
+
+.tt-breakdown-list li a:hover .tt-breakdown-count {
+  text-decoration: underline;
+}
+
+.tt-breakdown-count {
+  font-weight: 700;
+}
+
+.tt-user-counts {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 1rem;
+}
+
+.tt-user-counts dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+@media (max-width: 991.98px) {
+  .tt-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-dashboard-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .tt-metric-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

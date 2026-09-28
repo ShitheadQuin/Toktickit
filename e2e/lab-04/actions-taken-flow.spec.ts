@@ -26,14 +26,14 @@ test.describe('Actions Taken flow (E2E-01)', () => {
 
   test('several staff members record, assign, complete and cancel Actions; the Requester sees them all', async ({ page }) => {
     // Staff B, who does not own the Ticket, records an Action for Staff A (BR-02).
-    await signIn(page, STAFF_B.email, '/staff/queue');
+    await signIn(page, STAFF_B.email, '/dashboard');
     await page.goto(`/staff/tickets/${ticketId}`);
     await addAction(page, 'Tested the adapter with a meter', STAFF_A.name);
     await expect(page.getByRole('status').filter({ hasText: 'Action saved.' })).toBeVisible();
     await signOut(page);
 
     // Staff A, the owner, records one for Staff B.
-    await signIn(page, STAFF_A.email, '/staff/queue');
+    await signIn(page, STAFF_A.email, '/dashboard');
     await page.goto(`/staff/tickets/${ticketId}`);
     await addAction(page, 'Order a replacement adapter', STAFF_B.name);
     await expect(page.getByRole('status').filter({ hasText: 'Action saved.' })).toBeVisible();
@@ -89,7 +89,7 @@ test.describe('Actions Taken flow (E2E-01)', () => {
     await signOut(page);
 
     // AC-05: the Requester sees every Action, Cancelled included, with nothing to change them.
-    await signIn(page, REQUESTER.email, '/my-tickets');
+    await signIn(page, REQUESTER.email, '/dashboard');
     await page.goto(`/tickets/${ticketId}`);
     await expect(page.locator('.tt-actions-table tbody tr')).toHaveCount(3);
     await expect(page.locator('.tt-badge-action-cancelled')).toBeVisible();

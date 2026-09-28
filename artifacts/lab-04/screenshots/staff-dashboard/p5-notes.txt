@@ -1,0 +1,13 @@
+Part 5 evidence, captured 2026-09-27T19:27:03.560Z by capture-part5-8.mjs
+
+p5-01-staff-dashboard.png: IT Staff (Pimchanok) lands on the Staff dashboard: Unassigned, My Tickets, High IT Priority and My Open Actions cards, Recent Tickets, My Open Actions list, By Status and By IT Priority, Quick Actions.
+p5-02-metrics-match-database.png: Selected dashboard figures next to the same SQL queries run directly on the database; every one matches.
+p5-03-drill-down-my-tickets.png: Following the My Tickets card (5) opens the Ticket Queue filtered to Assigned: Me and active statuses (chip), showing the same 5 Tickets.
+p5-04-loading.png: Loading: the dashboard request is held by the test, so skeleton rows show and Refresh is busy.
+p5-05-empty.png: Empty: a stubbed response with no Tickets or Actions; every figure shows 0 and each list explains that it is empty.
+p5-06-safe-failure.png: Safe failure: the server cannot be reached; a plain message with Retry, and no stale figures shown as current.
+p5-07-forbidden.png: Forbidden: a stubbed 403 shows "You do not have access to this page." with a way back; the real refusal of a Requester is in p5-11.
+p5-08-tablet.png: Tablet 768 px: two cards per row, lists and breakdowns stacked, no horizontal scroll.
+p5-09-mobile.png: Mobile 375 px: one card per row, everything stacked, no horizontal scroll.
+p5-10-administrator-user-accounts.png: Administrator (Duangjai) reuses the Staff dashboard and also sees User Accounts (active per role, inactive) with Manage users.
+p5-11-requester-refused-staff-dashboard.png: the real refusal (403) when a Requester calls the Staff dashboard, from the same evidence page as p8-03.
