@@ -294,13 +294,7 @@ export function RequesterTicketDetail() {
             <label htmlFor="summary" className="form-label">
               Summary
             </label>
-            <input
-              id="summary"
-              type="text"
-              className="form-control tt-field-readonly"
-              value={ticket.summary}
-              readOnly
-            />
+            <textarea id="summary" className="form-control tt-field-readonly tt-summary-readonly" value={ticket.summary} rows={1} readOnly />
           </div>
 
           <div className="mb-4">

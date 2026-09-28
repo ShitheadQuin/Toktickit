@@ -313,7 +313,7 @@ export function StaffTicketDetail() {
             <label htmlFor="staff-summary" className="form-label">
               Summary
             </label>
-            <input id="staff-summary" type="text" className="form-control tt-field-readonly" value={ticket.summary} readOnly />
+            <textarea id="staff-summary" className="form-control tt-field-readonly tt-summary-readonly" value={ticket.summary} rows={1} readOnly />
           </div>
           <div className="mb-4">
             <label htmlFor="staff-description" className="form-label">
@@ -499,10 +499,10 @@ function StaffControls({
           <label htmlFor="staff-assign-to" className="form-label">
             Assign to
           </label>
-          <div className="d-flex gap-2">
+          <div className="d-flex flex-wrap gap-2">
             <select
               id="staff-assign-to"
-              className="form-select tt-field"
+              className="form-select tt-field tt-assign-select"
               value={newOwnerId}
               onChange={(event) => onNewOwnerChange(event.target.value)}
               disabled={busy}
