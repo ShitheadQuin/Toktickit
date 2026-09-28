@@ -24,7 +24,7 @@ Pull Requests Chanat authored and I reviewed, targeting his `lab4-staging`:
 | [#71](https://github.com/Chanat-888/TokTickIT/pull/71) | feature/lab4-actions-ui | Requested changes (2 points), fixed in `7d072ec`, approved, merged |
 | [#72](https://github.com/Chanat-888/TokTickIT/pull/72) | feature/lab4-dashboards | Requested changes (2 points), fixed in `c00ba24`, approved with 1 non-blocking note, merged |
 | [#73](https://github.com/Chanat-888/TokTickIT/pull/73) | feature/lab4-hardening | Approved with 1 non-blocking note, merged |
-| [#74](https://github.com/Chanat-888/TokTickIT/pull/74) | feature/lab4-reviewer | Approved with 1 non-blocking note, then a follow-up comment asking for the Lab 3 two-section layout; two of three points fixed in `1803fdb`, `d983118` and `8dd6d74`, open |
+| [#74](https://github.com/Chanat-888/TokTickIT/pull/74) | feature/lab4-reviewer | Approved with 1 non-blocking note, then follow-up comments asking for the Lab 3 two-section layout and the #74 and #75 entries; fixed in `1803fdb`, `d983118`, `8dd6d74` and `d19c639`, approved again |
 | [#75](https://github.com/Chanat-888/TokTickIT/pull/75) | feature/lab4-ai-use | Requested changes (3 points), fixed in `77907f2`, approved, merged |
 
 Chanat's repository numbers its own business rules, sections and tests. Every reference below is
@@ -164,6 +164,12 @@ section covering ShitheadQuin/Toktickit #66 to #71 in `d983118` and the decision
 **My second follow-up comment:** Confirmed both fixes and listed the two entries still missing
 under his "Reviews my partner gave on my PRs": #75 (three points, fixed in `77907f2`, approved and
 merged as `e8d27c2`) and #74 itself. I will approve again once they are in.
+
+**Chanat's response:** Added both entries in `d19c639` and asked for a re-review.
+
+**My approval:** Both entries match the PR history, and the file now has both sections, like Lab 3.
+Non-blocking note: the #74 entry names `docs/lab-03/ai-use.md` as the layout, where it means
+`docs/lab-03/reviewer.md`. Approved.
 
 ### AI use, [Chanat-888/TokTickIT#75](https://github.com/Chanat-888/TokTickIT/pull/75)
 
