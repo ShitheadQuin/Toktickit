@@ -28,6 +28,7 @@ Pull Requests Chanat authored and I reviewed, targeting his `lab4-staging`:
 | [#75](https://github.com/Chanat-888/TokTickIT/pull/75) | feature/lab4-ai-use | Requested changes (3 points), fixed in `77907f2`, approved, merged |
 | [#76](https://github.com/Chanat-888/TokTickIT/pull/76) | feature/lab4-screenshots | Approved with 1 non-blocking note, merged |
 | [#77](https://github.com/Chanat-888/TokTickIT/pull/77) | lab4-staging → main (release) | Requested changes (2 points), fixed in `e445b9c`, approved, merged |
+| [#79](https://github.com/Chanat-888/TokTickIT/pull/79) | feature/lab4-claim-race | Requested changes (3 points), fixed in `77e8e92`, approved, merged |
 
 Chanat's repository numbers its own business rules, sections and tests. Every reference below is
 to **his** `specification.md` / `api-spec.md` / `ui-spec.md` / `tests.md`, not to this repository's.
@@ -218,6 +219,31 @@ merged, and #76 has a row and a full section with my approval note.
 merged cleanly. Asked him, after the merge, to record the final test run from `main` in his
 `tests.md` §6 and to add #77 to his `reviewer.md`. Approved, and merged on 28 Sep 2026 (merge
 commit `edffce4`).
+
+### Claim race fix, [Chanat-888/TokTickIT#79](https://github.com/Chanat-888/TokTickIT/pull/79)
+
+A fix found by the full test run on `main` after his release: Owner, IT Priority and Status on
+Staff Ticket Detail all send the Ticket's `updatedAt` as their version, but each control disabled
+only itself while saving, so a second write could race ahead of the first and be refused.
+
+**My comments (requested changes):**
+1. `reviewer.md`: the #76 closing line had ended up under the new #79 section, so #79 said both
+   "Review pending" and "Approved and merged", and #76 had no closing line.
+2. `StaffTicketDetail.tsx`: only the Playwright E2E test caught the race. Asked for a component test
+   in `TicketWorkflow.test.tsx`, for example that IT Priority and Status stay disabled while a
+   Claim is pending, so `npm test` in client catches it.
+3. `tests.md`: it said the fix reaches `main` "through lab4-staging", which needs a second release
+   PR, while his `reviewer.md` quotes an "exactly one release PR" rule. Asked for the plan to be
+   written down so the grader sees it was on purpose.
+
+**Chanat's response:** Fixed all three in `77e8e92`, answering each on its line. The #76 closing
+line is back under #76. A new test holds the Claim response pending and checks that IT Priority and
+Status are disabled until it resolves; he confirmed it fails on the code before the fix. `tests.md`
+§6 now explains the second release PR: the same feature → `lab4-staging` → `main` flow, for a fix
+found by the required run on `main`, since handout §11.1 only says "Similar to Labs 2 and 3".
+
+**My approval:** All three addressed in `77e8e92`. Approved, and merged on 30 Sep 2026 (merge commit
+`0b958a8`).
 
 ## Reviews my partner gave on my PRs
 
